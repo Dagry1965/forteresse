@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String?
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  memberships WorkspaceMember[]
+}
+
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  members   WorkspaceMember[]
+}
+
+model WorkspaceMember {
+  id          String @id @default(uuid())
+  user        User   @relation(fields: [userId], references: [id])
+  userId      String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  workspaceId String
+  role        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Client {
+  id          String   @id @default(uuid())
+  workspaceId String
+  name        String
+  email       String?
+  phone       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  vehicles    Vehicle[]
+}
+
+model Vehicle {
+  id          String  @id @default(uuid())
+  workspaceId String
+  clientId    String
+  vin         String? @unique
+  plateNumber String?
+  make        String?
+  model       String?
+  createdAt   DateTime @default(now())
+  client      Client  @relation(fields: [clientId], references: [id])
+  appointments Appointment[]
+}
+
+model Appointment {
+  id                  String   @id @default(uuid())
+  user_id             String
+  vehicle_id          String
+  scheduled_at        DateTime
+  status              String
+  initial_description String
+  vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id])
+  intervention        Intervention?
+}
+
+model Intervention {
+  id             String   @id @default(uuid())
+  appointment_id String   @unique
+  appointment    Appointment @relation(fields: [appointment_id], references: [id])
+  status         String
+  diagnosis_text String?
+  proforma       Proforma?
+}
+
+model Proforma {
+  id              String   @id @default(uuid())
+  intervention_id String   @unique
+  intervention    Intervention @relation(fields: [intervention_id], references: [id])
+  total_amount    Float    @default(0)
+  status          String   @default("draft")
+  lines           LineItem[]
+  invoice         Invoice?
+}
+
+model Invoice {
+  id           String   @id @default(uuid())
+  proforma_id  String   @unique
+  proforma     Proforma @relation(fields: [proforma_id], references: [id])
+  status       String   @default("unpaid")
+  due_date     DateTime
+  total_paid   Float    @default(0)
+}
+
+model LineItem {
+  id          String   @id @default(uuid())
+  proforma_id String
+  proforma    Proforma @relation(fields: [proforma_id], references: [id])
+  description String
+  quantity    Float
+  unit_price  Float
+}
