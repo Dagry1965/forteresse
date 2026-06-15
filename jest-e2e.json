@@ -1,0 +1,6 @@
+{
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "testTimeout": 30000,
+  "roots": ["/apps/backend/test/e2e"]
+}

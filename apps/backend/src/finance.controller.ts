@@ -1,28 +1,34 @@
-import { Controller, Post, Body, Get, Param, Patch, NotFoundException } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Query, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller('finance')
 export class FinanceController {
   constructor(private prisma: PrismaService) {}
 
-  // Créer un Proforma avec ses lignes (produits / main d'œuvre)
+  // 1. CRÉER OU METTRE À JOUR UN PROFORMA
   @Post('proforma')
   async createProforma(@Body() data: {
     interventionId: string;
-    lines: { description: string; quantity: number; unit_price: number }[];
+    lines: { description: string; quantity: number; unit_price: number; product_id?: string }[];
   }) {
-    // Vérification que l'intervention existe
     const intervention = await this.prisma.intervention.findUnique({
-      where: { id: data.interventionId }
+      where: { id: data.interventionId },
+      include: { proforma: true }
     });
 
-    if (!intervention) {
-      throw new NotFoundException('Intervention non trouvée');
+    if (!intervention) throw new NotFoundException('Intervention non trouvée');
+
+    if (intervention.proforma) {
+       if (intervention.proforma.status === 'approved') {
+           throw new ConflictException('Un proforma déjà approuvé existe et ne peut être modifié');
+       }
+       await this.prisma.lineItem.deleteMany({ where: { proforma_id: intervention.proforma.id } });
+       await this.prisma.proforma.delete({ where: { id: intervention.proforma.id } });
     }
 
-    const total = data.lines.reduce((sum, line) => sum + (line.quantity * line.unit_price), 0);
+    const total = data.lines.reduce((sum, line) => sum + (Number(line.quantity) * Number(line.unit_price)), 0);
 
-    const proforma = await this.prisma.proforma.create({
+    return this.prisma.proforma.create({
       data: {
         intervention_id: data.interventionId,
         total_amount: total,
@@ -30,70 +36,200 @@ export class FinanceController {
         lines: {
           create: data.lines.map(line => ({
             description: line.description,
-            quantity: line.quantity,
-            unit_price: line.unit_price,
+            quantity: Number(line.quantity),
+            unit_price: Number(line.unit_price),
+            product_id: line.product_id
           }))
         }
       },
       include: { lines: true }
     });
-
-    return proforma;
   }
 
-  // Récupérer un Proforma avec ses lignes
-  @Get('proforma/:id')
-  async getProforma(@Param('id') id: string) {
-    return this.prisma.proforma.findUnique({
-      where: { id },
-      include: { lines: true, intervention: true }
-    });
-  }
-
-  // Approuver un Proforma → Créer la Facture
-  @Patch('proforma/:id/approve')
-  async approveProforma(@Param('id') id: string) {
-    const proforma = await this.prisma.proforma.update({
-      where: { id },
-      data: { status: 'approved' }
-    });
-
-    // Création automatique de la facture (échéance +30 jours)
-    const dueDate = new Date();
-    dueDate.setDate(dueDate.getDate() + 30);
-
-    const invoice = await this.prisma.invoice.create({
-      data: {
-        proforma_id: id,
-        status: 'unpaid',
-        due_date: dueDate,
-        total_paid: 0
-      }
-    });
-
-    return { proforma, invoice };
-  }
-
-  // Lister les factures impayées (pour les relances)
-  @Get('invoices/unpaid')
-  async getUnpaidInvoices() {
-    return this.prisma.invoice.findMany({
-      where: { status: 'unpaid' },
-      include: {
-        proforma: {
-          include: {
-            lines: true,
-            intervention: {
-              include: {
-                appointment: {
-                  include: {
-                    vehicle: { include: { client: true } }
-                  }
+  // 2. LISTER LES PROFORMAS
+  @Get('proformas')
+  async getAllProformas() {
+    try {
+      return await this.prisma.proforma.findMany({
+        include: {
+          intervention: {
+            include: {
+              appointment: {
+                include: {
+                  vehicle: { include: { client: true } }
                 }
               }
             }
           }
         }
+      });
+    } catch (e) {
+      console.error("Erreur lors de la récupération des proformas:", e);
+      return [];
+    }
+  }
+
+  // 3. APPROUVER (Correction : Récupération du WorkspaceId)
+  @Patch('proforma/:id/approve')
+  async approveProforma(@Param('id') id: string) {
+    const proforma = await this.prisma.proforma.findUnique({
+      where: { id },
+      include: {
+        lines: { include: { product: { include: { inventory: true } } } },
+        intervention: { 
+            include: { 
+                appointment: { 
+                    include: { vehicle: true } // ✅ On récupère le véhicule pour avoir le workspaceId
+                } 
+            } 
+        }
+      },
+    });
+
+    if (!proforma) throw new NotFoundException('Proforma non trouvé');
+    if (proforma.status === 'approved') throw new ConflictException('Déjà approuvé');
+
+    // Récupération de l'id de workspace
+    const workspaceId = proforma.intervention?.appointment?.vehicle?.workspaceId;
+    if (!workspaceId) throw new BadRequestException('Workspace ID manquant');
+
+    const stockUpdates: any[] = [];
+    for (const line of proforma.lines) {
+      if (line.product_id && line.product?.inventory) {
+        if (line.product.inventory.quantity < line.quantity) {
+          throw new BadRequestException(`Stock insuffisant pour ${line.product.name}`);
+        }
+        stockUpdates.push(
+          this.prisma.inventory.update({
+            where: { id: line.product.inventory.id },
+            data: { quantity: line.product.inventory.quantity - line.quantity },
+          }),
+          this.prisma.stockMovement.create({
+            data: {
+              workspaceId: workspaceId, // ✅ Maintenant bien rempli
+              product_id: line.product.id,
+              type: 'OUT',
+              quantity: line.quantity,
+              reason: `Sortie Facture Proforma ${proforma.id}`,
+            },
+          })
+        );
+      }
+    }
+
+    const [updatedProforma, invoice] = await this.prisma.$transaction([
+      this.prisma.proforma.update({ where: { id }, data: { status: 'approved' } }),
+      this.prisma.invoice.create({
+        data: {
+          proforma_id: id,
+          status: 'unpaid',
+          due_date: new Date(new Date().setDate(new Date().getDate() + 30)),
+          total_paid: 0,
+        },
+      }),
+      ...stockUpdates,
+    ]);
+
+    return { proforma: updatedProforma, invoice };
+  }
+
+  // 4. RAPPORTS : CHIFFRE D'AFFAIRES
+  @Get('reports/revenue')
+  async getRevenue(@Query('from') from: string, @Query('to') to: string) {
+    const fromDate = from ? new Date(from) : new Date('1970-01-01');
+    const toDate = to ? new Date(to) : new Date();
+
+    const payments = await this.prisma.payment.findMany({
+      where: { date: { gte: fromDate, lte: toDate } },
+    });
+
+    const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+    return { from: fromDate, to: toDate, totalRevenue, paymentsCount: payments.length };
+  }
+
+  // 5. RAPPORTS : STATUS FACTURES
+  @Get('reports/invoices-by-status')
+  async getInvoicesByStatus() {
+    const invoices = await this.prisma.invoice.findMany();
+    return invoices.reduce((acc, inv) => {
+      acc[inv.status] = (acc[inv.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+
+  // 6. RAPPORTS : TOP CLIENTS
+  @Get('reports/top-clients')
+  async getTopClients() {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { status: { in: ['paid', 'partially_paid'] } },
+      include: { proforma: { include: { intervention: { include: { appointment: { include: { vehicle: { include: { client: true } } } } } } } } }
+    });
+    const map = new Map();
+    for (const inv of invoices) {
+      const client = inv.proforma.intervention.appointment.vehicle.client;
+      if (!client) continue;
+      const current = map.get(client.id) || { name: client.name, total: 0 };
+      current.total += inv.total_paid;
+      map.set(client.id, current);
+    }
+    return Array.from(map.values()).sort((a, b) => (b as any).total - (a as any).total);
+  }
+
+  // 7. RAPPORTS : TOP PRODUITS
+  @Get('reports/top-products')
+  async getTopProducts() {
+    const lineItems = await this.prisma.lineItem.findMany({
+      where: { product_id: { not: null }, proforma: { status: 'approved' } },
+      include: { product: true },
+    });
+    const map = new Map();
+    for (const li of lineItems) {
+      if (!li.product) continue;
+      const current = map.get(li.product.id) || { name: li.product.name, qty: 0, revenue: 0 };
+      current.qty += li.quantity;
+      current.revenue += li.quantity * li.unit_price;
+      map.set(li.product.id, current);
+    }
+    return Array.from(map.values()).sort((a, b) => (b as any).revenue - (a as any).revenue);
+  }
+
+  // 8. ENREGISTRER PAIEMENT
+  @Post('invoice/:invoiceId/payment')
+  async recordPayment(@Param('invoiceId') invoiceId: string, @Body() data: { amount: number; method: string }) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { proforma: true, payments: true }
+    });
+    if (!invoice) throw new NotFoundException('Facture non trouvée');
+    const currentPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+    const newTotalPaid = currentPaid + Number(data.amount);
+
+    await this.prisma.payment.create({
+      data: { invoice_id: invoiceId, amount: Number(data.amount), method: data.method }
+    });
+
+    return this.prisma.invoice.update({
+      where: { id: invoiceId },
+      data: {
+        total_paid: newTotalPaid,
+        status: newTotalPaid >= invoice.proforma.total_amount ? 'paid' : 'partially_paid',
+      }
+    });
+  }
+
+  // 9. FACTURES IMPAYÉES
+  @Get('invoices/unpaid')
+  async getUnpaidInvoices() {
+    return this.prisma.invoice.findMany({
+      where: { status: { not: 'paid' } },
+      include: {
+        proforma: {
+          include: {
+            lines: { include: { product: true } },
+            intervention: { include: { appointment: { include: { vehicle: { include: { client: true } } } } } }
+          }
+        },
+        payments: true
       }
     });
   }

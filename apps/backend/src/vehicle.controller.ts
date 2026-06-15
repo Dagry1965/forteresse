@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, Get, Query, BadRequestException } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller('vehicles')
@@ -6,12 +6,27 @@ export class VehicleController {
   constructor(private prisma: PrismaService) {}
 
   @Post()
-  create(@Body() data: { vin: string, plateNumber: string, make: string, model: string, clientId: string, workspaceId: string }) {
+  async create(@Body() data: {
+    workspaceId: string;
+    clientId: string;
+    vin?: string;
+    plateNumber?: string;
+    make?: string;
+    model?: string;
+    year?: number;
+    mileage?: number;
+  }) {
+    if (!data.workspaceId || !data.clientId) throw new BadRequestException('workspaceId et clientId requis');
     return this.prisma.vehicle.create({ data });
   }
 
   @Get()
-  findByClient(@Query('clientId') clientId: string) {
-    return this.prisma.vehicle.findMany({ where: { clientId } });
+  async list(@Query('clientId') clientId?: string, @Query('workspaceId') workspaceId?: string) {
+    return this.prisma.vehicle.findMany({
+      where: {
+        ...(clientId ? { clientId } : {}),
+        ...(workspaceId ? { workspaceId } : {}),
+      },
+    });
   }
 }
