@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f8f9fa;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  margin-top: 10px;
+}
+
+th {
+  background: #f4f4f4;
+  text-align: left;
+}
+
+button:hover {
+  opacity: 0.8;
+}

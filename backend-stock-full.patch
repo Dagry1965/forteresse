@@ -1,0 +1,253 @@
+@' -- BEGIN PATCH From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001 From: ChatBot App bot@example.com Date: Mon, 14 Jun 2026 00:00:00 +0000 Subject: [PATCH] feat(stock/purchase): add services/controllers and register in AppModule
+apps/backend/src/purchase/purchase-order.service.ts | 34 +++++++++++++++++++ apps/backend/src/purchase/purchase-order.controller.ts | 36 ++++++++++++++++++++ apps/backend/src/purchase/purchase-receipt.service.ts | 62 ++++++++++++++++++++++++++++++++++++++ apps/backend/src/purchase/purchase-receipt.controller.ts| 42 +++++++++++++++++++++++++ apps/backend/src/stock/stock.service.ts | 29 ++++++++++++++++ apps/backend/src/stock/stock.controller.ts | 32 +++++++++++++++++++ apps/backend/test/e2e/purchase.e2e-spec.ts | 103 ++++++++++++++++++++++++++++++++++++++++++++++++++ apps/backend/src/app.module.ts | 32 ++++++++++++++++++++++++++++++++ jest-e2e.json | 22 ++++++++ 9 files changed, 392 insertions(+) create mode 100644 apps/backend/src/purchase/purchase-order.service.ts create mode 100644 apps/backend/src/purchase/purchase-order.controller.ts create mode 100644 apps/backend/src/purchase/purchase-receipt.service.ts create mode 100644 apps/backend/src/purchase/purchase-receipt.controller.ts create mode 100644 apps/backend/src/stock/stock.service.ts create mode 100644 apps/backend/src/stock/stock.controller.ts create mode 100644 apps/backend/test/e2e/purchase.e2e-spec.ts create mode 100644 apps/backend/src/app.module.ts create mode 100644 jest-e2e.json
+*** Begin File: apps/backend/src/purchase/purchase-order.service.ts
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+@Injectable()
+export class PurchaseOrderService {
+  async create(data: any) {
+    return prisma.purchaseOrder.create({ data, include: { lines: true } });
+  }
+
+  async findAll(workspaceId: string) {
+    return prisma.purchaseOrder.findMany({ where: { workspaceId }, include: { lines: true } });
+  }
+
+  async findOne(id: string) {
+    return prisma.purchaseOrder.findUnique({ where: { id }, include: { lines: true } });
+  }
+
+  async confirm(id: string) {
+    return prisma.purchaseOrder.update({ where: { id }, data: { status: 'confirmed' } });
+  }
+}
+*** End File: apps/backend/src/purchase/purchase-order.service.ts
+
+*** Begin File: apps/backend/src/purchase/purchase-order.controller.ts
+import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
+import { PurchaseOrderService } from './purchase-order.service';
+import { Request } from 'express';
+
+@Controller('api/purchase-orders')
+export class PurchaseOrderController {
+  constructor(private readonly service: PurchaseOrderService) {}
+
+  @Post()
+  async create(@Body() dto: any, @Req() req: Request) {
+    // In real app, workspaceId enforced by middleware/guard
+    return this.service.create(dto);
+  }
+
+  @Get()
+  async findAll(@Req() req: Request) {
+    const workspaceId = (req.headers['x-workspace-id'] as string) || process.env.NEXT_PUBLIC_WORKSPACE_ID || process.env.WORKSPACE_ID || 'dev-ws';
+    return this.service.findAll(workspaceId);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string) {
+    return this.service.findOne(id);
+  }
+}
+*** End File: apps/backend/src/purchase/purchase-order.controller.ts
+
+*** Begin File: apps/backend/src/purchase/purchase-receipt.service.ts
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+@Injectable()
+export class PurchaseReceiptService {
+  async create(data: any) {
+    return prisma.purchaseReceipt.create({ data, include: { lines: true } });
+  }
+
+  async completeReceipt(receiptId: string) {
+    return prisma.$transaction(async (tx) => {
+      const receipt = await tx.purchaseReceipt.findUnique({ where: { id: receiptId }, include: { lines: true } });
+      if (!receipt) throw new Error('Receipt not found');
+
+text
+
+Collapse
+
+
+ Copy
+
+  for (const line of receipt.lines) {
+    const qty = Number(line.quantity || 0);
+    await tx.inventory.upsert({
+      where: { product_id: line.productId },
+      create: { product_id: line.productId, quantity: qty },
+      update: { quantity: { increment: qty } },
+    });
+    await tx.stockMovement.create({
+      data: {
+        workspaceId: receipt.workspaceId,
+        product_id: line.productId,
+        type: 'purchase_in',
+        quantity: qty,
+        reason: 'receipt completed',
+        reference: receipt.id,
+      },
+    });
+    if (receipt.purchaseOrderId) {
+      await tx.purchaseOrderLine.updateMany({
+        where: { purchaseOrderId: receipt.purchaseOrderId, productId: line.productId },
+        data: { receivedQty: { increment: qty } },
+      });
+    }
+  }
+  return tx.purchaseReceipt.update({ where: { id: receiptId }, data: { status: 'completed' } });
+});
+  }
+}
+*** End File: apps/backend/src/purchase/purchase-receipt.service.ts
+
+*** Begin File: apps/backend/src/purchase/purchase-receipt.controller.ts
+import { Body, Controller, Param, Post } from '@nestjs/common';
+import { PurchaseReceiptService } from './purchase-receipt.service';
+
+@Controller('api/purchase-receipts')
+export class PurchaseReceiptController {
+  constructor(private readonly service: PurchaseReceiptService) {}
+
+  @Post()
+  async create(@Body() dto: any) {
+    return this.service.create(dto);
+  }
+
+  @Post(':id/complete')
+  async complete(@Param('id') id: string) {
+    return this.service.completeReceipt(id);
+  }
+}
+*** End File: apps/backend/src/purchase/purchase-receipt.controller.ts
+
+*** Begin File: apps/backend/src/stock/stock.service.ts
+import { Injectable } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+@Injectable()
+export class StockService {
+  async getInventory(productId: string) {
+    return prisma.inventory.findUnique({ where: { product_id: productId } });
+  }
+
+  async listMovements(workspaceId: string, productId?: string) {
+    const where: any = { workspaceId };
+    if (productId) where.product_id = productId;
+    return prisma.stockMovement.findMany({ where, orderBy: { createdAt: 'desc' } });
+  }
+
+  async adjust(productId: string, delta: number, workspaceId: string, reason = 'adjustment') {
+    return prisma.$transaction(async (tx) => {
+      await tx.inventory.upsert({
+        where: { product_id: productId },
+        create: { product_id: productId, quantity: delta },
+        update: { quantity: { increment: delta } },
+      });
+      return tx.stockMovement.create({
+        data: { workspaceId, product_id: productId, type: delta >= 0 ? 'adjustment_in' : 'adjustment_out', quantity: Math.abs(delta), reason },
+      });
+    });
+  }
+}
+*** End File: apps/backend/src/stock/stock.service.ts
+
+*** Begin File: apps/backend/src/stock/stock.controller.ts
+import { Controller, Get, Param, Query } from '@nestjs/common';
+import { StockService } from './stock.service';
+
+@Controller('api/inventory')
+export class StockController {
+  constructor(private readonly service: StockService) {}
+
+  @Get(':productId')
+  async getProductInventory(@Param('productId') productId: string) {
+    return this.service.getInventory(productId);
+  }
+
+  @Get('movements')
+  async listMovements(@Query('workspaceId') workspaceId: string, @Query('productId') productId?: string) {
+    return this.service.listMovements(workspaceId, productId);
+  }
+}
+*** End File: apps/backend/src/stock/stock.controller.ts
+
+*** Begin File: apps/backend/test/e2e/purchase.e2e-spec.ts
+import { PrismaClient } from '@prisma/client';
+
+const p = new PrismaClient();
+
+(async () => {
+  try {
+    console.log('E2E test skeleton start');
+    const ws = process.env.NEXT_PUBLIC_WORKSPACE_ID || process.env.WORKSPACE_ID || 'dev-ws';
+    const supplier = await p.supplier.create({ data: { workspaceId: ws, name: 'CI Supplier' }});
+    const product = await p.product.create({
+      data: { workspaceId: ws, supplier_id: supplier.id, reference: 'CI-PRD', name: 'CI Product', purchase_price: 1, selling_price: 2 }
+    });
+    await p.inventory.upsert({ where: { product_id: product.id }, create: { product_id: product.id, quantity: 0 }, update: {} });
+    const po = await p.purchaseOrder.create({ data: { workspaceId: ws, supplierId: supplier.id, reference: 'CI-PO', status: 'confirmed', totalAmount: 10, lines: { create: [{ productId: product.id, quantity: 5, unit_price: 2 }] } }, include: { lines: true }});
+    const receipt = await p.purchaseReceipt.create({ data: { purchaseOrderId: po.id, workspaceId: ws, reference: 'CI-REC', status: 'pending' }});
+    await p.purchaseReceiptLine.create({ data: { purchaseReceiptId: receipt.id, productId: product.id, quantity: 5, unit_price: 2 }});
+    await p.$transaction(async (tx) => {
+      await tx.inventory.upsert({ where: { product_id: product.id }, create: { product_id: product.id, quantity: 5 }, update: { quantity: { increment: 5 } }});
+      await tx.stockMovement.create({ data: { workspaceId: ws, product_id: product.id, type: 'purchase_in', quantity: 5, reason: 'ci test' }});
+    });
+    const inv = await p.inventory.findUnique({ where: { product_id: product.id }});
+    console.log('CI final inventory for product:', inv ? inv.quantity : null);
+    console.log('E2E test skeleton finished');
+    process.exit(0);
+  } catch (e) {
+    console.error('E2E skeleton error', e);
+    process.exit(1);
+  } finally {
+    await p.$disconnect();
+  }
+})();
+*** End File: apps/backend/test/e2e/purchase.e2e-spec.ts
+
+*** Begin File: apps/backend/src/app.module.ts
+import { Module } from '@nestjs/common';
+import { PurchaseOrderController } from './purchase/purchase-order.controller';
+import { PurchaseOrderService } from './purchase/purchase-order.service';
+import { PurchaseReceiptController } from './purchase/purchase-receipt.controller';
+import { PurchaseReceiptService } from './purchase/purchase-receipt.service';
+import { StockController } from './stock/stock.controller';
+import { StockService } from './stock/stock.service';
+
+@Module({
+  imports: [],
+  controllers: [
+    PurchaseOrderController,
+    PurchaseReceiptController,
+    StockController,
+  ],
+  providers: [
+    PurchaseOrderService,
+    PurchaseReceiptService,
+    StockService,
+  ],
+})
+export class AppModule {}
+*** End File: apps/backend/src/app.module.ts
+
+*** Begin File: jest-e2e.json
+{
+  "preset": "ts-jest",
+  "testEnvironment": "node",
+  "testTimeout": 30000,
+  "roots": ["/apps/backend/test/e2e"]
+}
+*** End File: jest-e2e.json
+
+-- END PATCH
+'@ | Out-File backend-stock-full.patch -Encoding utf8

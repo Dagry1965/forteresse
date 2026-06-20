@@ -1,0 +1,75 @@
+﻿# Node / Next
+node_modules
+.next
+apps/web/.next
+apps/web/.turbo
+
+# DB de dev
+apps/backend/prisma/dev.db
+apps/backend/prisma/dev.db-journal
+
+# pnpm / npm
+pnpm-lock.yaml
+package-lock.json
+
+# miroir git local
+repo-mirror.git
+
+node_modules
+.next
+.turbo
+*.db
+*.db-journal
+repo-mirror.git
+
+
+
+Local sqlite DBs / backups
+/apps/backend/prisma/dev.db
+/apps/backend/prisma/dev.db.bak
+/apps/backend/prisma/.db
+/apps/backend/prisma/.db.bak
+**/*.bak
+
+Local env
+/.env
+.env.local
+.env.*.local
+..env.dev
+.github/.env.dev
+
+Node / package manager
+/node_modules/
+
+keep pnpm-lock.yaml tracked for pnpm projects; remove next line if you want it tracked
+pnpm-lock.yaml
+**/package-lock.json
+**/yarn.lock
+
+Build / framework / IDE
+/apps/web/.next/
+/dist/
+/build/
+/out/
+
+Logs, OS, editors
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+*.suo
+.ntvs
+*.njsproj
+*.sln
+
+Misc temp files
+"Nouveau Document texte.txt"
+audit_output/
+audit/
+audit_*.ps1
+
+Ignore generated prisma artifacts if needed
+/apps/backend/prisma/migrations/*/migration.sql

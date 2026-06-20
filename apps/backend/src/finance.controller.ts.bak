@@ -1,0 +1,266 @@
+﻿import { Controller, Post, Body, Get, Param, Patch, Query, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from './prisma/prisma.service';
+import { UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from './auth/jwt-auth.guard';
+import { RolesGuard } from './auth/roles.guard';
+import { WorkspaceGuard } from './auth/workspace.guard';
+import { Roles } from './auth/roles.decorator';
+
+@Controller('finance')
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)n@Roles('cashier','admin')
+export class FinanceController {
+  constructor(private prisma: PrismaService) {}
+
+  // 1. CRÃ‰ER OU METTRE Ã€ JOUR UN PROFORMA
+  @Post('proforma')
+  async createProforma(@Body() data: {
+    interventionId: string;
+    lines: { description: string; quantity: number; unit_price: number; product_id?: string }[];
+  }) {
+    const intervention = await this.prisma.intervention.findUnique({
+      where: { id: data.interventionId },
+      include: { proforma: true }
+    });
+
+if (!intervention) throw new NotFoundException('Intervention non trouvÃ©e');
+
+if (intervention.proforma) {
+   if (intervention.proforma.status === 'approved') {
+       throw new ConflictException('Un proforma dÃ©jÃ  approuvÃ© existe et ne peut Ãªtre modifiÃ©');
+   }
+   await this.prisma.lineItem.deleteMany({ where: { proforma_id: intervention.proforma.id } });
+   await this.prisma.proforma.delete({ where: { id: intervention.proforma.id } });
+}
+
+const total = data.lines.reduce((sum, line) => sum + (Number(line.quantity) * Number(line.unit_price)), 0);
+
+return this.prisma.proforma.create({
+  data: {
+    intervention_id: data.interventionId,
+    total_amount: total,
+    status: 'draft',
+    lines: {
+      create: data.lines.map(line => ({
+        description: line.description,
+        quantity: Number(line.quantity),
+        unit_price: Number(line.unit_price),
+        product_id: line.product_id || null
+      }))
+    }
+  },
+  include: { lines: true }
+});
+  }
+
+  // 2. LISTER LES PROFORMAS
+  @Get('proformas')
+  async getAllProformas() {
+    try {
+      return await this.prisma.proforma.findMany({
+        include: {
+          intervention: {
+            include: {
+              appointment: {
+                include: {
+                  vehicle: { include: { client: true } }
+                }
+              }
+            }
+          }
+        }
+      });
+    } catch (e) {
+      console.error("Erreur lors de la rÃ©cupÃ©ration des proformas:", e);
+      return [];
+    }
+  }
+
+  // 3. APPROUVER (consommation de stock + crÃ©ation facture)
+  @Patch('proforma/:id/approve')
+  async approveProforma(@Param('id') id: string) {
+    const proforma = await this.prisma.proforma.findUnique({
+      where: { id },
+      include: {
+        lines: { include: { product: { include: { inventory: true } } } },
+        intervention: { 
+            include: { 
+                appointment: { 
+                    include: { vehicle: true } 
+                } 
+            } 
+        }
+      },
+    });
+
+if (!proforma) throw new NotFoundException('Proforma non trouvÃ©');
+if (proforma.status === 'approved') throw new ConflictException('DÃ©jÃ  approuvÃ©');
+
+// RÃ©cupÃ©ration de l'id de workspace
+const workspaceId = proforma.intervention?.appointment?.vehicle?.workspaceId;
+if (!workspaceId) throw new BadRequestException('Workspace ID manquant');
+
+const stockUpdates: Array<Promise<any>> = [];
+
+for (const line of proforma.lines) {
+  const product = line.product;
+  const inventory = product?.inventory;
+  if (line.product_id && product) {
+    const invQty = inventory ? Number(inventory.quantity || 0) : 0;
+    const reqQty = Number(line.quantity || 0);
+    if (invQty < reqQty) {
+      throw new BadRequestException(`Stock insuffisant pour ${product.name}`);
+    }
+    // update inventory and create stock movement
+    if (inventory && inventory.id) {
+      stockUpdates.push(
+        this.prisma.inventory.update({
+          where: { id: inventory.id },
+          data: { quantity: invQty - reqQty },
+        })
+      );
+    } else {
+      // If no inventory record exists, create one with remaining quantity (shouldn't happen if invQty checked)
+      stockUpdates.push(
+        this.prisma.inventory.create({
+          data: { product_id: product.id, quantity: 0 },
+        })
+      );
+    }
+
+    stockUpdates.push(
+      this.prisma.stockMovement.create({
+        data: {
+          workspaceId,
+          product_id: product.id,
+          type: 'sale_out',
+          quantity: reqQty,
+          reason: `Sortie facture Proforma ${proforma.id}`,
+          reference: proforma.id,
+        },
+      })
+    );
+  }
+}
+
+const txOps = [
+  this.prisma.proforma.update({ where: { id }, data: { status: 'approved' } }),
+  this.prisma.invoice.create({
+    data: {
+      proforma_id: id,
+      status: 'unpaid',
+      due_date: new Date(Date.now() + 30*24*60*60*1000),
+      total_paid: 0,
+    },
+  }),
+  ...stockUpdates,
+];
+
+const [updatedProforma, invoice] = await this.prisma.$transaction(txOps as any);
+
+return { proforma: updatedProforma, invoice };
+  }
+
+  // 4. RAPPORTS : CHIFFRE D'AFFAIRES
+  @Get('reports/revenue')
+  async getRevenue(@Query('from') from: string, @Query('to') to: string) {
+    const fromDate = from ? new Date(from) : new Date('1970-01-01');
+    const toDate = to ? new Date(to) : new Date();
+
+
+const payments = await this.prisma.payment.findMany({
+  where: { date: { gte: fromDate, lte: toDate } },
+});
+
+const totalRevenue = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+return { from: fromDate, to: toDate, totalRevenue, paymentsCount: payments.length };
+  }
+
+  // 5. RAPPORTS : STATUS FACTURES
+  @Get('reports/invoices-by-status')
+  async getInvoicesByStatus() {
+    const invoices = await this.prisma.invoice.findMany();
+    return invoices.reduce((acc, inv) => {
+      acc[inv.status] = (acc[inv.status] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  }
+
+  // 6. RAPPORTS : TOP CLIENTS
+  @Get('reports/top-clients')
+  async getTopClients() {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { status: { in: ['paid', 'partially_paid'] } },
+      include: { proforma: { include: { intervention: { include: { appointment: { include: { vehicle: { include: { client: true } } } } } } } } }
+    });
+    const map = new Map();
+    for (const inv of invoices) {
+      const client = inv.proforma?.intervention?.appointment?.vehicle?.client;
+      if (!client) continue;
+      const current = map.get(client.id) || { name: client.name, total: 0 };
+      current.total += Number(inv.total_paid || 0);
+      map.set(client.id, current);
+    }
+    return Array.from(map.values()).sort((a, b) => (b as any).total - (a as any).total);
+  }
+
+  // 7. RAPPORTS : TOP PRODUITS
+  @Get('reports/top-products')
+  async getTopProducts() {
+    const lineItems = await this.prisma.lineItem.findMany({
+      where: { product_id: { not: null }, proforma: { status: 'approved' } },
+      include: { product: true },
+    });
+    const map = new Map();
+    for (const li of lineItems) {
+      if (!li.product) continue;
+      const current = map.get(li.product.id) || { name: li.product.name, qty: 0, revenue: 0 };
+      current.qty += Number(li.quantity || 0);
+      current.revenue += Number(li.quantity || 0) * Number(li.unit_price || 0);
+      map.set(li.product.id, current);
+    }
+    return Array.from(map.values()).sort((a, b) => (b as any).revenue - (a as any).revenue);
+  }
+
+  // 8. ENREGISTRER PAIEMENT
+  @Post('invoice/:invoiceId/payment')
+  async recordPayment(@Param('invoiceId') invoiceId: string, @Body() data: { amount: number; method: string }) {
+    const invoice = await this.prisma.invoice.findUnique({
+      where: { id: invoiceId },
+      include: { proforma: true, payments: true }
+    });
+    if (!invoice) throw new NotFoundException('Facture non trouvÃ©e');
+    const currentPaid = invoice.payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const newTotalPaid = currentPaid + Number(data.amount || 0);
+
+
+await this.prisma.payment.create({
+  data: { invoice_id: invoiceId, amount: Number(data.amount), method: data.method }
+});
+
+return this.prisma.invoice.update({
+  where: { id: invoiceId },
+  data: {
+    total_paid: newTotalPaid,
+    status: newTotalPaid >= (invoice.proforma?.total_amount || 0) ? 'paid' : 'partially_paid',
+  }
+});
+  }
+
+  // 9. FACTURES IMPAYÃ‰ES
+  @Get('invoices/unpaid')
+  async getUnpaidInvoices() {
+    return this.prisma.invoice.findMany({
+      where: { status: { not: 'paid' } },
+      include: {
+        proforma: {
+          include: {
+            lines: { include: { product: true } },
+            intervention: { include: { appointment: { include: { vehicle: { include: { client: true } } } } } }
+          }
+        },
+        payments: true
+      }
+    });
+  }
+}
+

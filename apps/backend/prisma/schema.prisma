@@ -8,33 +8,40 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String?
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  memberships WorkspaceMember[]
+  id            String            @id @default(uuid())
+  email         String            @unique
+  password      String?
+  name          String?
+  role          String            @default("user")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  memberships   WorkspaceMember[]
+  refreshTokens RefreshToken[]
 }
 
 model Workspace {
-  id        String   @id @default(uuid())
+  id        String            @id @default(uuid())
   name      String
-  ownerId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  ownerId   String?           // Peut être null au début, lié à l'utilisateur ownerId
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
   members   WorkspaceMember[]
+  // Ajoutez un index pour les performances si beaucoup de workspaces
+  @@index([ownerId]) 
 }
 
 model WorkspaceMember {
-  id          String @id @default(uuid())
-  user        User   @relation(fields: [userId], references: [id])
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
   userId      String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   workspaceId String
-  role        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  role        String    @default("member") // Rôle de l'utilisateur dans ce workspace
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, workspaceId]) // Un utilisateur ne peut être membre qu'une fois par workspace
+  @@index([workspaceId])
 }
 
 model Client {
@@ -46,65 +53,302 @@ model Client {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   vehicles    Vehicle[]
+  @@index([workspaceId])
 }
 
 model Vehicle {
-  id          String  @id @default(uuid())
+  id          String        @id @default(uuid())
   workspaceId String
   clientId    String
-  vin         String? @unique
+  vin         String?       @unique
   plateNumber String?
   make        String?
   model       String?
-  createdAt   DateTime @default(now())
-  client      Client  @relation(fields: [clientId], references: [id])
+  createdAt   DateTime      @default(now())
+  updatedAt    DateTime     @updatedAt @default(now())
+  client      Client        @relation(fields: [clientId], references: [id])
   appointments Appointment[]
+  @@index([workspaceId, clientId])
 }
 
 model Appointment {
-  id                  String   @id @default(uuid())
-  user_id             String
+  id                  String        @id @default(uuid())
+  user_id             String // ID de l'utilisateur qui a planifié
   vehicle_id          String
   scheduled_at        DateTime
-  status              String
+  status              String // Ex: 'planned', 'cancelled', 'completed'
   initial_description String
-  vehicle             Vehicle  @relation(fields: [vehicle_id], references: [id])
-  intervention        Intervention?
+  vehicle             Vehicle       @relation(fields: [vehicle_id], references: [id])
+  intervention        Intervention? // Un RDV peut mener à une intervention
 }
 
 model Intervention {
-  id             String   @id @default(uuid())
-  appointment_id String   @unique
+  id             String      @id @default(uuid())
+  appointment_id String      @unique // Une intervention est liée à un RDV unique
   appointment    Appointment @relation(fields: [appointment_id], references: [id])
-  status         String
-  diagnosis_text String?
-  proforma       Proforma?
+  status         String      // Ex: 'IN_PROGRESS', 'DIAGNOSIS_DONE', 'COMPLETED'
+  diagnosis_text String?     // Texte du diagnostic effectué
+  proforma       Proforma?   // Une intervention peut générer un devis
 }
 
 model Proforma {
-  id              String   @id @default(uuid())
-  intervention_id String   @unique
+  id              String       @id @default(uuid())
+  intervention_id String       @unique
   intervention    Intervention @relation(fields: [intervention_id], references: [id])
-  total_amount    Float    @default(0)
-  status          String   @default("draft")
+  total_amount    Float        @default(0)
+  status          String       @default("draft")
   lines           LineItem[]
   invoice         Invoice?
+  workspaceId     String       
+
+  @@index([workspaceId])
 }
 
 model Invoice {
-  id           String   @id @default(uuid())
-  proforma_id  String   @unique
-  proforma     Proforma @relation(fields: [proforma_id], references: [id])
-  status       String   @default("unpaid")
-  due_date     DateTime
-  total_paid   Float    @default(0)
+  id                 String    @id @default(uuid())
+  proforma_id        String    @unique
+  proforma           Proforma  @relation(fields: [proforma_id], references: [id])
+  status             String    @default("unpaid")
+  due_date           DateTime
+  total_paid         Float     @default(0)
+  lastReminderSentAt DateTime?
+  reminderCount      Int       @default(0)
+  payments           Payment[]
+
+workspaceId     String       
+  @@index([workspaceId])
+}
+
+
+model Payment {
+  id         String   @id @default(uuid())
+  invoice_id String
+  invoice    Invoice  @relation(fields: [invoice_id], references: [id])
+  amount     Float
+  method     String   // Ex: "carte", "virement", "espèces"
+  date       DateTime @default(now())
 }
 
 model LineItem {
   id          String   @id @default(uuid())
   proforma_id String
   proforma    Proforma @relation(fields: [proforma_id], references: [id])
+  product_id  String?
+  product     Product? @relation(fields: [product_id], references: [id])
   description String
   quantity    Float
   unit_price  Float
 }
+
+// GESTION DES STOCKS ET PIECES
+model Supplier {
+  id             String            @id @default(uuid())
+  workspaceId    String
+  name           String
+  email          String?
+  phone          String?
+  products       Product[]
+  purchaseOrders PurchaseOrder[]
+  contacts       SupplierContact[]
+  createdAt      DateTime          @default(now())
+
+  @@index([workspaceId])
+}
+
+model SupplierContact {
+  id         String   @id @default(uuid())
+  supplierId String
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+  name       String
+  email      String?
+  phone      String?
+  role       String?
+  createdAt  DateTime @default(now())
+}
+
+model Product {
+  id                    String                 @id @default(uuid())
+  workspaceId           String
+  supplier_id           String?
+  supplier              Supplier?              @relation(fields: [supplier_id], references: [id])
+  reference             String
+  name                  String
+  description           String?
+  purchase_price        Float
+  selling_price         Float
+  min_stock_alert       Float                  @default(5)
+  createdAt             DateTime               @default(now())
+
+  inventory             Inventory?
+  movements             StockMovement[]
+  lineItems             LineItem[]
+  inventoryLocations    InventoryLocation[]
+  purchaseOrderLines    PurchaseOrderLine[]
+  purchaseReceiptLines  PurchaseReceiptLine[]
+  reservations          InventoryReservation[]
+  adjustments           InventoryAdjustment[]
+
+  @@index([workspaceId])
+}
+
+model Inventory {
+  id         String   @id @default(uuid())
+  product_id String   @unique
+  product    Product  @relation(fields: [product_id], references: [id])
+  quantity   Float    @default(0)
+  updatedAt  DateTime @updatedAt
+}
+
+model StockLocation {
+  id          String              @id @default(uuid())
+  workspaceId String
+  code        String
+  name        String
+  description String?
+  createdAt   DateTime            @default(now())
+  inventories InventoryLocation[]
+
+  @@unique([workspaceId, code])
+  @@index([workspaceId])
+}
+
+model InventoryLocation {
+  id         String        @id @default(uuid())
+  productId  String
+  locationId String
+  quantity   Float         @default(0)
+  lot        String?
+  updatedAt  DateTime      @updatedAt
+  location   StockLocation @relation(fields: [locationId], references: [id])
+  product    Product       @relation(fields: [productId], references: [id])
+
+  @@unique([productId, locationId, lot])
+  @@index([productId, locationId])
+}
+
+model PurchaseOrder {
+  id            String              @id @default(uuid())
+  workspaceId   String
+  supplierId    String
+  supplier      Supplier            @relation(fields: [supplierId], references: [id])
+  reference     String              @unique
+  status        String              @default("draft") // Ex: 'draft', 'confirmed', 'received', 'cancelled'
+  totalAmount   Float               @default(0)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  lines         PurchaseOrderLine[]
+  receipts      PurchaseReceipt[]
+
+  @@index([workspaceId])
+}
+
+model PurchaseOrderLine {
+  id              String        @id @default(uuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  productId       String
+  product         Product       @relation(fields: [productId], references: [id])
+  quantity        Float
+  unit_price      Float
+  receivedQty     Float         @default(0) // Quantité déjà reçue
+  createdAt       DateTime      @default(now())
+}
+
+model PurchaseReceipt {
+  id              String                @id @default(uuid())
+  purchaseOrderId String?               // Peut être lié à un PO ou être une réception directe
+  purchaseOrder   PurchaseOrder?        @relation(fields: [purchaseOrderId], references: [id])
+  workspaceId     String
+  reference       String                @unique // Référence de la réception (ex: n°BL)
+  status          String                @default("pending") // Ex: 'pending', 'completed', 'cancelled'
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  lines           PurchaseReceiptLine[]
+
+  @@index([workspaceId])
+}
+
+model PurchaseReceiptLine {
+  id                String          @id @default(uuid())
+  purchaseReceiptId String
+  purchaseReceipt   PurchaseReceipt @relation(fields: [purchaseReceiptId], references: [id])
+  productId         String
+  product           Product         @relation(fields: [productId], references: [id])
+  quantity          Float
+  unit_price        Float
+  lot               String?         // Numéro de lot si gestion par lot
+  createdAt         DateTime        @default(now())
+}
+
+model InventoryReservation {
+  id          String    @id @default(uuid())
+  workspaceId String
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+  quantity    Float
+  reference   String    // Référence du document (proforma, intervention) qui a réservé le stock
+  reservedAt  DateTime  @default(now())
+  expiresAt   DateTime? // Date d'expiration de la réservation
+  createdAt   DateTime  @default(now())
+
+  @@index([workspaceId, productId])
+}
+
+model InventoryAdjustment {
+  id          String   @id @default(uuid())
+  workspaceId String
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Float
+  reason      String   // Ex: 'inventaire', 'casse', 'perte'
+  createdAt   DateTime @default(now())
+  performedBy String?  // ID de l'utilisateur qui a fait l'ajustement
+
+  @@index([workspaceId, productId])
+}
+
+model StockMovement {
+  id             String   @id @default(uuid())
+  workspaceId    String
+  product_id     String
+  product        Product  @relation(fields: [product_id], references: [id])
+  type           String   // Ex: 'purchase_in', 'sale_out', 'adjustment_in', 'adjustment_out', 'transfer_in', 'transfer_out'
+  quantity       Float
+  fromLocationId String?  // Si transfert
+  toLocationId   String?  // Si transfert
+  lot            String?  // Si gestion par lot
+  reason         String
+  reference      String?  // ID du document (PO, Facture, Ajustement) lié au mouvement
+  createdAt      DateTime @default(now())
+
+  @@index([workspaceId, product_id, createdAt])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  tokenHash String
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  revoked   Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  workspaceId String
+  entity      String   // ex: 'purchase_order', 'purchase_receipt', 'inventory'
+  entityId    String
+  action      String   // ex: 'create', 'update', 'delete', 'confirm'
+  userId      String?  // L'utilisateur qui a fait l'action (optionnel pour l'instant)
+  message     String
+  metadata    String?  // Pour stocker du JSON sous forme de texte (détails de l'action)
+  createdAt   DateTime @default(now())
+
+  @@index([workspaceId])
+  @@index([entity, entityId])
+}
+
+

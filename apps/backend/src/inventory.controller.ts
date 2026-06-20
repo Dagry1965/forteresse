@@ -1,30 +1,24 @@
 import { Controller, Post, Body, Get, Query, BadRequestException } from '@nestjs/common';
 import { PrismaService } from './prisma/prisma.service';
+import { CreateSupplierDto } from './inventory/dto/create-supplier.dto';
+import { CreateProductDto } from './inventory/dto/create-product.dto';
+import { CreateMovementDto } from './inventory/dto/create-movement.dto';
+import { GetStockAlertsDto } from './inventory/dto/get-stock-alerts.dto';
 
-@Controller('inventory')
+
+@Controller('api/inventory')
 export class InventoryController {
   constructor(private prisma: PrismaService) {}
 
   // 1. Ajouter un Fournisseur
   @Post('supplier')
-  async createSupplier(@Body() data: { name: string; email?: string; phone?: string; workspaceId: string }) {
+  async createSupplier(@Body() data: CreateSupplierDto) {
     return this.prisma.supplier.create({ data });
   }
 
   // 2. Ajouter une Pièce au Catalogue (Produit)
   @Post('product')
-  async createProduct(
-    @Body()
-    data: {
-      workspaceId: string;
-      supplier_id?: string;
-      reference: string;
-      name: string;
-      purchase_price: number;
-      selling_price: number;
-      min_stock_alert: number;
-    },
-  ) {
+  async createProduct(@Body() data: CreateProductDto) {
     const product = await this.prisma.product.create({ data });
 
     // Initialiser le stock à 0 lors de la création
@@ -37,32 +31,28 @@ export class InventoryController {
 
   // 3. Faire un mouvement de stock (Entrée ou Sortie)
   @Post('movement')
-  async createMovement(
-    @Body()
-    data: {
-      workspaceId: string;
-      product_id: string;
-      type: 'IN' | 'OUT';
-      quantity: number;
-      reason: string;
-    },
-  ) {
-    if (data.quantity <= 0) throw new BadRequestException('La quantité doit être supérieure à 0');
+  async createMovement(@Body() data: CreateMovementDto) {
+    if (data.quantity <= 0) {
+      throw new BadRequestException('La quantité doit être supérieure à 0');
+    }
 
-    // Récupérer le stock actuel
-    const inventory = await this.prisma.inventory.findUnique({ where: { product_id: data.product_id } });
+    const inventory = await this.prisma.inventory.findUnique({
+      where: { product_id: data.product_id },
+    });
 
-    if (!inventory) throw new BadRequestException("Produit introuvable dans l'inventaire");
+    if (!inventory) {
+      throw new BadRequestException("Produit introuvable dans l'inventaire");
+    }
 
     if (data.type === 'OUT' && inventory.quantity < data.quantity) {
       throw new BadRequestException(`Stock insuffisant. Stock actuel : ${inventory.quantity}`);
     }
 
-    // Mise à jour de la quantité
     const newQuantity =
-      data.type === 'IN' ? inventory.quantity + data.quantity : inventory.quantity - data.quantity;
+      data.type === 'IN'
+        ? inventory.quantity + data.quantity
+        : inventory.quantity - data.quantity;
 
-    // Transaction : on met à jour le stock ET on trace le mouvement
     const [movement, updatedInventory] = await this.prisma.$transaction([
       this.prisma.stockMovement.create({ data }),
       this.prisma.inventory.update({
@@ -75,26 +65,32 @@ export class InventoryController {
   }
 
   // 4. Voir les alertes de stock (Pièces à recommander)
-  @Get('alerts')
-  async getStockAlerts(@Query('workspaceId') workspaceId: string) {
-    const products = await this.prisma.product.findMany({
-      where: { workspaceId },
-      include: { inventory: true, supplier: true },
-    });
+ @Get('alerts')
+async getStockAlerts(@Query() query: GetStockAlertsDto) {
+  const { workspaceId } = query;
 
-    // Filtrer pour ne garder que ceux où la quantité est <= au seuil d'alerte
-    return products.filter((p) => p.inventory && p.inventory.quantity <= p.min_stock_alert);
-  }
+  const products = await this.prisma.product.findMany({
+    where: { workspaceId },
+    include: { inventory: true, supplier: true },
+  });
 
-  // 5. Lister les produits (catalogue + stock)
+  // Filtrer pour ne garder que ceux où la quantité est inférieure ou égale au seuil d'alerte
+  return products.filter((p) => p.inventory && p.inventory.quantity <= p.min_stock_alert);
+}
+  // 5. Lister les produits
   @Get('products')
   async getProducts(@Query('workspaceId') workspaceId: string) {
     return this.prisma.product.findMany({
       where: { workspaceId },
-      include: {
-        inventory: true,
-        supplier: true,
-      },
+      include: { inventory: true, supplier: true },
+    });
+  }
+
+  // 6. Lister les Fournisseurs
+  @Get('supplier')
+  async getSuppliers(@Query('workspaceId') workspaceId: string) {
+    return this.prisma.supplier.findMany({
+      where: { workspaceId }
     });
   }
 }
