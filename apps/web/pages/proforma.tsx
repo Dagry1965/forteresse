@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { useRouter } from "next/router";
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -26,17 +35,17 @@ export default function ProformaPage() {
 
       if (resCat.ok) {
         const dataCat = await resCat.json();
-        console.log("Produits reçus:", dataCat.length);
+        console.log("Produits reÃƒÆ’Ã‚Â§us:", dataCat.length);
         setCatalog(Array.isArray(dataCat) ? dataCat : []);
       } else {
         console.error("Erreur API Catalogue, Status:", resCat.status);
         if (resCat.status === 403) {
-          console.error("Accès refusé : Votre rôle n'est pas suffisant.");
+          console.error("AccÃƒÆ’Ã‚Â¨s refusÃƒÆ’Ã‚Â© : Votre rÃƒÆ’Ã‚Â´le n'est pas suffisant.");
         }
       }
 
       if (interventionId) {
-        console.log("Vérification d'un devis existant...");
+        console.log("VÃƒÆ’Ã‚Â©rification d'un devis existant...");
         const resProf = await apiFetch("/finance/proformas");
 
         if (resProf.status === 401) {
@@ -50,7 +59,7 @@ export default function ProformaPage() {
             (p: any) => p.intervention_id === interventionId,
           );
           if (existing) {
-            console.log("Devis trouvé ID:", existing.id);
+            console.log("Devis trouvÃƒÆ’Ã‚Â© ID:", existing.id);
             setProforma(existing);
             if (existing.lines && existing.lines.length > 0) {
               setSelectedLines(existing.lines);
@@ -68,7 +77,7 @@ export default function ProformaPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (loading) {
-        console.log("Sécurité : Fin du chargement forcée");
+        console.log("SÃƒÆ’Ã‚Â©curitÃƒÆ’Ã‚Â© : Fin du chargement forcÃƒÆ’Ã‚Â©e");
         setLoading(false);
       }
     }, 4000);
@@ -120,7 +129,7 @@ export default function ProformaPage() {
       const data = await res.json();
       if (res.ok) {
         setProforma(data);
-        alert("✅ Devis enregistré !");
+        alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Devis enregistrÃƒÆ’Ã‚Â© !");
       } else {
         alert("Erreur: " + (data.message || "Interdit"));
       }
@@ -141,7 +150,7 @@ export default function ProformaPage() {
         { method: "PATCH" },
       );
       if (res.ok) {
-        alert("🚀 Facture générée ! Redirection vers la caisse...");
+        alert("ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Facture gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â©e ! Redirection vers la caisse...");
         router.push("/cashier");
       } else {
         const data = await res.json();
@@ -155,7 +164,7 @@ export default function ProformaPage() {
   if (!token) {
     return (
       <div className="p-12 text-slate-700">
-        🔒 Veuillez vous connecter...
+        ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬â„¢ Veuillez vous connecter...
       </div>
     );
   }
@@ -163,7 +172,7 @@ export default function ProformaPage() {
   if (loading) {
     return (
       <div className="p-12 text-slate-700">
-        ⏳ Chargement des données (ID: {interventionId || "Recherche..."})
+        ÃƒÂ¢Ã‚ÂÃ‚Â³ Chargement des donnÃƒÆ’Ã‚Â©es (ID: {interventionId || "Recherche..."})
       </div>
     );
   }
@@ -176,18 +185,18 @@ export default function ProformaPage() {
   return (
     <div className="px-6 py-8 max-w-6xl mx-auto font-sans">
       <h1 className="text-3xl font-bold text-slate-900 mb-6">
-        🧾 Devis & Facturation
+        ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¾ Devis & Facturation
       </h1>
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* CATALOGUE */}
         <section className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-800 mb-3">
-            📦 Catalogue Pièces
+            ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Catalogue PiÃƒÆ’Ã‚Â¨ces
           </h3>
           {catalog.length === 0 ? (
             <p className="text-sm text-amber-600">
-              Aucun produit trouvé dans le catalogue. Vérifiez vos droits
+              Aucun produit trouvÃƒÆ’Ã‚Â© dans le catalogue. VÃƒÆ’Ã‚Â©rifiez vos droits
               admin ou ajoutez des produits dans /inventory.
             </p>
           ) : (
@@ -198,13 +207,13 @@ export default function ProformaPage() {
                   className="flex items-center justify-between rounded-md border border-slate-200 bg-white px-3 py-2 text-sm"
                 >
                   <span className="text-slate-800">
-                    <strong>{p.name}</strong> – {p.selling_price} €
+                    <strong>{p.name}</strong> ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“ {p.selling_price} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                   </span>
                   <button
                     onClick={() => addLine(p)}
                     className="inline-flex items-center rounded-md bg-sky-600 px-3 py-1 text-xs font-semibold text-white hover:bg-sky-700"
                   >
-                    ➕
+                    ÃƒÂ¢Ã…Â¾Ã¢â‚¬Â¢
                   </button>
                 </div>
               ))}
@@ -215,7 +224,7 @@ export default function ProformaPage() {
         {/* LIGNES DE DEVIS */}
         <section className="rounded-xl border border-slate-200 bg-white px-4 py-5 shadow-sm">
           <h3 className="text-lg font-semibold text-slate-800 mb-3">
-            📝 Lignes du devis
+            ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Lignes du devis
           </h3>
           {selectedLines.length === 0 ? (
             <p className="text-slate-500 text-sm">Le devis est vide.</p>
@@ -230,7 +239,7 @@ export default function ProformaPage() {
                     {l.description} x {l.quantity}
                   </span>
                   <strong className="text-slate-900">
-                    {(l.quantity * l.unit_price).toFixed(2)} €
+                    {(l.quantity * l.unit_price).toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                   </strong>
                 </div>
               ))}
@@ -242,7 +251,7 @@ export default function ProformaPage() {
           <div className="flex items-center justify-between text-sm">
             <span className="font-semibold text-slate-700">Total</span>
             <span className="text-lg font-bold text-slate-900">
-              {total.toFixed(2)} €
+              {total.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
             </span>
           </div>
 
@@ -252,7 +261,7 @@ export default function ProformaPage() {
               onClick={handleSaveProforma}
               className="px-4"
             >
-              💾 ENREGISTRER
+              ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â¾ ENREGISTRER
             </Button>
             {proforma && (
               <Button
@@ -260,7 +269,7 @@ export default function ProformaPage() {
                 onClick={handleApproveAndBill}
                 className="bg-emerald-600 hover:bg-emerald-700 border-none px-4"
               >
-                ✅ FACTURER
+                ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ FACTURER
               </Button>
             )}
           </div>
@@ -269,3 +278,7 @@ export default function ProformaPage() {
     </div>
   );
 }
+
+
+
+

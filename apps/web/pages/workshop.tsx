@@ -1,8 +1,20 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/router";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import Section from "../components/section";
+import { Save, Wrench } from "lucide-react";
 
 const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 
@@ -22,7 +34,7 @@ export default function WorkshopPage() {
       const data = await res.json();
       setAppointments(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Erreur chargement planning", err);
+      console.error("erreur chargement planning", err);
     } finally {
       setLoading(false);
     }
@@ -45,17 +57,17 @@ export default function WorkshopPage() {
         }
       );
       if (res.ok) {
-        alert("✅ Véhicule réceptionné à l'atelier !");
+        alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ vÃƒÆ’Ã‚Â©hicule rÃƒÆ’Ã‚Â©ceptionnÃƒÆ’Ã‚Â© !");
         loadData();
       }
     } catch (err) {
-      alert("Erreur lors de la réception");
+      alert("erreur lors de la rÃƒÆ’Ã‚Â©ception");
     }
   };
 
   const saveDiagnosis = async (interId: string) => {
     if (!diag[interId]) {
-      alert("Veuillez saisir un texte de diagnostic.");
+      alert("veuillez saisir un texte de diagnostic.");
       return;
     }
 
@@ -68,154 +80,151 @@ export default function WorkshopPage() {
         }
       );
       if (res.ok) {
-        alert("✅ Diagnostic et pré-devis enregistrés !");
+        alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ diagnostic enregistrÃƒÆ’Ã‚Â© !");
         loadData();
       } else {
         const error = await res.json();
         alert(error.message);
       }
     } catch (err) {
-      alert("Erreur lors de l'enregistrement");
+      alert("erreur lors de l'enregistrement");
     }
   };
 
-  if (!token) {
-    return (
-      <p className="p-5 text-slate-600">Veuillez vous connecter...</p>
-    );
-  }
+  if (!token) return null;
 
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto font-sans bg-slate-50 min-h-screen">
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-slate-900">
-          🛠️ Atelier : Suivi des Interventions
-        </h1>
+    <div className="flex flex-col gap-10 p-10 bg-[oklch(0.98_0_0)] min-h-screen font-sans text-[oklch(0.22_0_0)]">
+      
+      {/* HEADER PREMIUM */}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tighter lowercase">
+            atelier & interventions
+          </h1>
+          <p className="text-[oklch(0.45_0_0)] font-medium text-sm">
+            suivi technique et diagnostics en temps rÃƒÆ’Ã‚Â©el
+          </p>
+        </div>
         <Button
           onClick={() => router.push("/appointments")}
-          variant="primary"
-          className="rounded-xl"
+          className="rounded-2xl py-6 font-bold uppercase text-[10px] tracking-widest shadow-sm"
         >
-          ➕ Nouveau Rendez-vous
+          nouveau rdv
         </Button>
       </div>
 
       {loading ? (
-        <p className="text-slate-600">Mise à jour du planning...</p>
+        <div className="py-20 text-center animate-pulse text-[oklch(0.45_0_0)] lowercase tracking-tight">
+          mise ÃƒÆ’Ã‚Â  jour du planning...
+        </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm border-collapse">
-            <thead className="bg-slate-900 text-white">
-              <tr>
-                <th className="px-4 py-3 text-left">Client / Véhicule</th>
-                <th className="px-4 py-3 text-left">Heure prévue</th>
-                <th className="px-4 py-3 text-center">Statut</th>
-                <th className="px-4 py-3 text-left">Action technique</th>
-              </tr>
-            </thead>
-            <tbody>
-              {appointments.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-4 py-8 text-center text-slate-500"
-                  >
-                    Aucun véhicule à l'agenda.
-                  </td>
+        <Section title="flux atelier">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="text-left border-b border-[oklch(0.92_0_0)]">
+                  <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">client / vÃƒÆ’Ã‚Â©hicule</th>
+                  <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">horaire</th>
+                  <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase text-center">statut</th>
+                  <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase text-right">action technique</th>
                 </tr>
-              ) : (
-                appointments.map((app) => (
-                  <tr
-                    key={app.id}
-                    className="border-b last:border-none border-slate-200"
-                  >
-                    <td className="px-4 py-4 align-top">
-                      <div className="font-semibold text-slate-900">
-                        {app.vehicle?.client?.name}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-1">
-                        {app.vehicle?.make} {app.vehicle?.model} —{" "}
-                        <span className="font-semibold">
-                          {app.vehicle?.plateNumber}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-4 text-slate-700 align-top">
-                      {new Date(app.scheduled_at).toLocaleTimeString("fr-FR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </td>
-                    <td className="px-4 py-4 text-center align-top">
-                      <span
-                        className={[
-                          "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
-                          app.intervention
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-red-50 text-red-700",
-                        ].join(" ")}
-                      >
-                        {app.intervention
-                          ? app.intervention.status.toUpperCase()
-                          : "ABSENT"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4 align-top">
-                      {!app.intervention ? (
-                        <Button
-                          variant="success"
-                          onClick={() => startIntervention(app.id)}
-                          className="font-bold"
-                        >
-                          📥 RÉCEPTIONNER LE VÉHICULE
-                        </Button>
-                      ) : (
-                        <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center">
-                          <textarea
-                            placeholder="Notes techniques / Diagnostic..."
-                            value={
-                              diag[app.intervention.id] !== undefined
-                                ? diag[app.intervention.id]
-                                : app.intervention.diagnosis_text || ""
-                            }
-                            onChange={(e) =>
-                              setDiag({
-                                ...diag,
-                                [app.intervention.id]: e.target.value,
-                              })
-                            }
-                            className="flex-1 min-h-[40px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                          />
-                          <Button
-                            variant="primary"
-                            onClick={() => saveDiagnosis(app.intervention.id)}
-                            title="Enregistrer le diagnostic"
-                            className="px-3"
-                          >
-                            💾
-                          </Button>
-                          <Button
-                            variant="secondary"
-                            onClick={() =>
-                              router.push(
-                                `/create-proforma?interventionId=${app.intervention.id}`
-                              )
-                            }
-                            className="whitespace-nowrap bg-amber-500 hover:bg-amber-600 border-none text-white font-bold"
-                          >
-                            🧾 CRÉER DEVIS
-                          </Button>
-                        </div>
-                      )}
+              </thead>
+              <tbody className="divide-y divide-[oklch(0.96_0_0)]">
+                {appointments.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-10 text-center text-[oklch(0.45_0_0)] lowercase italic">
+                      aucun vÃƒÆ’Ã‚Â©hicule ÃƒÆ’Ã‚Â  l'agenda.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
+                ) : (
+                  appointments.map((app) => (
+                    <tr key={app.id} className="group hover:bg-[oklch(0.99_0_0)] transition-colors">
+                      <td className="py-5">
+                        <div className="flex flex-col">
+                          <span className="font-bold text-[oklch(0.22_0_0)] lowercase">
+                            {app.vehicle?.client?.name}
+                          </span>
+                          <span className="text-[10px] text-[oklch(0.45_0_0)] uppercase font-mono tracking-tighter">
+                            {app.vehicle?.make} {app.vehicle?.model} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {app.vehicle?.plateNumber}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-5 text-[oklch(0.35_0_0)] font-medium">
+                        {new Date(app.scheduled_at).toLocaleTimeString("fr-FR", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </td>
+                      <td className="py-5 text-center">
+                        <Badge
+                          variant={app.intervention ? "company" : "destructive"}
+                        >
+                          {app.intervention ? app.intervention.status : "absent"}
+                        </Badge>
+                      </td>
+                      <td className="py-5">
+                        {!app.intervention ? (
+                          <div className="flex justify-end">
+                            <button
+                              onClick={() => startIntervention(app.id)}
+                              className="bg-[oklch(0.22_0_0)] text-white hover:bg-black px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"
+                            >
+                              rÃƒÆ’Ã‚Â©ceptionner
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 justify-end">
+                            <textarea
+                              placeholder="notes techniques..."
+                              value={
+                                diag[app.intervention.id] !== undefined
+                                  ? diag[app.intervention.id]
+                                  : app.intervention.diagnosis_text || ""
+                              }
+                              onChange={(e) =>
+                                setDiag({
+                                  ...diag,
+                                  [app.intervention.id]: e.target.value,
+                                })
+                              }
+                              className="flex-1 max-w-[280px] bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-xl px-4 py-2 text-xs outline-none focus:border-[oklch(0.45_0_0)] transition-colors h-11 resize-none"
+                            />
+                            <button
+                              onClick={() => saveDiagnosis(app.intervention.id)}
+                              className="p-3 rounded-xl bg-[oklch(0.96_0_0)] hover:bg-[oklch(0.22_0_0)] hover:text-white transition-all group/btn"
+                              title="enregistrer"
+                            >
+                              <Save className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/create-proforma?interventionId=${app.intervention.id}`
+                                )
+                              }
+                              className="bg-[oklch(0.22_0_0)] text-white hover:bg-black px-5 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm whitespace-nowrap"
+                            >
+                              devis
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Section>
       )}
     </div>
   );
 }
+
+
+
+
+
+
+

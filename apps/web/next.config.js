@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    optimizeCss: true,
-  },
-}
-
-export default nextConfig
+  // Pas d'option expérimentale ici pour l'instant
+};
+module.exports = nextConfig;

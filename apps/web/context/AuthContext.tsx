@@ -22,7 +22,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
     setToken(accessToken);
-    router.push('/cashier'); // Redirection par défaut après login
+    router.push('/cashier'); // Redirection par dÃƒÆ’Ã‚Â©faut aprÃƒÆ’Ã‚Â¨s login
   };
 
   const logout = () => {

@@ -44,13 +44,25 @@ model WorkspaceMember {
   @@index([workspaceId])
 }
 
+
+
 model Client {
   id          String   @id @default(uuid())
+ type          String      @default("INDIVIDUAL") 
   workspaceId String
   name        String
   email       String?
   phone       String?
-  createdAt   DateTime @default(now())
+  
+// Champs spécifiques Entreprise (B2B)
+  vatNumber     String?     // Numéro de TVA
+  siret         String?     // Numéro SIRET
+  contactPerson String?     // Nom du gestionnaire de flotte ou contact principal
+
+  address       String?
+  city          String?
+
+createdAt   DateTime     @default(now())
   updatedAt   DateTime @updatedAt
   vehicles    Vehicle[]
   @@index([workspaceId])
@@ -64,7 +76,11 @@ model Vehicle {
   plateNumber String?
   make        String?
   model       String?
-  createdAt   DateTime      @default(now())
+ 
+ // Champ spécifique Flotte
+  assignedDriver  String?        // Nom du conducteur habituel
+
+ createdAt   DateTime      @default(now())
   updatedAt    DateTime     @updatedAt @default(now())
   client      Client        @relation(fields: [clientId], references: [id])
   appointments Appointment[]
@@ -77,6 +93,10 @@ model Appointment {
   vehicle_id          String
   scheduled_at        DateTime
   status              String // Ex: 'planned', 'cancelled', 'completed'
+  source              String   @default("internal") // "internal" ou "online"
+  publicOrigin        Boolean
+  validationToken    String?
+  validationTokenExpires DateTime?
   initial_description String
   vehicle             Vehicle       @relation(fields: [vehicle_id], references: [id])
   intervention        Intervention? // Un RDV peut mener à une intervention

@@ -3,15 +3,17 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = (global as any).prisma || new PrismaClient();
 
+if (process.env.NODE_ENV !== 'production') {
+  (global as any).prisma = prisma;
+}
+
 @Injectable()
 export class PurchaseOrderService {
   async create(data: any) {
-    // 1. Validation de base
     if (!data.workspaceId || !data.supplierId) {
       throw new BadRequestException('WorkspaceId et SupplierId sont obligatoires.');
     }
 
-    // 2. Préparation des données pour Prisma (Nested Create)
     const createPayload = {
       workspaceId: data.workspaceId,
       supplierId: data.supplierId,
@@ -19,7 +21,6 @@ export class PurchaseOrderService {
       status: data.status || 'draft',
       totalAmount: Number(data.totalAmount) || 0,
       lines: {
-        // C'est ici que l'erreur se corrige : on enveloppe dans "create"
         create: (data.lines || []).map((line: any) => ({
           productId: line.productId,
           quantity: Number(line.quantity),

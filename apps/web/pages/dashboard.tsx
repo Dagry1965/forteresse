@@ -1,213 +1,160 @@
-import React, { useEffect, useState } from "react"
-import { apiFetch } from "../utils/api"
-import { useAuth } from "../context/AuthContext"
+import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
+import { CreditCard, Users, Package, TrendingUp, RefreshCcw } from "lucide-react";
+import { apiFetch } from "../utils/api";
+import { useAuth } from "../context/AuthContext";
+import Section from "../components/section";
+import KpiCard from "../components/kpi-card";
+import { Badge } from "../components/ui/badge"; // Import du nouveau composant
+import CountUp from "react-countup";
 
-// UI shadcn (imports corrigés)
-import { Button } from "@/components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
+const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 
-// Ton composant KPI n'existe pas dans shadcn → on garde ton alias interne
-import { KPI } from "@ui/kpi"
+export default function Dashboard() {
+  const { token } = useAuth();
+  const [data, setData] = useState<any>({
+    invoices: {}, revenue: null, clients: [], products: [], logs: []
+  });
+  const [loading, setLoading] = useState(false);
 
-import CountUp from "react-countup"
-
-const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971"
-
-export default function DashboardPage() {
-  const { token } = useAuth()
-
-  const [invoicesByStatus, setInvoicesByStatus] = useState<Record<string, number>>({})
-  const [revenue, setRevenue] = useState<any>(null)
-  const [topClients, setTopClients] = useState<any[]>([])
-  const [topProducts, setTopProducts] = useState<any[]>([])
-  const [auditLogs, setAuditLogs] = useState<any[]>([])
-
-  const today = new Date()
-  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split("T")[0]
-  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().split("T")[0]
-
-  const [from, setFrom] = useState(firstDayOfMonth)
-  const [to, setTo] = useState(lastDayOfMonth)
-
-  const totalInvoices = Object.values(invoicesByStatus).reduce((sum, count) => sum + count, 0)
-  const totalArticlesSold = topProducts.reduce((sum, p) => sum + (p.qty || 0), 0)
-
-  async function loadDashboardData() {
+  async function load() {
+    setLoading(true);
     try {
       const [resStatus, resRev, resClients, resProds, resLogs] = await Promise.all([
         apiFetch(`/api/reports/invoices-by-status?workspaceId=${WORKSPACE_ID}`),
-        apiFetch(`/api/reports/revenue?from=${from}&to=${to}&workspaceId=${WORKSPACE_ID}`),
+        apiFetch(`/api/reports/revenue?workspaceId=${WORKSPACE_ID}`),
         apiFetch(`/api/reports/top-clients?limit=5&workspaceId=${WORKSPACE_ID}`),
         apiFetch(`/api/reports/top-products?limit=5&workspaceId=${WORKSPACE_ID}`),
         apiFetch(`/api/finance/audit-logs?workspaceId=${WORKSPACE_ID}`),
-      ])
+      ]);
 
-      if (resStatus?.ok) setInvoicesByStatus(await resStatus.json())
-      if (resRev?.ok) setRevenue(await resRev.json())
-      if (resClients?.ok) setTopClients(await resClients.json())
-      if (resProds?.ok) setTopProducts(await resProds.json())
-      if (resLogs?.ok) setAuditLogs(await resLogs.json())
-    } catch (err) {
-      console.error("Erreur dashboard", err)
+      setData({
+        invoices: resStatus.ok ? await resStatus.json() : {},
+        revenue: resRev.ok ? await resRev.json() : null,
+        clients: resClients.ok ? await resClients.json() : [],
+        products: resProds.ok ? await resProds.json() : [],
+        logs: resLogs.ok ? await resLogs.json() : []
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
-  useEffect(() => {
-    if (token) loadDashboardData()
-  }, [token, from, to])
+  useEffect(() => { if (token) load(); }, [token]);
 
-  if (!token) return <p className="p-6">Redirection vers la connexion...</p>
+  if (!token) return null;
+
+  const totalInvoices = Object.values(data.invoices).reduce((a: any, b: any) => a + b, 0);
 
   return (
-    <div className="p-8 bg-background text-foreground min-h-screen space-y-10">
+    <div className="flex flex-col gap-10">
 
-      {/* Header */}
+      {/* HEADER PREMIUM RE-STABILISÃƒÆ’Ã¢â‚¬Â° */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">Tableau de bord</h1>
-          <p className="text-muted-foreground mt-1">Vue d’ensemble de votre activité</p>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-3xl font-bold tracking-tight text-[oklch(0.22_0_0)] lowercase">
+            tableau de bord
+          </h1>
+          <p className="text-[oklch(0.45_0_0)]">
+            aperÃƒÆ’Ã‚Â§u global de lÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢activitÃƒÆ’Ã‚Â©
+          </p>
         </div>
-        <Button onClick={loadDashboardData} variant="default" className="rounded-xl">
-          🔄 Actualiser
-        </Button>
+        <button 
+          onClick={load} 
+          className="p-3 rounded-full bg-white border border-[oklch(0.92_0_0)] hover:bg-[oklch(0.95_0_0)] transition-colors shadow-sm"
+        >
+          <RefreshCcw className={`w-5 h-5 text-[oklch(0.45_0_0)] ${loading ? 'animate-spin' : ''}`} />
+        </button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <KPI label="Chiffre d'affaires" icon="💰" value={
-          revenue ? (
-            <>
-              <CountUp end={revenue.totalRevenue || 0} duration={1.6} separator=" " />
-              <span className="text-4xl"> €</span>
-            </>
-          ) : "---"
-        } />
-
-        <KPI label="Total factures" icon="📋" value={<CountUp end={totalInvoices} duration={1.3} />} />
-        <KPI label="Clients actifs" icon="⭐" value={<CountUp end={topClients.length} duration={1.3} />} />
-        <KPI label="Articles vendus" icon="📦" value={<CountUp end={totalArticlesSold} duration={1.3} />} />
+      {/* KPI CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-8">
+        <KpiCard label="chiffre d'affaires" value={<CountUp end={data.revenue?.totalRevenue || 0} decimals={2} suffix=".-" />} icon={<CreditCard />} />
+        <KpiCard label="total factures" value={<CountUp end={totalInvoices} />} icon={<Package />} />
+        <KpiCard label="clients actifs" value={<CountUp end={data.clients.length} />} icon={<Users />} />
+        <KpiCard label="articles vendus" value={<CountUp end={data.products.reduce((a:any, b:any) => a + (b.qty || 0), 0)} />} icon={<TrendingUp />} />
       </div>
 
-      {/* CONTENU */}
-      <div className="grid gap-8 md:grid-cols-2 xl:grid-cols-3">
+      {/* SECTIONS PREMIUM */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        
+        {/* STATUTS */}
+        <Section title="factures par statut">
+          <div className="flex flex-col gap-4">
+            {Object.entries(data.invoices).length > 0 ? Object.entries(data.invoices).map(([status, count]: any) => (
+              <div key={status} className="flex justify-between items-center border-b border-[oklch(0.96_0_0)] pb-2 last:border-none">
+                <span className="capitalize font-medium text-[oklch(0.35_0_0)]">{status}</span>
+                <span className="font-bold text-[oklch(0.22_0_0)]">{count}</span>
+              </div>
+            )) : <div className="text-[oklch(0.45_0_0)] text-sm">aucune donnÃƒÆ’Ã‚Â©e</div>}
+          </div>
+        </Section>
 
-        {/* Colonne gauche */}
-        <div className="md:col-span-2 space-y-8">
+        {/* TOP CLIENTS AVEC BADGE B2B */}
+        <Section title="top 5 clients">
+          <div className="flex flex-col gap-4">
+            {data.clients.length > 0 ? data.clients.map((c: any, i: number) => (
+              <div key={i} className="flex justify-between items-center border-b border-[oklch(0.96_0_0)] pb-2 last:border-none">
+                <div className="flex items-center gap-3">
+                  {/* Badge dynamique selon le type de client */}
+                  <Badge variant={c.type === 'COMPANY' ? 'company' : 'individual'}>
+                    {c.type === 'COMPANY' ? 'flotte' : 'perso'}
+                  </Badge>
+                  <span className="font-medium text-[oklch(0.35_0_0)] lowercase">{c.name}</span>
+                </div>
+                <span className="font-bold text-[oklch(0.22_0_0)]">{c.total.toFixed(2)}.-</span>
+              </div>
+            )) : <div className="text-[oklch(0.45_0_0)] text-sm">aucune donnÃƒÆ’Ã‚Â©e</div>}
+          </div>
+        </Section>
 
-          {/* Factures par statut */}
-          <Card className="rounded-3xl border border-border bg-card text-card-foreground shadow-sm hover:shadow-md transition">
-            <CardHeader>
-              <CardTitle>📋 Factures par statut</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-1">
-              {Object.keys(invoicesByStatus).length > 0 ? (
-                Object.entries(invoicesByStatus).map(([status, count]) => (
-                  <div key={status} className="flex justify-between items-center py-2 border-b border-border last:border-none">
-                    <span className="capitalize px-3 py-1 rounded-lg text-xs font-medium bg-muted text-muted-foreground">
-                      {status}
-                    </span>
-                    <span className="font-semibold text-lg">
-                      <CountUp end={count} duration={0.8} />
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground">Aucune donnée</p>
-              )}
-            </CardContent>
-          </Card>
+        {/* PRODUITS */}
+        <Section title="top piÃƒÆ’Ã‚Â¨ces & articles vendus">
+          <div className="flex flex-col gap-4">
+            {data.products.length > 0 ? data.products.map((p: any, i: number) => (
+              <div key={i} className="flex justify-between items-center border-b border-[oklch(0.96_0_0)] pb-2 last:border-none text-sm">
+                <span className="text-[oklch(0.35_0_0)] lowercase">{p.name} (x{p.qty})</span>
+                <span className="font-bold text-[oklch(0.22_0_0)]">{p.revenue.toFixed(2)}.-</span>
+              </div>
+            )) : <div className="text-[oklch(0.45_0_0)] text-sm">aucune donnÃƒÆ’Ã‚Â©e</div>}
+          </div>
+        </Section>
 
-          {/* Top Clients */}
-          <Card className="rounded-3xl border border-border bg-card text-card-foreground shadow-sm hover:shadow-md transition">
-            <CardHeader>
-              <CardTitle>⭐ Top 5 Clients</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {topClients.length > 0 ? (
-                topClients.map((c, i) => (
-                  <div key={i} className="flex justify-between py-2 border-b border-border last:border-none">
-                    <span>{c.name}</span>
-                    <span className="font-semibold text-primary">{c.total.toFixed(2)} €</span>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground">Aucune donnée</p>
-              )}
-            </CardContent>
-          </Card>
+        {/* ACTIVITÃƒÆ’Ã¢â‚¬Â° */}
+        <Section title="activitÃƒÆ’Ã‚Â© rÃƒÆ’Ã‚Â©cente">
+          <div className="h-64 overflow-y-auto pr-2 custom-scrollbar">
+            <div className="flex flex-col gap-6">
+              {data.logs.length > 0 ? data.logs.map((log: any, i: number) => (
+                <div key={i} className="flex flex-col gap-1 border-l-2 border-[oklch(0.92_0_0)] pl-4">
+                  <span className="text-[10px] uppercase tracking-tighter text-[oklch(0.55_0_0)] font-bold">
+                    {new Date(log.createdAt).toLocaleTimeString()}
+                  </span>
+                  <span className="text-sm font-bold text-[oklch(0.22_0_0)] lowercase leading-none">
+                    {log.action.replace("_", " ")}
+                  </span>
+                  <p className="text-xs text-[oklch(0.45_0_0)]">{log.message}</p>
+                </div>
+              )) : <div className="text-[oklch(0.45_0_0)] text-sm">aucune activitÃƒÆ’Ã‚Â© rÃƒÆ’Ã‚Â©cente</div>}
+            </div>
+          </div>
+        </Section>
 
-          {/* Top Produits */}
-          <Card className="rounded-3xl border border-border bg-card text-card-foreground shadow-sm hover:shadow-md transition">
-            <CardHeader>
-              <CardTitle>📦 Top Pièces & Articles vendus</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <table className="w-full">
-                <thead>
-                  <tr className="text-left text-sm text-muted-foreground border-b border-border">
-                    <th className="pb-3">Article</th>
-                    <th className="pb-3">Qté</th>
-                    <th className="pb-3 text-right">CA</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topProducts.length > 0 ? (
-                    topProducts.map((p, i) => (
-                      <tr key={i} className="border-b border-border last:border-none hover:bg-muted/30">
-                        <td className="py-3">{p.name}</td>
-                        <td className="py-3 font-medium">
-                          <CountUp end={p.qty} duration={0.6} />
-                        </td>
-                        <td className="py-3 text-right font-semibold text-primary">
-                          {p.revenue.toFixed(2)} €
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={3} className="py-4 text-center text-muted-foreground">Aucune donnée</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Activité récente */}
-        <Card className="rounded-3xl border border-border bg-card text-card-foreground shadow-sm hover:shadow-md transition h-fit sticky top-6">
-          <CardHeader>
-            <CardTitle>🕒 Activité récente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[520px] pr-2">
-              {auditLogs.length > 0 ? (
-                auditLogs.map((log, i) => (
-                  <div key={i} className="flex gap-3 mb-4">
-                    <div className="w-2 h-2 mt-2 bg-primary rounded-full flex-shrink-0" />
-                    <div>
-                      <div className="text-xs text-muted-foreground">
-                        {new Date(log.createdAt).toLocaleString("fr-FR", {
-                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
-                        })}
-                      </div>
-                      <div className="font-medium text-sm">{log.action.replace("_", " ")}</div>
-                      <div className="text-sm text-muted-foreground">{log.message}</div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <p className="text-muted-foreground text-sm">Aucune activité récente.</p>
-              )}
-            </ScrollArea>
-            <Button variant="outline" className="w-full mt-6 rounded-xl">
-              Voir tout l'historique
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
-  )
+  );
 }
+
+
+
+
+
+
+

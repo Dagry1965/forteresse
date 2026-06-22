@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
@@ -108,13 +117,13 @@ export default function PurchaseOrdersPage() {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        alert("✅ Bon de Commande créé !");
+        alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Bon de Commande crÃƒÆ’Ã‚Â©ÃƒÆ’Ã‚Â© !");
         setSelectedSupplier("");
         setPoLines([]);
         loadData();
       } else {
         const body = await safeJson(res);
-        setError(body?.message || "Erreur création");
+        setError(body?.message || "Erreur crÃƒÆ’Ã‚Â©ation");
       }
     } catch (err: any) {
       setError(err.message);
@@ -129,7 +138,7 @@ export default function PurchaseOrdersPage() {
         { method: "POST" },
       );
       if (res.ok) {
-        alert("✅ Bon de Commande confirmé !");
+        alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Bon de Commande confirmÃƒÆ’Ã‚Â© !");
         loadData();
       } else {
         const body = await safeJson(res);
@@ -149,15 +158,15 @@ export default function PurchaseOrdersPage() {
     }
 
     const confirmReception = window.confirm(
-      `Voulez-vous vraiment réceptionner ce bon de commande ?\n\nRéférence : ${po.reference}\nFournisseur : ${po.supplier?.name || "Inconnu"}`,
+      `Voulez-vous vraiment rÃƒÆ’Ã‚Â©ceptionner ce bon de commande ?\n\nRÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence : ${po.reference}\nFournisseur : ${po.supplier?.name || "Inconnu"}`,
     );
     if (!confirmReception) return;
 
     const receptionRef = prompt(
-      'Entrez la référence du Bon de Livraison (ex: BL-2024-001) :',
+      'Entrez la rÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence du Bon de Livraison (ex: BL-2024-001) :',
     );
     if (!receptionRef) {
-      setError("Réception annulée : Référence manquante.");
+      setError("RÃƒÆ’Ã‚Â©ception annulÃƒÆ’Ã‚Â©e : RÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence manquante.");
       return;
     }
 
@@ -183,11 +192,11 @@ export default function PurchaseOrdersPage() {
         throw new Error(body?.message || res.statusText);
       }
 
-      alert(`✅ Réception "${receptionRef}" enregistrée avec succès !`);
+      alert(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ RÃƒÆ’Ã‚Â©ception "${receptionRef}" enregistrÃƒÆ’Ã‚Â©e avec succÃƒÆ’Ã‚Â¨s !`);
       loadData();
     } catch (err: any) {
-      console.error("Erreur réception :", err);
-      setError(err?.message || "Erreur lors de la réception");
+      console.error("Erreur rÃƒÆ’Ã‚Â©ception :", err);
+      setError(err?.message || "Erreur lors de la rÃƒÆ’Ã‚Â©ception");
     }
   };
 
@@ -208,7 +217,7 @@ export default function PurchaseOrdersPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold text-slate-900">
-          🛒 Bons de Commande
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ¢â‚¬â„¢ Bons de Commande
         </h1>
         <Button
           variant="secondary"
@@ -234,10 +243,10 @@ export default function PurchaseOrdersPage() {
         </div>
       )}
 
-      {/* Formulaire de création */}
+      {/* Formulaire de crÃƒÆ’Ã‚Â©ation */}
       <section className="mb-6 rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 shadow-sm">
         <h3 className="text-lg font-semibold text-slate-800 mb-4">
-          ➕ Nouveau Bon de Commande
+          ÃƒÂ¢Ã…Â¾Ã¢â‚¬Â¢ Nouveau Bon de Commande
         </h3>
         <form
           onSubmit={handleCreatePo}
@@ -245,7 +254,7 @@ export default function PurchaseOrdersPage() {
         >
           <div>
             <label className="block mb-1 text-sm font-medium text-slate-700">
-              Fournisseur ({suppliers.length} trouvés)
+              Fournisseur ({suppliers.length} trouvÃƒÆ’Ã‚Â©s)
             </label>
             <select
               value={selectedSupplier}
@@ -271,7 +280,7 @@ export default function PurchaseOrdersPage() {
                   className="flex items-center justify-between border-b last:border-none border-slate-100 py-1"
                 >
                   <span className="text-slate-700">
-                    {p.name} ({p.purchase_price} €)
+                    {p.name} ({p.purchase_price} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬)
                   </span>
                   <button
                     type="button"
@@ -287,12 +296,12 @@ export default function PurchaseOrdersPage() {
 
           <div>
             <h4 className="text-sm font-semibold text-slate-800 mb-2">
-              Lignes sélectionnées
+              Lignes sÃƒÆ’Ã‚Â©lectionnÃƒÆ’Ã‚Â©es
             </h4>
             <div className="mb-2 max-h-48 overflow-y-auto rounded-md border border-slate-200 bg-white px-3 py-2 text-sm">
               {poLines.length === 0 ? (
                 <p className="text-slate-400">
-                  Aucun produit sélectionné.
+                  Aucun produit sÃƒÆ’Ã‚Â©lectionnÃƒÆ’Ã‚Â©.
                 </p>
               ) : (
                 poLines.map((line, index) => (
@@ -304,7 +313,7 @@ export default function PurchaseOrdersPage() {
                       {line.name} x {line.quantity}
                     </span>
                     <span className="font-semibold">
-                      {(line.quantity * line.unit_price).toFixed(2)} €
+                      {(line.quantity * line.unit_price).toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                     </span>
                   </div>
                 ))
@@ -313,7 +322,7 @@ export default function PurchaseOrdersPage() {
             <h4 className="mt-2 text-sm font-semibold text-slate-800">
               Total :{" "}
               <span className="text-slate-900">
-                {getPayload().totalAmount.toFixed(2)} €
+                {getPayload().totalAmount.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
               </span>
             </h4>
             <Button
@@ -321,7 +330,7 @@ export default function PurchaseOrdersPage() {
               variant="primary"
               className="mt-3 w-full font-bold"
             >
-              Créer le Bon de Commande
+              CrÃƒÆ’Ã‚Â©er le Bon de Commande
             </Button>
           </div>
         </form>
@@ -329,13 +338,13 @@ export default function PurchaseOrdersPage() {
 
       {/* Liste des Bons de Commande */}
       <h3 className="text-lg font-semibold text-slate-800 mb-3">
-        📋 Liste des Bons de Commande
+        ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ Liste des Bons de Commande
       </h3>
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
         <table className="w-full text-sm border-collapse">
           <thead className="bg-slate-100">
             <tr>
-              <th className="px-4 py-3 text-left">Référence</th>
+              <th className="px-4 py-3 text-left">RÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence</th>
               <th className="px-4 py-3 text-left">Fournisseur</th>
               <th className="px-4 py-3 text-left">Total</th>
               <th className="px-4 py-3 text-left">Statut</th>
@@ -349,7 +358,7 @@ export default function PurchaseOrdersPage() {
                   colSpan={5}
                   className="px-4 py-6 text-center text-slate-500"
                 >
-                  Aucun Bon de Commande trouvé.
+                  Aucun Bon de Commande trouvÃƒÆ’Ã‚Â©.
                 </td>
               </tr>
             ) : (
@@ -361,7 +370,7 @@ export default function PurchaseOrdersPage() {
                   <td className="px-4 py-3">{po.reference}</td>
                   <td className="px-4 py-3">{po.supplier?.name}</td>
                   <td className="px-4 py-3">
-                    {Number(po.totalAmount || 0).toFixed(2)} €
+                    {Number(po.totalAmount || 0).toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                   </td>
                   <td className="px-4 py-3">{po.status}</td>
                   <td className="px-4 py-3">
@@ -378,14 +387,14 @@ export default function PurchaseOrdersPage() {
                         onClick={() => handleReceivePo(po.id)}
                         className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"
                       >
-                        Réceptionner
+                        RÃƒÆ’Ã‚Â©ceptionner
                       </button>
                     )}
                     {["received", "partially_received", "completed"].includes(
                       po.status,
                     ) && (
                       <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                        Réceptionné
+                        RÃƒÆ’Ã‚Â©ceptionnÃƒÆ’Ã‚Â©
                       </span>
                     )}
                   </td>
@@ -398,3 +407,7 @@ export default function PurchaseOrdersPage() {
     </div>
   );
 }
+
+
+
+

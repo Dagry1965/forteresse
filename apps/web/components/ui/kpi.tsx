@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 
 interface KPIProps {
   label: string
-  icon?: string
+  icon?: React.ReactNode
   value: React.ReactNode
   className?: string
 }
@@ -21,15 +21,16 @@ export function KPI({ label, icon, value, className }: KPIProps) {
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {label}
         </CardTitle>
+
         {icon && (
-          <div className="text-xl opacity-70">
+          <div className="text-xl opacity-70 flex items-center justify-center">
             {icon}
           </div>
         )}
       </CardHeader>
 
       <CardContent>
-        <div className="text-3xl font-bold text-foreground">
+        <div className="text-3xl font-bold text-foreground leading-tight">
           {value}
         </div>
       </CardContent>

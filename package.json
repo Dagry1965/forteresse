@@ -1,11 +1,22 @@
 {
+  "name": "forteresse-erp",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
   "private": true,
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4.3.1",
-    "prisma": "^4.16.2",
-    "tailwindcss": "^4.3.1"
-  },
+  "workspaces": [
+    "apps/*"
+  ],
   "dependencies": {
-    "@prisma/client": "^4.16.2"
+    "pnpm": "^11.5.3"
+  },
+  "devDependencies": {
+    "turbo": "latest"
+  },
+  "pnpm": {
+    "overrides": {
+      "tailwindcss": "3.4.17",
+      "@tailwindcss/postcss": "3.4.17"
+    }
   }
 }

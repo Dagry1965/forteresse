@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* On garde tes styles de secours pour confirmer la lecture */
+body {
+  background-color: oklch(0.98 0 0) !important;
+  color: oklch(0.22 0 0) !important;
+  margin: 0;
+}
+
+/* On garde le titre rouge tant qu'on n'a pas vu le jaune Tailwind */
+h1 {
+  color: red !important;
+}

@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { useRouter } from 'next/router';
 import { apiFetch } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -28,7 +37,7 @@ export default function CreateProforma() {
       const dataP = await resP.json();
       setProducts(Array.isArray(dataP) ? dataP : []);
       
-      // 2. Charger les interventions à l'atelier
+      // 2. Charger les interventions ÃƒÆ’Ã‚Â  l'atelier
       const resI = await apiFetch(`/api/interventions?workspaceId=${WORKSPACE_ID}`);
       const dataI = await resI.json();
       setInterventions(Array.isArray(dataI) ? dataI : []);
@@ -60,7 +69,7 @@ export default function CreateProforma() {
     if (laborPrice <= 0) return;
     setSelectedLines([...selectedLines, { 
         product_id: null, 
-        name: "Main d'œuvre", 
+        name: "Main d'Ãƒâ€¦Ã¢â‚¬Å“uvre", 
         quantity: 1, 
         price: Number(laborPrice) 
     }]);
@@ -72,7 +81,7 @@ export default function CreateProforma() {
   };
 
   const submitProforma = async () => {
-    if (!interventionId) return alert("Veuillez sélectionner une intervention.");
+    if (!interventionId) return alert("Veuillez sÃƒÆ’Ã‚Â©lectionner une intervention.");
     if (selectedLines.length === 0) return alert("Le devis est vide.");
     
     const payload = {
@@ -93,15 +102,15 @@ export default function CreateProforma() {
         });
 
         if (res.ok) {
-            setMessage({ text: "✅ Devis généré avec succès !", type: "success" });
+            setMessage({ text: "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Devis gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â© avec succÃƒÆ’Ã‚Â¨s !", type: "success" });
             setSelectedLines([]);
             setTimeout(() => router.push('/workshop'), 1500);
         } else {
             const err = await res.json();
-            setMessage({ text: `❌ Erreur : ${err.message}`, type: "error" });
+            setMessage({ text: `ÃƒÂ¢Ã‚ÂÃ…â€™ Erreur : ${err.message}`, type: "error" });
         }
     } catch (err) {
-        setMessage({ text: "❌ Impossible de joindre le serveur", type: "error" });
+        setMessage({ text: "ÃƒÂ¢Ã‚ÂÃ…â€™ Impossible de joindre le serveur", type: "error" });
     }
   };
 
@@ -109,19 +118,19 @@ export default function CreateProforma() {
 
   return (
     <div style={{ padding: 24, fontFamily: "sans-serif", maxWidth: '1000px', margin: '0 auto' }}>
-      <h1>🧾 Établir un Devis (Proforma)</h1>
+      <h1>ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¾ ÃƒÆ’Ã¢â‚¬Â°tablir un Devis (Proforma)</h1>
       
       <div style={{ background: '#f8fafc', padding: 20, borderRadius: 8, marginBottom: 20, border: '1px solid #e2e8f0' }}>
-        <label style={{ fontWeight: 'bold', display: 'block', marginBottom: 10 }}>Choisir l'Intervention liée :</label>
+        <label style={{ fontWeight: 'bold', display: 'block', marginBottom: 10 }}>Choisir l'Intervention liÃƒÆ’Ã‚Â©e :</label>
         <select 
             value={interventionId} 
             onChange={e => setInterventionId(e.target.value)}
             style={{ width: '100%', padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1' }}
         >
-          <option value="">--- Sélectionner l'intervention en cours ---</option>
+          <option value="">--- SÃƒÆ’Ã‚Â©lectionner l'intervention en cours ---</option>
           {interventions.map(i => (
             <option key={i.id} value={i.id}>
-              🔧 {i.appointment?.vehicle?.plateNumber} — {i.appointment?.vehicle?.client?.name} ({i.status})
+              ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ {i.appointment?.vehicle?.plateNumber} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {i.appointment?.vehicle?.client?.name} ({i.status})
             </option>
           ))}
         </select>
@@ -130,29 +139,29 @@ export default function CreateProforma() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
         {/* CATALOGUE */}
         <div>
-          <h3>📦 Catalogue Pièces</h3>
+          <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Catalogue PiÃƒÆ’Ã‚Â¨ces</h3>
           <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 8, background: 'white' }}>
             {products.map(p => (
               <div key={p.id} style={{ padding: '12px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <strong>{p.name}</strong><br/>
-                    <small style={{ color: '#64748b' }}>Stock: {p.inventory?.quantity || 0} | Réf: {p.reference}</small>
+                    <small style={{ color: '#64748b' }}>Stock: {p.inventory?.quantity || 0} | RÃƒÆ’Ã‚Â©f: {p.reference}</small>
                 </div>
                 <button 
                     onClick={() => addLine(p)}
                     style={{ background: '#2563eb', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}
                 >
-                    {p.selling_price}€ +
+                    {p.selling_price}ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ +
                 </button>
               </div>
             ))}
           </div>
 
-          <h3 style={{ marginTop: 24 }}>🛠️ Main d'œuvre</h3>
+          <h3 style={{ marginTop: 24 }}>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Main d'Ãƒâ€¦Ã¢â‚¬Å“uvre</h3>
           <div style={{ display: 'flex', gap: 10 }}>
             <input 
                 type="number" 
-                placeholder="Prix Main d'œuvre" 
+                placeholder="Prix Main d'Ãƒâ€¦Ã¢â‚¬Å“uvre" 
                 value={laborPrice} 
                 onChange={e => setLaborPrice(Number(e.target.value))}
                 style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #cbd5e1' }}
@@ -161,9 +170,9 @@ export default function CreateProforma() {
           </div>
         </div>
 
-        {/* RÉCAPITULATIF */}
+        {/* RÃƒÆ’Ã¢â‚¬Â°CAPITULATIF */}
         <div style={{ background: 'white', padding: 24, borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', height: 'fit-content' }}>
-          <h3>📋 Récapitulatif Devis</h3>
+          <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ RÃƒÆ’Ã‚Â©capitulatif Devis</h3>
           {selectedLines.length === 0 ? (
             <p style={{ color: '#64748b', textAlign: 'center', padding: 20 }}>Votre devis est vide.</p>
           ) : (
@@ -173,9 +182,9 @@ export default function CreateProforma() {
                         {selectedLines.map((l, i) => (
                             <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
                                 <td style={{ padding: '10px 0' }}>{l.name}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{l.price.toFixed(2)}€</td>
+                                <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{l.price.toFixed(2)}ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬</td>
                                 <td style={{ textAlign: 'right' }}>
-                                    <button onClick={() => setSelectedLines(selectedLines.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>✕</button>
+                                    <button onClick={() => setSelectedLines(selectedLines.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
                                 </td>
                             </tr>
                         ))}
@@ -183,13 +192,13 @@ export default function CreateProforma() {
                 </table>
                 <div style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL TTC</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{calculateTotal().toFixed(2)} €</span>
+                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{calculateTotal().toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬</span>
                 </div>
                 <button 
                     onClick={submitProforma} 
                     style={{ width: '100%', background: '#1e293b', color: 'white', marginTop: 24, padding: '15px', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}
                 >
-                    GÉNÉRER LE DEVIS OFFICIEL
+                    GÃƒÆ’Ã¢â‚¬Â°NÃƒÆ’Ã¢â‚¬Â°RER LE DEVIS OFFICIEL
                 </button>
             </>
           )}
@@ -212,3 +221,5 @@ export default function CreateProforma() {
     </div>
   );
 }
+
+

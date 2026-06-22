@@ -1,18 +1,12 @@
-import tailwindcss from "tailwindcss";
-import { shadcnPreset } from "shadcn/preset";
-
-export default {
-  presets: [shadcnPreset],
-
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
-    "./app/**/*.{ts,tsx,js,jsx}",
-    "./pages/**/*.{ts,tsx,js,jsx}",
-    "./components/**/*.{ts,tsx,js,jsx}",
+    "C:/Users/Admin/forteresse/apps/web/pages/**/*.{js,ts,jsx,tsx}",
+    "C:/Users/Admin/forteresse/apps/web/components/**/*.{js,ts,jsx,tsx}",
+    "C:/Users/Admin/forteresse/apps/web/test-tailwind.html",
   ],
-
   theme: {
     extend: {},
   },
-
-  plugins: [tailwindcss()],
-};
+  plugins: [],
+}

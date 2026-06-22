@@ -7,35 +7,35 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // ✅ CETTE PARTIE EST CRUCIALE POUR LE FRONTEND
+  // 🔥 Ajout du prefix global pour garder les routes /api/... côté frontend
+  app.setGlobalPrefix('api');
+
+  // CORS OK
   app.enableCors({
-    origin: true, 
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // ✅ ACTIVATION ET FORMATAGE GÉNÉRIQUE DES ERREURS
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-    forbidNonWhitelisted: false,
-    
-    // Transforme le tableau d'erreurs en un message texte simple
-    exceptionFactory: (errors) => {
-      const messages = errors.map((error) => {
-        // On récupère la première contrainte violée pour chaque champ
-        return Object.values(error.constraints || {})[0];
-      });
-      // Renvoie une erreur 400 avec les messages joints proprement
-      return new BadRequestException(messages.join('. '));
-    },
-    
-    // S'arrête à la première erreur pour éviter les messages trop longs
-    stopAtFirstError: true, 
-  }));
+  // Validation + formatage des erreurs
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+      exceptionFactory: (errors) => {
+        const messages = errors.map((error) => {
+          return Object.values(error.constraints || {})[0];
+        });
+        return new BadRequestException(messages.join('. '));
+      },
+      stopAtFirstError: true,
+    }),
+  );
 
   const port = process.env.APP_PORT || '4000';
   await app.listen(Number(port));
   console.log(`Backend listening on ${port}`);
 }
+
 bootstrap();

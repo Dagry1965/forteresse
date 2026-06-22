@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { CONFIG } from "../lib/config";
 
 export default function ManageFinance() {
@@ -12,12 +21,12 @@ export default function ManageFinance() {
         if (Array.isArray(data)) {
           setProformas(data);
         } else {
-          console.error("Le backend n'a pas renvoyé un tableau:", data);
+          console.error("Le backend n'a pas renvoyÃƒÆ’Ã‚Â© un tableau:", data);
           setProformas([]);
         }
       })
       .catch((err) => {
-        console.error("Erreur réseau:", err);
+        console.error("Erreur rÃƒÆ’Ã‚Â©seau:", err);
         setProformas([]);
       });
   };
@@ -34,7 +43,7 @@ export default function ManageFinance() {
 
     if (res.ok) {
       setMessage(
-        "✅ Devis approuvé ! Stock mis à jour et facture générée.",
+        "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Devis approuvÃƒÆ’Ã‚Â© ! Stock mis ÃƒÆ’Ã‚Â  jour et facture gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â©e.",
       );
       loadProformas();
     } else {
@@ -60,7 +69,7 @@ export default function ManageFinance() {
           <thead className="bg-slate-100">
             <tr>
               <th className="px-4 py-3 text-left">Client</th>
-              <th className="px-4 py-3 text-left">Véhicule</th>
+              <th className="px-4 py-3 text-left">VÃƒÆ’Ã‚Â©hicule</th>
               <th className="px-4 py-3 text-left">Total</th>
               <th className="px-4 py-3 text-left">Statut</th>
               <th className="px-4 py-3 text-left">Actions</th>
@@ -73,7 +82,7 @@ export default function ManageFinance() {
                   colSpan={5}
                   className="px-4 py-6 text-center text-slate-500"
                 >
-                  Aucun devis trouvé.
+                  Aucun devis trouvÃƒÆ’Ã‚Â©.
                 </td>
               </tr>
             ) : (
@@ -91,7 +100,7 @@ export default function ManageFinance() {
                     {p.intervention?.appointment?.vehicle?.model}
                   </td>
                   <td className="px-4 py-3">
-                    {p.total_amount?.toFixed(2)} €
+                    {p.total_amount?.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -124,3 +133,7 @@ export default function ManageFinance() {
     </div>
   );
 }
+
+
+
+

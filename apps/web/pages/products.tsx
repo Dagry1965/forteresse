@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { CONFIG } from "../lib/config";
 
 type Product = {
@@ -55,7 +64,7 @@ export default function ProductsPage() {
           <table className="w-full text-sm border-collapse">
             <thead className="bg-slate-100">
               <tr>
-                <th className="px-4 py-3 text-left">Réf</th>
+                <th className="px-4 py-3 text-left">RÃƒÆ’Ã‚Â©f</th>
                 <th className="px-4 py-3 text-left">Nom</th>
                 <th className="px-4 py-3 text-left">Fournisseur</th>
                 <th className="px-4 py-3 text-left">Stock</th>
@@ -82,10 +91,10 @@ export default function ProductsPage() {
                     {p.min_stock_alert}
                   </td>
                   <td className="px-4 py-2">
-                    {p.purchase_price.toFixed(2)} €
+                    {p.purchase_price.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                   </td>
                   <td className="px-4 py-2">
-                    {p.selling_price.toFixed(2)} €
+                    {p.selling_price.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                   </td>
                 </tr>
               ))}
@@ -96,3 +105,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+

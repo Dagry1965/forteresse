@@ -1,7 +1,17 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
+import Section from "../components/section";
 
 const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 
@@ -36,7 +46,7 @@ export default function InventoryPage() {
         setSuppliers([]);
       }
     } catch (err) {
-      console.error("Erreur stock", err);
+      console.error("erreur stock", err);
     } finally {
       setLoading(false);
     }
@@ -62,7 +72,7 @@ export default function InventoryPage() {
     });
 
     if (res.ok) {
-      alert("✅ Produit ajouté au catalogue !");
+      alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ produit ajoutÃƒÆ’Ã‚Â© au catalogue !");
       setProdRef("");
       setProdName("");
       setPPrice(0);
@@ -71,7 +81,7 @@ export default function InventoryPage() {
       setSelectedSupplier("");
       loadInventory();
     } else {
-      alert("Erreur lors de la création du produit");
+      alert("erreur lors de la crÃƒÆ’Ã‚Â©ation du produit");
     }
   };
 
@@ -84,199 +94,173 @@ export default function InventoryPage() {
           product_id: productId,
           type: "purchase_in",
           quantity: 10,
-          reason: "Réapprovisionnement rapide (Test)",
+          reason: "rÃƒÆ’Ã‚Â©approvisionnement rapide (test)",
         }),
       });
 
       if (res.ok) {
-        alert("✅ Stock mis à jour : +10 unités");
+        alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ stock mis ÃƒÆ’Ã‚Â  jour : +10 unitÃƒÆ’Ã‚Â©s");
         loadInventory();
       } else {
-        alert("Erreur lors de la mise à jour du stock");
+        alert("erreur lors de la mise ÃƒÆ’Ã‚Â  jour du stock");
       }
     } catch (err) {
       console.error(err);
     }
   };
 
-  if (!token) {
-    return (
-      <p className="p-6 text-slate-600">Veuillez vous connecter...</p>
-    );
-  }
+  if (!token) return null;
 
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto font-sans">
-      <h1 className="text-3xl font-bold text-slate-900 mb-6">
-        📦 Catalogue & Gestion de Stock
-      </h1>
+    <div className="flex flex-col gap-10 p-10 bg-[oklch(0.98_0_0)] min-h-screen font-sans text-[oklch(0.22_0_0)]">
+      
+      {/* HEADER PREMIUM */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tighter lowercase">
+          stock & catalogue
+        </h1>
+        <p className="text-[oklch(0.45_0_0)] font-medium text-sm">
+          gestion des piÃƒÆ’Ã‚Â¨ces dÃƒÆ’Ã‚Â©tachÃƒÆ’Ã‚Â©es et inventaire en temps rÃƒÆ’Ã‚Â©el
+        </p>
+      </div>
 
-      <div className="grid gap-6 md:grid-cols-[1.1fr,2fr]">
-        {/* FORMULAIRE */}
-        <section className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-5 shadow-sm">
-          <h3 className="text-lg font-semibold text-slate-800 mb-4">
-            ➕ Ajouter une pièce
-          </h3>
-          <form onSubmit={handleCreateProduct}>
-            <label className="block mb-1 text-sm font-medium text-slate-700">
-              Référence
-            </label>
-            <input
-              className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-              value={prodRef}
-              onChange={(e) => setProdRef(e.target.value)}
-              required
-            />
-
-            <label className="block mb-1 text-sm font-medium text-slate-700">
-              Désignation
-            </label>
-            <input
-              className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-              value={prodName}
-              onChange={(e) => setProdName(e.target.value)}
-              required
-            />
-
-            <label className="block mb-1 text-sm font-medium text-slate-700">
-              Fournisseur
-            </label>
-            <select
-              value={selectedSupplier}
-              onChange={(e) => setSelectedSupplier(e.target.value)}
-              className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            >
-              <option value="">— Aucun (optionnel) —</option>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block mb-1 text-sm font-medium text-slate-700">
-                  Prix Achat (€)
-                </label>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-12 items-start">
+        {/* COLONNE GAUCHE : FORMULAIRE */}
+        <div className="xl:col-span-1">
+          <Section title="ajouter une piÃƒÆ’Ã‚Â¨ce">
+            <form onSubmit={handleCreateProduct} className="flex flex-col gap-5">
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase text-[oklch(0.45_0_0)] ml-1 tracking-widest">rÃƒÆ’Ã‚Â©fÃƒÆ’Ã‚Â©rence</span>
                 <input
-                  type="number"
-                  className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  value={pPrice}
-                  onChange={(e) => setPPrice(Number(e.target.value))}
+                  value={prodRef}
+                  onChange={(e) => setProdRef(e.target.value)}
+                  required
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors"
                 />
               </div>
-              <div className="flex-1">
-                <label className="block mb-1 text-sm font-medium text-slate-700">
-                  Prix Vente (€)
-                </label>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase text-[oklch(0.45_0_0)] ml-1 tracking-widest">dÃƒÆ’Ã‚Â©signation</span>
                 <input
-                  type="number"
-                  className="mb-3 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-                  value={sPrice}
-                  onChange={(e) => setSPrice(Number(e.target.value))}
+                  value={prodName}
+                  onChange={(e) => setProdName(e.target.value)}
+                  required
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors"
                 />
               </div>
-            </div>
 
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label className="block mb-1 text-sm font-medium text-slate-700">
-                  Seuil d’alerte stock
-                </label>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase text-[oklch(0.45_0_0)] ml-1 tracking-widest">fournisseur</span>
+                <select
+                  value={selectedSupplier}
+                  onChange={(e) => setSelectedSupplier(e.target.value)}
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors text-[oklch(0.22_0_0)]"
+                >
+                  <option value="">ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â aucun (optionnel) ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â</option>
+                  {suppliers.map((s) => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold uppercase text-[oklch(0.45_0_0)] ml-1 tracking-widest">prix achat</span>
+                  <input
+                    type="number"
+                    value={pPrice}
+                    onChange={(e) => setPPrice(Number(e.target.value))}
+                    className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-bold uppercase text-[oklch(0.45_0_0)] ml-1 tracking-widest">prix vente</span>
+                  <input
+                    type="number"
+                    value={sPrice}
+                    onChange={(e) => setSPrice(Number(e.target.value))}
+                    className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-bold uppercase text-[oklch(0.45_0_0)] ml-1 tracking-widest">seuil d'alerte</span>
                 <input
                   type="number"
                   min={0}
-                  className="mb-5 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
                   value={minStockAlert}
-                  onChange={(e) =>
-                    setMinStockAlert(Number(e.target.value))
-                  }
+                  onChange={(e) => setMinStockAlert(Number(e.target.value))}
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-2.5 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors"
                 />
               </div>
-            </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full font-bold"
-            >
-              Ajouter au Catalogue
-            </Button>
-          </form>
-        </section>
+              <Button type="submit" className="w-full rounded-2xl py-6 font-bold tracking-widest uppercase text-[10px]">
+                ajouter au catalogue
+              </Button>
+            </form>
+          </Section>
+        </div>
 
-        {/* LISTE */}
-        <section>
-          <h3 className="text-lg font-semibold text-slate-800 mb-3">
-            📋 État du Stock actuel
-          </h3>
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            {loading ? (
-              <p className="py-8 text-center text-slate-500">
-                Chargement du stock...
-              </p>
-            ) : (
+        {/* COLONNE DROITE : LISTE */}
+        <div className="xl:col-span-2">
+          <Section title="ÃƒÆ’Ã‚Â©tat du stock actuel">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm border-collapse">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="px-4 py-3 text-left">Réf</th>
-                    <th className="px-4 py-3 text-left">Désignation</th>
-                    <th className="px-4 py-3 text-center">Stock</th>
-                    <th className="px-4 py-3 text-left">Prix Vente</th>
-                    <th className="px-4 py-3 text-center">Action rapide</th>
+                <thead>
+                  <tr className="text-left border-b border-[oklch(0.92_0_0)]">
+                    <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">rÃƒÆ’Ã‚Â©f</th>
+                    <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">dÃƒÆ’Ã‚Â©signation</th>
+                    <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase text-center">stock</th>
+                    <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">prix vente</th>
+                    <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase text-right">action rapide</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {products.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-6 text-center text-slate-500"
-                      >
-                        Aucun produit trouvé.
-                      </td>
-                    </tr>
+                <tbody className="divide-y divide-[oklch(0.96_0_0)]">
+                  {loading ? (
+                    <tr><td colSpan={5} className="py-10 text-center animate-pulse text-[oklch(0.45_0_0)] lowercase">chargement du stock...</td></tr>
+                  ) : products.length === 0 ? (
+                    <tr><td colSpan={5} className="py-10 text-center text-[oklch(0.45_0_0)] lowercase italic">aucun produit en inventaire.</td></tr>
                   ) : (
                     products.map((p) => (
-                      <tr
-                        key={p.id}
-                        className="border-b last:border-none border-slate-100"
-                      >
-                        <td className="px-4 py-3">{p.reference}</td>
-                        <td className="px-4 py-3">{p.name}</td>
-                        <td className="px-4 py-3 text-center font-semibold">
-                          <span
-                            className={
-                              p.inventory?.quantity > 0
-                                ? "text-emerald-600"
-                                : "text-red-500"
-                            }
-                          >
+                      <tr key={p.id} className="group hover:bg-[oklch(0.99_0_0)] transition-colors">
+                        <td className="py-5 font-mono text-xs uppercase tracking-tight text-[oklch(0.45_0_0)]">
+                          {p.reference}
+                        </td>
+                        <td className="py-5 font-bold text-[oklch(0.22_0_0)] lowercase">
+                          {p.name}
+                        </td>
+                        <td className="py-5 text-center">
+                          <span className={`font-bold px-3 py-1 rounded-full text-xs ${p.inventory?.quantity > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
                             {p.inventory?.quantity || 0}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
-                          {p.selling_price.toFixed(2)} €
+                        <td className="py-5 font-medium text-[oklch(0.35_0_0)]">
+                          {p.selling_price.toFixed(2)}.-
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <Button
-                            variant="success"
+                        <td className="py-5 text-right">
+                          <button
                             onClick={() => handleQuickAddStock(p.id)}
-                            className="px-3 py-1.5 text-xs"
+                            className="bg-[oklch(0.96_0_0)] hover:bg-[oklch(0.22_0_0)] hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all"
                           >
-                            ➕ Entrée +10
-                          </Button>
+                            entrÃƒÆ’Ã‚Â©e +10
+                          </button>
                         </td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
-            )}
-          </div>
-        </section>
+            </div>
+          </Section>
+        </div>
       </div>
     </div>
   );
 }
+
+
+
+
+
+

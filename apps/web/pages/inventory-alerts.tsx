@@ -1,4 +1,13 @@
 import React, { useEffect, useState, useMemo } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import Link from "next/link";
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -78,10 +87,10 @@ export default function InventoryAlertsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="m-0 text-3xl font-bold text-slate-900">
-            ⚠️ Réapprovisionnement
+            ÃƒÂ¢Ã…Â¡Ã‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â RÃƒÆ’Ã‚Â©approvisionnement
           </h1>
           <p className="mt-1 text-slate-500 text-sm">
-            Gérez vos ruptures et stocks critiques
+            GÃƒÆ’Ã‚Â©rez vos ruptures et stocks critiques
           </p>
         </div>
         <Link href="/purchase-orders">
@@ -103,7 +112,7 @@ export default function InventoryAlertsPage() {
         </div>
         <div className="rounded-xl border-l-4 border-amber-500 bg-white px-4 py-4 shadow-sm">
           <div className="text-xs font-medium text-slate-500 uppercase">
-            Articles à commander
+            Articles ÃƒÆ’Ã‚Â  commander
           </div>
           <div className="mt-1 text-2xl font-bold text-amber-500">
             {stats.total}
@@ -114,7 +123,7 @@ export default function InventoryAlertsPage() {
             Estimation Commande
           </div>
           <div className="mt-1 text-2xl font-bold text-sky-500">
-            {stats.value.toFixed(2)} €
+            {stats.value.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
           </div>
         </div>
       </div>
@@ -123,7 +132,7 @@ export default function InventoryAlertsPage() {
       <div className="mb-6 flex flex-wrap gap-3 items-center rounded-xl bg-white px-4 py-3 shadow-sm border border-slate-200">
         <input
           type="text"
-          placeholder="Rechercher nom ou réf..."
+          placeholder="Rechercher nom ou rÃƒÆ’Ã‚Â©f..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-1 min-w-[200px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -154,7 +163,7 @@ export default function InventoryAlertsPage() {
           onClick={loadData}
           className="px-3 py-2 text-sm"
         >
-          🔄
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾
         </Button>
       </div>
 
@@ -209,7 +218,7 @@ export default function InventoryAlertsPage() {
                           {p.name}
                         </div>
                         <div className="text-xs text-slate-500 mt-1">
-                          Réf: {p.reference}
+                          RÃƒÆ’Ã‚Â©f: {p.reference}
                         </div>
                       </td>
                       <td className="px-4 py-4 text-slate-800">
@@ -232,7 +241,7 @@ export default function InventoryAlertsPage() {
                       </td>
                       <td className="px-4 py-4 text-center">
                         <button className="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
-                          🛒 Commander
+                          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ¢â‚¬â„¢ Commander
                         </button>
                       </td>
                     </tr>
@@ -246,3 +255,5 @@ export default function InventoryAlertsPage() {
     </div>
   );
 }
+
+

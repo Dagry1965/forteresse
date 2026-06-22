@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { useAuth } from "../context/AuthContext";
 import { Modal } from "../components/ui/modal";
 import { Button } from "../components/ui/button";
@@ -16,16 +25,16 @@ export default function CashierPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // États pour le Modal d'encaissement
+  // ÃƒÆ’Ã¢â‚¬Â°tats pour le Modal d'encaissement
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
   const [amountToPay, setAmountToPay] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<
-    "carte" | "espèces" | "virement"
+    "carte" | "espÃƒÆ’Ã‚Â¨ces" | "virement"
   >("carte");
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // Charger les factures impayées
+  // Charger les factures impayÃƒÆ’Ã‚Â©es
   const loadInvoices = async () => {
     if (!token) return;
     setLoading(true);
@@ -63,11 +72,11 @@ export default function CashierPage() {
     loadInvoices();
   }, [token]);
 
-  // Ouvrir la fenêtre modale
+  // Ouvrir la fenÃƒÆ’Ã‚Âªtre modale
   const openPaymentModal = (invoice: any, remains: number) => {
     setSelectedInvoice(invoice);
     setAmountToPay(remains);
-    setPaymentMethod("carte"); // Méthode par défaut
+    setPaymentMethod("carte"); // MÃƒÆ’Ã‚Â©thode par dÃƒÆ’Ã‚Â©faut
     setModalOpen(true);
   };
 
@@ -97,7 +106,7 @@ export default function CashierPage() {
 
       if (res.ok) {
         setMessage({
-          text: `✅ Paiement de ${amountToPay}€ encaissé par ${paymentMethod} !`,
+          text: `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Paiement de ${amountToPay}ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ encaissÃƒÆ’Ã‚Â© par ${paymentMethod} !`,
           type: "success",
         });
         setModalOpen(false);
@@ -123,10 +132,10 @@ export default function CashierPage() {
       {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="m-0 text-2xl sm:text-3xl font-bold text-slate-900">
-          🏦 Caisse & Encaissements
+          ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¦ Caisse & Encaissements
         </h1>
         <Button variant="secondary" onClick={loadInvoices} className="rounded-xl">
-          🔄 Actualiser
+          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Actualiser
         </Button>
       </div>
 
@@ -150,7 +159,7 @@ export default function CashierPage() {
       ) : invoices.length === 0 ? (
         <div className="p-10 text-center bg-white rounded-xl shadow-sm">
           <p className="text-lg text-slate-500 m-0">
-            Toutes les factures sont réglées. Excellent travail !
+            Toutes les factures sont rÃƒÆ’Ã‚Â©glÃƒÆ’Ã‚Â©es. Excellent travail !
           </p>
         </div>
       ) : (
@@ -159,16 +168,16 @@ export default function CashierPage() {
             <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">
-                  Client / Véhicule
+                  Client / VÃƒÆ’Ã‚Â©hicule
                 </th>
                 <th className="px-4 py-3 text-right text-sm font-medium text-slate-600">
                   Total Facture
                 </th>
                 <th className="px-4 py-3 text-right text-sm font-medium text-slate-600">
-                  Déjà payé
+                  DÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  payÃƒÆ’Ã‚Â©
                 </th>
                 <th className="px-4 py-3 text-right text-sm font-medium text-slate-600">
-                  Reste à payer
+                  Reste ÃƒÆ’Ã‚Â  payer
                 </th>
                 <th className="px-4 py-3 text-center text-sm font-medium text-slate-600">
                   Action
@@ -203,13 +212,13 @@ export default function CashierPage() {
                       </div>
                     </td>
                     <td className="px-4 py-4 text-right text-sm text-slate-700">
-                      {total.toFixed(2)} €
+                      {total.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                     </td>
                     <td className="px-4 py-4 text-right text-sm text-emerald-600 font-medium">
-                      {paid.toFixed(2)} €
+                      {paid.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                     </td>
                     <td className="px-4 py-4 text-right text-red-500 font-bold text-lg">
-                      {remain.toFixed(2)} €
+                      {remain.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
                     </td>
                     <td className="px-4 py-4 text-center">
                       <Button
@@ -257,7 +266,7 @@ export default function CashierPage() {
       >
         <div className="mb-4">
           <label className="block mb-2 font-semibold text-slate-700">
-            Montant reçu (€)
+            Montant reÃƒÆ’Ã‚Â§u (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬)
           </label>
           <input
             type="number"
@@ -276,18 +285,18 @@ export default function CashierPage() {
           <select
             value={paymentMethod}
             onChange={(e) =>
-              setPaymentMethod(e.target.value as "carte" | "espèces" | "virement")
+              setPaymentMethod(e.target.value as "carte" | "espÃƒÆ’Ã‚Â¨ces" | "virement")
             }
             className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
           >
-            <option value="carte">💳 Carte Bancaire</option>
-            <option value="espèces">💵 Espèces</option>
-            <option value="virement">🏦 Virement</option>
+            <option value="carte">ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â³ Carte Bancaire</option>
+            <option value="espÃƒÆ’Ã‚Â¨ces">ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Âµ EspÃƒÆ’Ã‚Â¨ces</option>
+            <option value="virement">ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¦ Virement</option>
           </select>
         </div>
 
         <div className="px-3 py-2 bg-slate-50 rounded-lg text-sm text-slate-600">
-          Le solde restant dû pour ce client est de{" "}
+          Le solde restant dÃƒÆ’Ã‚Â» pour ce client est de{" "}
           <strong className="text-red-500">
             {selectedInvoice
               ? (
@@ -295,7 +304,7 @@ export default function CashierPage() {
                   selectedInvoice.total_paid
                 ).toFixed(2)
               : 0}{" "}
-            €
+            ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
           </strong>
           .
         </div>
@@ -303,3 +312,9 @@ export default function CashierPage() {
     </div>
   );
 }
+
+
+
+
+
+

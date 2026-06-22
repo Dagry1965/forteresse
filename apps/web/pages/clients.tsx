@@ -1,7 +1,18 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { apiFetch } from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
+import Section from "../components/section";
 
 const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 
@@ -10,10 +21,10 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // État du type de client
+  // ÃƒÆ’Ã¢â‚¬Â°tat du type de client
   const [type, setType] = useState<"INDIVIDUAL" | "COMPANY">("INDIVIDUAL");
 
-  // État pour le formulaire de création
+  // ÃƒÆ’Ã¢â‚¬Â°tat pour le formulaire de crÃƒÆ’Ã‚Â©ation
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -27,10 +38,9 @@ export default function ClientsPage() {
     try {
       const res = await apiFetch("/clients");
       const data = await res.json();
-      console.log("Clients chargés :", data);
       setClients(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error("Erreur chargement clients", err);
+      console.error("erreur chargement clients", err);
     } finally {
       setLoading(false);
     }
@@ -46,7 +56,7 @@ export default function ClientsPage() {
       const res = await apiFetch("/clients", {
         method: "POST",
         body: JSON.stringify({
-          type, // INDIVIDUAL ou COMPANY
+          type, 
           name: newName,
           email: newEmail,
           phone: newPhone,
@@ -58,173 +68,177 @@ export default function ClientsPage() {
       });
 
       if (res.ok) {
-        alert("✅ Client créé avec succès !");
         setNewName(""); setNewEmail(""); setNewPhone("");
         setVatNumber(""); setSiret(""); setContactPerson("");
         setType("INDIVIDUAL");
         loadClients();
       } else {
         const errData = await res.json();
-        alert("Erreur : " + errData.message);
+        alert("erreur : " + errData.message);
       }
     } catch (err) {
-      alert("Erreur lors de la création");
+      alert("erreur lors de la crÃƒÆ’Ã‚Â©ation");
     }
   };
 
-  if (!token) {
-    return (
-      <p className="p-6 text-slate-600">Veuillez vous connecter...</p>
-    );
-  }
+  if (!token) return null;
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto font-sans">
-      <h1 className="text-3xl font-bold text-slate-900 mb-6">
-        👥 Gestion de la Clientèle & Flottes
-      </h1>
+    <div className="flex flex-col gap-10 p-10 bg-[oklch(0.98_0_0)] min-h-screen font-sans">
+      
+      {/* HEADER PREMIUM */}
+      <div className="flex flex-col gap-1">
+        <h1 className="text-3xl font-bold tracking-tight text-[oklch(0.22_0_0)] lowercase">
+          gestion clientÃƒÆ’Ã‚Â¨le
+        </h1>
+        <p className="text-[oklch(0.45_0_0)] font-medium">
+          comptes particuliers et flottes dÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢entreprise
+        </p>
+      </div>
 
-      {/* FORMULAIRE DE CRÉATION */}
-      <section className="mb-8 rounded-xl border border-slate-200 bg-slate-50 px-5 py-6 shadow-sm">
-        <h3 className="text-lg font-semibold text-slate-800 mb-4">
-          ➕ Ajouter un nouveau client
-        </h3>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-12 items-start">
+        
+        {/* COLONNE GAUCHE : FORMULAIRE */}
+        <div className="xl:col-span-1">
+          <Section title="ajouter un client">
+            <form onSubmit={handleCreateClient} className="flex flex-col gap-6">
+              
+              {/* TOGGLE TYPE PREMIUM */}
+              <div className="flex gap-2 p-1 bg-[oklch(0.96_0_0)] rounded-2xl w-full font-bold">
+                <button
+                  type="button"
+                  onClick={() => setType("INDIVIDUAL")}
+                  className={`flex-1 py-2 rounded-xl text-[10px] uppercase transition-all ${type === "INDIVIDUAL" ? "bg-white shadow-sm text-[oklch(0.22_0_0)]" : "text-[oklch(0.45_0_0)]"}`}
+                >
+                  particulier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setType("COMPANY")}
+                  className={`flex-1 py-2 rounded-xl text-[10px] uppercase transition-all ${type === "COMPANY" ? "bg-white shadow-sm text-[oklch(0.22_0_0)]" : "text-[oklch(0.45_0_0)]"}`}
+                >
+                  entreprise
+                </button>
+              </div>
 
-        <form onSubmit={handleCreateClient} className="space-y-4">
-          {/* SÉLECTEUR DE TYPE */}
-          <div className="flex gap-2 p-1 bg-slate-200 rounded-lg w-fit">
-            <button
-              type="button"
-              onClick={() => setType("INDIVIDUAL")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${type === "INDIVIDUAL" ? "bg-white shadow-sm text-sky-600" : "text-slate-600"}`}
-            >
-              Particulier
-            </button>
-            <button
-              type="button"
-              onClick={() => setType("COMPANY")}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition ${type === "COMPANY" ? "bg-white shadow-sm text-sky-600" : "text-slate-600"}`}
-            >
-              Entreprise / Flotte
-            </button>
-          </div>
+              {/* INPUTS DÃƒÆ’Ã¢â‚¬Â°SIGNATION */}
+              <div className="flex flex-col gap-4">
+                <input
+                  placeholder={type === "COMPANY" ? "raison sociale" : "nom complet"}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors text-[oklch(0.22_0_0)]"
+                />
+                <input
+                  type="email"
+                  placeholder="adresse email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors text-[oklch(0.22_0_0)]"
+                />
+                <input
+                  placeholder="tÃƒÆ’Ã‚Â©lÃƒÆ’Ã‚Â©phone"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors text-[oklch(0.22_0_0)]"
+                />
 
-          {/* CHAMPS COMMUNS */}
-          <div className="flex flex-wrap gap-3 items-center">
-            <input
-              type="text"
-              placeholder={type === "COMPANY" ? "Raison Sociale" : "Nom complet"}
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              required
-              className="flex-1 min-w-[180px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="flex-1 min-w-[180px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            <input
-              type="text"
-              placeholder="Téléphone"
-              value={newPhone}
-              onChange={(e) => setNewPhone(e.target.value)}
-              className="flex-1 min-w-[180px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-          </div>
+                {type === "COMPANY" && (
+                  <div className="flex flex-col gap-4 pt-2 border-t border-[oklch(0.96_0_0)]">
+                    <input
+                      placeholder="numÃƒÆ’Ã‚Â©ro de tva"
+                      value={vatNumber}
+                      onChange={(e) => setVatNumber(e.target.value)}
+                      className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors font-mono"
+                    />
+                    <input
+                      placeholder="siiret"
+                      value={siret}
+                      onChange={(e) => setSiret(e.target.value)}
+                      className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors font-mono"
+                    />
+                    <input
+                      placeholder="gestionnaire de flotte"
+                      value={contactPerson}
+                      onChange={(e) => setContactPerson(e.target.value)}
+                      className="w-full bg-[oklch(0.98_0_0)] border border-[oklch(0.92_0_0)] rounded-2xl px-4 py-3 text-sm outline-none focus:border-[oklch(0.45_0_0)] transition-colors"
+                    />
+                  </div>
+                )}
+              </div>
 
-          {/* CHAMPS B2B (affichés uniquement pour COMPANY) */}
-          {type === "COMPANY" && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t border-slate-200">
-              <input
-                type="text"
-                placeholder="N° TVA (optionnel)"
-                value={vatNumber}
-                onChange={(e) => setVatNumber(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-              <input
-                type="text"
-                placeholder="SIRET (optionnel)"
-                value={siret}
-                onChange={(e) => setSiret(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-              <input
-                type="text"
-                placeholder="Gestionnaire / Contact"
-                value={contactPerson}
-                onChange={(e) => setContactPerson(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-          )}
-
-          <div className="flex justify-end">
-            <Button type="submit" variant="primary" className="px-10">
-              ENREGISTRER
-            </Button>
-          </div>
-        </form>
-      </section>
-
-      {/* LISTE DES CLIENTS */}
-      <h3 className="text-lg font-semibold text-slate-800 mb-3">
-        📋 Liste des comptes enregistrés
-      </h3>
-
-      {loading ? (
-        <p className="text-slate-500">Chargement des clients...</p>
-      ) : (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm border-collapse">
-            <thead className="bg-slate-800 text-white text-left">
-              <tr>
-                <th className="px-4 py-3">Type</th>
-                <th className="px-4 py-3">Nom / Raison Sociale</th>
-                <th className="px-4 py-3">Contact Principal</th>
-                <th className="px-4 py-3 text-center">Véhicules</th>
-                <th className="px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {clients.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-4 text-center text-slate-500">Aucun client trouvé.</td></tr>
-              ) : (
-                clients.map((c) => (
-                  <tr key={c.id} className="border-b last:border-none border-slate-100 hover:bg-slate-50">
-                    <td className="px-4 py-3">
-                      <span className={`px-2 py-1 rounded text-[10px] font-bold ${c.type === 'COMPANY' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
-                        {c.type === 'COMPANY' ? 'FLOTTE' : 'PERSO'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-900">{c.name}</div>
-                      <div className="text-xs text-slate-500">{c.email || "-"}</div>
-                    </td>
-                    <td className="px-4 py-3 text-slate-700">
-                      {c.type === 'COMPANY' ? (c.contactPerson || "Gérant") : (c.phone || "-")}
-                    </td>
-                    <td className="px-4 py-3 text-center text-slate-800 font-medium">
-                      {c.vehicles?.length || 0}
-                    </td>
-                    <td className="px-4 py-3">
-                      <button
-                        onClick={() => (window.location.href = `/vehicles?clientId=${c.id}`)}
-                        className="inline-flex items-center rounded-md bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200"
-                      >
-                        🚗 Gérer
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+              <Button type="submit" className="w-full rounded-2xl py-6 font-bold tracking-widest uppercase text-[10px]">
+                enregistrer le client
+              </Button>
+            </form>
+          </Section>
         </div>
-      )}
+
+        {/* COLONNE DROITE : LISTE */}
+        <div className="xl:col-span-2">
+          <Section title="comptes enregistrÃƒÆ’Ã‚Â©s">
+            <div className="flex flex-col gap-4">
+              {loading ? (
+                <div className="text-center py-10 animate-pulse text-[oklch(0.45_0_0)] lowercase">chargement de la base clientÃƒÆ’Ã‚Â¨le...</div>
+              ) : clients.length === 0 ? (
+                <div className="text-[oklch(0.45_0_0)] text-sm lowercase text-center py-10">aucun compte trouvÃƒÆ’Ã‚Â©.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm border-collapse">
+                    <thead>
+                      <tr className="text-left border-b border-[oklch(0.92_0_0)]">
+                        <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">type</th>
+                        <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">nom / raison sociale</th>
+                        <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase">contact</th>
+                        <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase text-center">parc</th>
+                        <th className="pb-4 font-bold text-[oklch(0.45_0_0)] lowercase text-right">actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[oklch(0.96_0_0)]">
+                      {clients.map((c) => (
+                        <tr key={c.id} className="group hover:bg-[oklch(0.99_0_0)] transition-colors">
+                          <td className="py-4">
+                            <Badge variant={c.type === 'COMPANY' ? 'company' : 'individual'}>
+                              {c.type === 'COMPANY' ? 'flotte' : 'perso'}
+                            </Badge>
+                          </td>
+                          <td className="py-4">
+                            <div className="font-bold text-[oklch(0.22_0_0)] lowercase">{c.name}</div>
+                            <div className="text-xs text-[oklch(0.45_0_0)]">{c.email || '-'}</div>
+                          </td>
+                          <td className="py-4 text-[oklch(0.35_0_0)]">
+                            {c.type === 'COMPANY' ? (c.contactPerson || "non dÃƒÆ’Ã‚Â©fini") : (c.phone || "-")}
+                          </td>
+                          <td className="py-4 text-center font-bold text-[oklch(0.22_0_0)]">
+                            {c.vehicles?.length || 0}
+                          </td>
+                          <td className="py-4 text-right">
+                            <button
+                              onClick={() => (window.location.href = `/vehicles?clientId=${c.id}`)}
+                              className="bg-[oklch(0.96_0_0)] hover:bg-[oklch(0.22_0_0)] hover:text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-tighter transition-all"
+                            >
+                              gÃƒÆ’Ã‚Â©rer
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </Section>
+        </div>
+
+      </div>
     </div>
   );
 }
+
+
+
+
+
+
+

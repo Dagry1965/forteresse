@@ -4,7 +4,7 @@ const API_BASE = "http://localhost:4000";
 const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 
 export async function apiFetch(endpoint: string, options: any = {}) {
-  // Récupération du token depuis le localStorage (plus simple pour cet utilitaire hors React)
+  // RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©ration du token depuis le localStorage (plus simple pour cet utilitaire hors React)
   const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
   
   const headers = {
@@ -19,7 +19,7 @@ export async function apiFetch(endpoint: string, options: any = {}) {
   try {
     const res = await fetch(url, { ...options, headers });
 
-    // Gestion automatique de la déconnexion si le token est expiré
+    // Gestion automatique de la dÃƒÆ’Ã‚Â©connexion si le token est expirÃƒÆ’Ã‚Â©
     if (res.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('access_token');
       window.location.href = '/login';

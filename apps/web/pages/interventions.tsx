@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { Button } from "../components/ui/button";
 
 const API_BASE = "http://localhost:4000";
@@ -29,7 +38,7 @@ export default function InterventionsPage() {
       body: JSON.stringify({ diagnosis_text: diagnosis }),
     });
     if (res.ok) {
-      alert("✅ Diagnostic enregistré ! Prêt pour le devis.");
+      alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Diagnostic enregistrÃƒÆ’Ã‚Â© ! PrÃƒÆ’Ã‚Âªt pour le devis.");
       loadInterventions();
       setDiagnosis("");
       setSelectedId("");
@@ -41,7 +50,7 @@ export default function InterventionsPage() {
   return (
     <div className="px-6 py-8 max-w-6xl mx-auto font-sans">
       <h1 className="text-3xl font-bold text-slate-900 mb-6">
-        🛠️ Atelier : Interventions &amp; Diagnostics
+        ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Atelier : Interventions &amp; Diagnostics
       </h1>
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -49,7 +58,7 @@ export default function InterventionsPage() {
           <thead className="bg-slate-100">
             <tr>
               <th className="px-4 py-3 text-left">Client</th>
-              <th className="px-4 py-3 text-left">Véhicule</th>
+              <th className="px-4 py-3 text-left">VÃƒÆ’Ã‚Â©hicule</th>
               <th className="px-4 py-3 text-left">Statut</th>
               <th className="px-4 py-3 text-left">Diagnostic</th>
               <th className="px-4 py-3 text-left">Action</th>
@@ -62,7 +71,7 @@ export default function InterventionsPage() {
                   colSpan={5}
                   className="px-4 py-6 text-center text-slate-500"
                 >
-                  Aucune intervention trouvée.
+                  Aucune intervention trouvÃƒÆ’Ã‚Â©e.
                 </td>
               </tr>
             ) : (
@@ -105,12 +114,12 @@ export default function InterventionsPage() {
       {selectedId && (
         <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
           <h3 className="text-lg font-semibold text-slate-800 mb-3">
-            Saisir le diagnostic pour l'intervention sélectionnée
+            Saisir le diagnostic pour l'intervention sÃƒÆ’Ã‚Â©lectionnÃƒÆ’Ã‚Â©e
           </h3>
           <textarea
             value={diagnosis}
             onChange={(e) => setDiagnosis(e.target.value)}
-            placeholder="Ex: Disques de frein HS, Prévoir remplacement..."
+            placeholder="Ex: Disques de frein HS, PrÃƒÆ’Ã‚Â©voir remplacement..."
             className="w-full min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
           <Button
@@ -125,3 +134,5 @@ export default function InterventionsPage() {
     </div>
   );
 }
+
+

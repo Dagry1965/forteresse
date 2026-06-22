@@ -1,4 +1,13 @@
 import { useState } from "react";
+import { EmptyState } from '../components/ui/empty-state';
+import { Tabs } from '../components/ui/tabs';
+import { Alert } from '../components/ui/alert';
+import { TextareaField } from '../components/ui/textarea-field';
+import { SelectField } from '../components/ui/select-field';
+import { ResponsiveGrid } from '../components/ui/responsive-grid';
+import { DataTable } from '../components/ui/data-table';
+import { DateField } from '../components/ui/date-field';
+import { TextField } from '../components/ui/text-field';
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 
@@ -38,7 +47,7 @@ export default function LoginPage() {
     } catch (err) {
       console.error("Login error:", err);
       setError(
-        "Impossible de joindre le serveur (Vérifiez que le backend sur le port 4000 est lancé)",
+        "Impossible de joindre le serveur (VÃƒÆ’Ã‚Â©rifiez que le backend sur le port 4000 est lancÃƒÆ’Ã‚Â©)",
       );
     } finally {
       setLoading(false);
@@ -81,7 +90,7 @@ export default function LoginPage() {
           </label>
           <input
             type="password"
-            placeholder="••••••••"
+            placeholder="ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -100,3 +109,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
