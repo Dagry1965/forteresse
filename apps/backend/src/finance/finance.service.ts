@@ -11,7 +11,7 @@ export class FinanceService {
   async createInvoice(dto: CreateInvoiceDto, workspaceId: string) {
     const proforma = await this.prisma.proforma.findUnique({
       where: { id: dto.proforma_id },
-      select: { id: true, total_amount: true, invoice: true } // ⚡ select = plus léger
+      select: { id: true, total_amount: true, invoice: true }
     });
 
     if (!proforma) throw new NotFoundException("Le devis spécifié n'existe pas.");
@@ -24,6 +24,7 @@ export class FinanceService {
           due_date: new Date(dto.due_date),
           status: 'unpaid',
           total_paid: 0,
+          workspaceId, 
         }
       });
 
@@ -49,7 +50,7 @@ export class FinanceService {
       select: {
         id: true,
         total_paid: true,
-        proforma: { select: { total_amount: true } } // ⚡ select = plus rapide
+        proforma: { select: { total_amount: true } }
       }
     });
 
@@ -90,15 +91,15 @@ export class FinanceService {
 
       await tx.auditLog.create({
         data: {
-          workspaceId: dto.workspaceId,
+          workspaceId: dto.workspaceId, 
           entity: 'payment',
           entityId: payment.id,
           action: 'payment_received',
           message: `Paiement de ${dto.amount}€ par ${dto.method}. Reste à payer : ${remainingAfter.toFixed(2)}€`,
-          metadata: JSON.stringify({ 
-            invoice_id: invoice.id, 
-            method: dto.method, 
-            status: newStatus 
+          metadata: JSON.stringify({
+            invoice_id: invoice.id,
+            method: dto.method,
+            status: newStatus
           })
         }
       });
@@ -107,7 +108,7 @@ export class FinanceService {
     });
   }
 
-  // 3. Lister les factures impayées (Utile pour la caisse)
+  // 3. Lister les factures impayées
   async findAllUnpaid(workspaceId: string) {
     return this.prisma.invoice.findMany({
       where: {

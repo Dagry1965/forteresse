@@ -1,12 +1,11 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 import { CreatePurchaseReceiptDto } from './dto/create-purchase-receipt.dto';
 
 const prisma = (global as any).prisma || new PrismaClient();
 
 @Injectable()
 export class PurchaseReceiptService {
-  
   async create(dto: CreatePurchaseReceiptDto) {
     const { purchaseOrderId, workspaceId, reference, lines } = dto;
 
@@ -19,8 +18,7 @@ export class PurchaseReceiptService {
       throw new BadRequestException('Bon de Commande introuvable');
     }
 
-    return prisma.$transaction(async (tx) => {
-
+    return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       // 1. Vérification des quantités (sécurité)
       for (const line of lines) {
         if (line.quantity <= 0) {
@@ -36,7 +34,7 @@ export class PurchaseReceiptService {
           reference,
           status: 'completed',
           lines: {
-            create: lines.map(line => ({
+            create: lines.map((line) => ({
               productId: line.productId,
               quantity: line.quantity,
               unit_price: line.unit_price,
@@ -69,7 +67,7 @@ export class PurchaseReceiptService {
 
       // 4. Mise à jour des receivedQty avec protection anti-sur-réception
       for (const line of lines) {
-        const poLine = purchaseOrder.lines.find(l => l.productId === line.productId);
+        const poLine = purchaseOrder.lines.find((l: any) => l.productId === line.productId);
 
         if (poLine) {
           const newReceivedQty = poLine.receivedQty + line.quantity;
@@ -92,17 +90,25 @@ export class PurchaseReceiptService {
         where: { purchaseOrderId },
       });
 
-      const isFullyReceived = updatedPOLines.every(l => l.receivedQty >= l.quantity);
-      const isPartiallyReceived = updatedPOLines.some(l => l.receivedQty > 0);
+      const isFullyReceived = updatedPOLines.every(
+        (l: any) => l.receivedQty >= l.quantity,
+      );
+      const isPartiallyReceived = updatedPOLines.some(
+        (l: any) => l.receivedQty > 0,
+      );
 
       await tx.purchaseOrder.update({
         where: { id: purchaseOrderId },
         data: {
-          status: isFullyReceived ? 'received' : (isPartiallyReceived ? 'partially_received' : 'confirmed'),
+          status: isFullyReceived
+            ? 'received'
+            : isPartiallyReceived
+            ? 'partially_received'
+            : 'confirmed',
         },
       });
 
-      // 6. ✅ AJOUT DU LOG D'AUDIT
+      // 6. ✅ Log d'audit
       await tx.auditLog.create({
         data: {
           workspaceId,
@@ -114,7 +120,7 @@ export class PurchaseReceiptService {
             purchaseOrderId,
             reference,
             totalItems: lines.length,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
           }),
         },
       });

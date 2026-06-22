@@ -2,13 +2,13 @@ import { Controller, Post, Body, Get, Query, Headers, BadRequestException } from
 import { FinanceService } from './finance.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { PrismaService } from '../prisma/prisma.service'; // Ajout de Prisma pour l'audit direct
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('api/finance')
 export class FinanceController {
   constructor(
     private readonly financeService: FinanceService,
-    private readonly prisma: PrismaService // Injecté pour les requêtes de logs
+    private readonly prisma: PrismaService
   ) {}
 
   // 1. Transformer un Devis en Facture
@@ -38,17 +38,17 @@ export class FinanceController {
     return this.financeService.findAllUnpaid(workspaceId);
   }
 
-  // 4. RÉCUPÉRER LES LOGS D'AUDIT (Pour le Dashboard)
+  // 4. Récupérer les logs d'audit (Dashboard)
   @Get('audit-logs')
   async getRecentLogs(@Query('workspaceId') workspaceId: string) {
     if (!workspaceId) {
       throw new BadRequestException("Le paramètre workspaceId est obligatoire pour l'audit.");
     }
-    
+
     return this.prisma.auditLog.findMany({
       where: { workspaceId },
-      orderBy: { createdAt: 'desc' },
-      take: 10, // On limite aux 10 derniers événements
+      orderBy: { createdAt: 'desc' },   // ✅ Corrigé : created_at → createdAt
+      take: 10,
     });
   }
 }

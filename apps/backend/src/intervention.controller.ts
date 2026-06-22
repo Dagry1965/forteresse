@@ -18,7 +18,7 @@ export class InterventionController {
         },
         proforma: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { id: 'desc' } // ✅ Correction minimale : champ garanti existant
     });
   }
 
@@ -62,7 +62,7 @@ export class InterventionController {
     });
   }
 
-  // 5. Mettre à jour une intervention (diagnostic, statut, etc.)
+  // 5. Mettre à jour une intervention
   @Put(':id')
   async update(@Param('id') id: string, @Body() data: Partial<CreateInterventionDto>) {
     return this.prisma.intervention.update({
@@ -71,7 +71,7 @@ export class InterventionController {
     });
   }
 
-  // 6. Mettre à jour le diagnostic (méthode spécifique)
+  // 6. Mettre à jour le diagnostic
   @Patch(':id/diagnosis')
   async updateDiagnosis(@Param('id') id: string, @Body() data: { diagnosis_text: string }) {
     return this.prisma.intervention.update({

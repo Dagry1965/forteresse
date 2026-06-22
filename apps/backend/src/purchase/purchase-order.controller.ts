@@ -1,7 +1,7 @@
 ﻿import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import { PurchaseOrderService } from './purchase-order.service';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
-import { Request } from '@nestjs/common'; // <-- Correction : type NestJS, pas Express
+import { Request } from '@nestjs/common';
 
 @Controller('api/purchase-orders')
 export class PurchaseOrderController {
@@ -15,7 +15,7 @@ export class PurchaseOrderController {
   @Get()
   async findAll(@Req() req: Request) {
     const workspaceId =
-      (req.headers['x-workspace-id'] as string) ||
+      ((req.headers as any)['x-workspace-id'] as string) ||   // ✅ Correction TS
       process.env.NEXT_PUBLIC_WORKSPACE_ID ||
       process.env.WORKSPACE_ID ||
       'dev-ws';

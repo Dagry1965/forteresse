@@ -1,6 +1,7 @@
-﻿import { Controller, Post, Body, HttpCode, HttpStatus, Logger, Inject } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { addMinutes } from 'date-fns';
+import { InjectQueue } from '@nestjs/bullmq';
 import type { Queue } from 'bullmq';
 
 import { AppointmentsService } from './appointments.service';
@@ -9,31 +10,35 @@ import { Appointment } from '@prisma/client';
 
 /*
   Controller responsable des rendez-vous venant du public (/booking endpoint).
-  - force publicOrigin = true
-  - status = PENDING
-  - génère validationToken + expiration
-  - enregistre via service métier
-  - émet job BullMQ public-appointment.created
-*/
 
+  force publicOrigin = true
+  status = PENDING
+  génère validationToken + expiration
+  enregistre via service métier
+  émet job BullMQ public-appointment.created
+*/
 @Controller('public/appointments')
 export class PublicAppointmentController {
   private readonly logger = new Logger(PublicAppointmentController.name);
 
   constructor(
     private readonly appointmentsService: AppointmentsService,
-    @Inject('BULLMQ_MAIN_QUEUE') private readonly queue: Queue, // token défini dans votre module BullMQ
+    @InjectQueue('main') private readonly queue: Queue<any>, // ✅ Typage sûr
   ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreatePublicAppointmentDto): Promise<{ id: string; validationUrl?: string }> {
-    // génère token court
+  async create(
+    @Body() dto: CreatePublicAppointmentDto
+  ): Promise<{ id: string; validationUrl?: string }> {
+    
+    // Génère token court
     const validationToken = uuidv4();
-    // TTL token : 24h (configurable)
+
+    // TTL token : 24h
     const validationTokenExpires = addMinutes(new Date(), 60 * 24);
 
-    // Construire payload d'enregistrement (respecter le schéma métier)
+    // Construire payload d'enregistrement
     const payload = {
       ...dto,
       publicOrigin: true,
@@ -42,12 +47,12 @@ export class PublicAppointmentController {
       validationTokenExpires,
     } as Partial<Appointment & { validationToken?: string; validationTokenExpires?: Date }>;
 
-    // Délégué au service métier (vérifications, conflits, persistance)
+    // Délégué au service métier
     const appointment = await this.appointmentsService.createPublicAppointment(payload);
 
     this.logger.debug(`Public appointment created id=${appointment.id} token=${validationToken}`);
 
-    // Émettre un job pour notifier admin / workflow (BullMQ)
+    // Émettre un job BullMQ
     try {
       await this.queue.add('public-appointment.created', {
         appointmentId: appointment.id,
@@ -60,10 +65,10 @@ export class PublicAppointmentController {
       });
     } catch (e) {
       this.logger.error('Failed to enqueue public-appointment.created', e as any);
-      // Ne pas échouer la création client pour un échec de queue ; se logue pour réconciliation
+      // On ne casse pas la création
     }
 
-    // Construire url de validation publique (back-end doit exposer endpoint GET /public/appointments/validate?token=...)
+    // Construire URL de validation
     const validationUrl = `${process.env.PUBLIC_BASE_URL ?? ''}/public/appointments/validate?token=${validationToken}`;
 
     return { id: appointment.id, validationUrl };
