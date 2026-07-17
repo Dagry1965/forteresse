@@ -1,0 +1,662 @@
+==================================================================
+EXPORT COMPLET - INVENTORY + PURCHASE
+Date : 07/10/2026 11:41:48
+==================================================================
+
+==================================================================
+FICHIER : inventory\\inventory.controller.ts
+==================================================================
+
+import { Controller, Get, Query, Headers, UseGuards } from '@nestjs/common';
+import { InventoryService } from './inventory.service';
+import { InventoryFilterDto } from './dto/inventory-filter.dto';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+
+@Controller('inventory')
+@UseGuards(WorkspaceGuard) // On remet la sécurité ici
+export class InventoryController {
+  constructor(private readonly inventoryService: InventoryService) {}
+
+  @Get('products')
+  list(
+    @Headers('x-workspace-id') headerId: string,
+    @Query('workspaceId') queryId: string,
+  ) {
+    // On utilise le header en priorité
+    const workspaceId = headerId || queryId;
+    return this.inventoryService.listProducts({ workspace_id: workspaceId });
+  }
+}
+
+
+
+==================================================================
+FICHIER : inventory\\inventory.module.ts
+==================================================================
+
+import { Module } from '@nestjs/common';
+import { InventoryController } from './inventory.controller';
+import { InventoryService } from './inventory.service';
+import { StockController } from './stock.controller'; // AJOUT
+import { StockService } from './stock.service';       // AJOUT
+
+@Module({
+  controllers: [InventoryController, StockController], // AJOUT StockController
+  providers: [InventoryService, StockService],         // AJOUT StockService
+  exports: [InventoryService, StockService],
+})
+export class InventoryModule {}
+
+
+
+
+==================================================================
+FICHIER : inventory\\inventory.service.ts
+==================================================================
+
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { PrismaService } from '../../core/prisma/prisma.service';
+import { InventoryFilterDto } from './dto/inventory-filter.dto';
+
+@Injectable()
+export class InventoryService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async listProducts(filter: InventoryFilterDto) {
+    try {
+      return await this.prisma.stockItem.findMany({
+        where: {
+          workspace_id: filter.workspace_id,
+          deleted_at: null,
+        },
+        orderBy: { name: 'asc' },
+      });
+    } catch (error) {
+      throw new InternalServerErrorException("Erreur lors de la lecture du stock.");
+    }
+  }
+}
+
+
+
+==================================================================
+FICHIER : inventory\\purchase-order.controller.ts
+==================================================================
+
+@Controller('purchase-orders')
+@UseGuards(WorkspaceGuard)
+export class PurchaseOrderController {
+  constructor(private readonly poService: PurchaseOrderService) {}
+
+  @Post()
+  create(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: CreatePurchaseOrderDto
+  ) {
+    return this.poService.create(workspaceId, dto);
+  }
+
+  @Get()
+  findAll(@Headers('x-workspace-id') workspaceId: string) {
+    return this.poService.findAll(workspaceId);
+  }
+}
+
+
+
+==================================================================
+FICHIER : inventory\\purchase-order.service.ts
+==================================================================
+
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service'; // Assurez-vous du chemin
+import { PURCHASE_ORDER_STATUS, DOCUMENT_CONFIG } from '../../../../../shared/constants/status.constants';
+
+@Injectable()
+export class PurchaseOrderService {
+  constructor(
+    private prisma: PrismaService,
+    private sequencingService: SequencingService
+  ) {}
+
+  /**
+   * Création d'une commande fournisseur avec référence automatique
+   */
+  async createOrder(workspaceId: string, data: any) {
+    const { supplier_id, expected_date, items } = data;
+
+    // 1. Génération de la référence via le service généralisé (ex: CMD-2026-0001)
+    const reference = await this.sequencingService.generateReference(
+      workspaceId,
+      'PURCHASE_ORDER'
+    );
+
+    // 2. Création de la commande et de ses lignes (Items)
+    return this.prisma.purchaseOrder.create({
+      data: {
+        workspace_id: workspaceId,
+        supplier_id: supplier_id,
+        reference: reference,
+        status: PURCHASE_ORDER_STATUS.DRAFT, // On commence en DRAFT selon vos constantes
+        expected_date: expected_date ? new Date(expected_date) : null,
+        items: {
+          create: items.map((item: any) => ({
+            stock_item_id: item.stock_item_id,
+            quantity: item.quantity,
+            unit_cost: item.unit_cost, // Snapshot du prix d'achat convenu
+          })),
+        },
+      },
+      include: {
+        items: {
+          include: {
+            stockItem: true, // Pour afficher le nom des pièces côté Front
+          },
+        },
+        supplier: true,
+      },
+    });
+  }
+
+  /**
+   * Récupérer toutes les commandes du garage
+   */
+  async findAll(workspaceId: string) {
+    return this.prisma.purchaseOrder.findMany({
+      where: { workspace_id: workspaceId },
+      include: {
+        supplier: true,
+        _count: {
+          select: { items: true },
+        },
+      },
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  /**
+   * Récupérer une commande précise avec ses détails
+   */
+  async findOne(workspaceId: string, id: string) {
+    const order = await this.prisma.purchaseOrder.findFirst({
+      where: {
+        id: id,
+        workspace_id: workspaceId,
+      },
+      include: {
+        supplier: true,
+        items: {
+          include: {
+            stockItem: true,
+          },
+        },
+        receipts: true, // Pour voir l'historique des réceptions
+      },
+    });
+
+    if (!order) throw new NotFoundException('Commande fournisseur introuvable');
+    return order;
+  }
+
+  /**
+   * Mettre à jour le statut (ex: passer de DRAFT à SENT)
+   */
+  async updateStatus(workspaceId: string, id: string, status: string) {
+    return this.prisma.purchaseOrder.updateMany({
+      where: {
+        id: id,
+        workspace_id: workspaceId,
+      },
+      data: { status },
+    });
+  }
+}
+
+
+
+==================================================================
+FICHIER : inventory\\stock.controller.ts
+==================================================================
+
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  Body,
+} from '@nestjs/common';
+import { StockService } from './stock.service';
+
+@Controller('stock')
+export class StockController {
+  constructor(private readonly stockService: StockService) {}
+
+  // GET STOCK FOR ONE PRODUCT
+  @Get(':productId')
+  getStock(@Param('productId') productId: string) {
+    return this.stockService.getStock(productId);
+  }
+
+  // LIST MOVEMENTS
+  @Get()
+  list(@Query('workspaceId') workspaceId?: string) {
+    return this.stockService.listMovements(workspaceId);
+  }
+
+  // REGISTER MOVEMENT
+  @Post()
+  register(@Body() dto: any) {
+    return this.stockService.registerMovement(dto);
+  }
+}
+
+
+
+==================================================================
+FICHIER : inventory\\stock.service.ts
+==================================================================
+
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../../core/prisma/prisma.service';
+
+@Injectable()
+export class StockService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  // ---------------------------------------------------------
+  // GET STOCK FOR ONE PRODUCT
+  // ---------------------------------------------------------
+  async getStock(productId: string) {
+    const movements = await this.prisma.stockMovement.findMany({
+      where: { product_id: productId },
+    });
+
+    const total = movements.reduce(
+      (sum, m) => sum + (m.type === 'IN' ? m.quantity : -m.quantity),
+      0,
+    );
+
+    return { product_id: productId, stock: total };
+  }
+
+  // ---------------------------------------------------------
+  // LIST MOVEMENTS
+  // ---------------------------------------------------------
+  async listMovements(workspaceId?: string) {
+    return this.prisma.stockMovement.findMany({
+      where: workspaceId ? { workspace_id: workspaceId } : undefined,
+      orderBy: { created_at: 'desc' },
+    });
+  }
+
+  // ---------------------------------------------------------
+  // REGISTER MOVEMENT
+  // ---------------------------------------------------------
+  async registerMovement(dto: {
+    product_id: string;
+    workspace_id: string;
+    quantity: number;
+    type: 'IN' | 'OUT';
+    reason?: string;
+  }) {
+    return this.prisma.stockMovement.create({
+      data: {
+        product_id: dto.product_id,
+        workspace_id: dto.workspace_id,
+        quantity: dto.quantity,
+        type: dto.type,
+      },
+    });
+  }
+}
+
+
+
+==================================================================
+FICHIER : inventory\\dto\create-purchase-order.dto.ts
+==================================================================
+
+export class CreatePurchaseOrderItemDto {
+  stock_item_id: string;
+  quantity: number;
+  unit_cost: number;
+}
+
+export class CreatePurchaseOrderDto {
+  supplier_id: string;
+  expected_date?: string;
+  items: CreatePurchaseOrderItemDto[];
+}
+
+
+
+==================================================================
+FICHIER : inventory\\dto\inventory-filter.dto.ts
+==================================================================
+
+import { IsOptional, IsUUID } from 'class-validator';
+
+export class InventoryFilterDto {
+  @IsOptional()
+  @IsUUID()
+  workspace_id?: string;
+}
+
+
+
+==================================================================
+FICHIER : purchase\\purchase-order.service.ts
+==================================================================
+
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../core/prisma/prisma.service';
+import { PURCHASE_ORDER_STATUS }  from '../../../../../shared/constants/status.constants';
+
+
+@Injectable()
+export class PurchaseOrderService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(workspaceId: string, data: any) {
+    return this.prisma.purchaseOrder.create({
+      data: {
+        workspace_id: workspaceId,
+        supplier_id: data.supplierId,
+        reference: data.reference || `PO-${Date.now()}`,
+        status: PURCHASE_ORDER_STATUS.DRAFT,
+        items: {
+          create: (data.items || []).map((line: any) => ({
+            item_id: line.itemId,
+            quantity: Number(line.quantity),
+            price_buy: Number(line.price_buy),
+            received_quantity: 0
+          })),
+        },
+      },
+      include: {
+        items: { include: { item: true } },
+        supplier: true,
+      },
+    });
+  }
+
+  async findAll(workspaceId: string) {
+    return this.prisma.purchaseOrder.findMany({
+      where: { workspace_id: workspaceId },
+      include: { items: { include: { item: true } }, supplier: true },
+      orderBy: { created_at: 'desc' }
+    });
+  }
+
+  async findOne(workspaceId: string, id: string) {
+    return this.prisma.purchaseOrder.findFirst({
+      where: { id, workspace_id: workspaceId },
+      include: { items: { include: { item: true } }, supplier: true },
+    });
+  }
+}
+
+
+
+==================================================================
+FICHIER : purchase\\purchase-receipt.service.ts
+==================================================================
+
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../../core/prisma/prisma.service';
+import { PURCHASE_ORDER_STATUS, STOCK_MOVEMENT_TYPE } from '../../../../../shared/constants/status.constants';
+
+@Injectable()
+export class PurchaseReceiptService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async createReceipt(workspaceId: string, data: {
+    reference: string; // Numéro de Bon de Livraison
+    purchase_order_id: string;
+    items: { item_id: string; quantity: number }[];
+  }) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Créer le Bon de Réception
+      const receipt = await tx.purchaseReceipt.create({
+        data: {
+          reference: data.reference,
+          workspace_id: workspaceId,
+          purchase_order_id: data.purchase_order_id,
+        },
+      });
+
+      // 2. Traiter chaque article reçu
+      for (const receivedItem of data.items) {
+        // A. Trouver la ligne de commande correspondante
+        const orderLine = await tx.purchaseOrderItem.findFirst({
+          where: {
+            purchase_order_id: data.purchase_order_id,
+            item_id: receivedItem.item_id,
+          },
+        });
+
+        if (!orderLine) throw new BadRequestException(`Article ${receivedItem.item_id} non présent dans la commande.`);
+
+        // B. Mettre à jour la quantité reçue sur la commande
+        await tx.purchaseOrderItem.update({
+          where: { id: orderLine.id },
+          data: { received_quantity: { increment: receivedItem.quantity } },
+        });
+
+        // C. Augmenter le stock réel dans StockItem
+        await tx.stockItem.update({
+          where: { id: receivedItem.item_id },
+          data: { quantity: { increment: receivedItem.quantity } },
+        });
+
+        // D. Créer le mouvement de stock (Historique)
+        await tx.stockMovement.create({
+          data: {
+            workspace_id: workspaceId,
+            item_id: receivedItem.item_id,
+            quantity: receivedItem.quantity,
+            type: STOCK_MOVEMENT_TYPE.IN_PURCHASE,
+          },
+        });
+      }
+
+      // 3. Mettre à jour le statut de la commande (Partiel ou Complet)
+      const fullOrder = await tx.purchaseOrder.findUnique({
+        where: { id: data.purchase_order_id },
+        include: { items: true }
+      });
+
+      const isFullyReceived = fullOrder.items.every(i => i.received_quantity >= i.quantity);
+      
+      await tx.purchaseOrder.update({
+        where: { id: data.purchase_order_id },
+        data: { 
+          status: isFullyReceived ? PURCHASE_ORDER_STATUS.RECEIVED : PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED 
+        }
+      });
+
+      return receipt;
+    });
+  }
+}
+
+
+
+==================================================================
+FICHIER : purchase\\purchase.module.ts
+==================================================================
+
+import { Module } from '@nestjs/common';
+import { PurchaseController } from './purchases.controller';
+import { PurchaseOrderService } from './purchase-order.service'; // 👈 Service 1
+import { PurchaseReceiptService } from './purchase-receipt.service'; // 👈 Service 2
+import { PrismaModule } from '../../core/prisma/prisma.module';
+import { AuthModule } from '../../core/auth/auth.module';
+
+@Module({
+  imports: [
+    PrismaModule, 
+    AuthModule
+  ],
+  controllers: [PurchaseController],
+  providers: [
+    PurchaseOrderService, // 👈 Ajouté
+    PurchaseReceiptService // 👈 Ajouté
+  ],
+  exports: [
+    PurchaseOrderService, 
+    PurchaseReceiptService
+  ],
+})
+export class PurchaseModule {}
+
+
+
+==================================================================
+FICHIER : purchase\\purchases.controller.ts
+==================================================================
+
+import { Controller, Get, Post, Body, Param, Headers, UseGuards } from '@nestjs/common';
+import { PurchaseOrderService } from './purchase-order.service';
+import { PurchaseReceiptService } from './purchase-receipt.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto'; // 👈 Import ajouté
+import { CreatePurchaseReceiptDto } from './dto/create-purchase-receipt.dto'; // 👈 Import ajouté
+
+@Controller('purchases')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
+export class PurchaseController {
+  constructor(
+    private readonly poService: PurchaseOrderService,
+    private readonly receiptService: PurchaseReceiptService
+  ) {}
+
+  /**
+   * Lister toutes les commandes fournisseur (PO)
+   */
+  @Get('orders')
+  findAll(@Headers('x-workspace-id') workspaceId: string) {
+    return this.poService.findAll(workspaceId);
+  }
+
+  /**
+   * Récupérer une commande spécifique
+   */
+  @Get('orders/:id')
+  findOne(
+    @Headers('x-workspace-id') workspaceId: string, 
+    @Param('id') id: string
+  ) {
+    return this.poService.findOne(workspaceId, id);
+  }
+
+  /**
+   * Créer un nouveau bon de commande (DRAFT)
+   */
+  @Post('orders')
+  createOrder(
+    @Headers('x-workspace-id') workspaceId: string, 
+    @Body() dto: CreatePurchaseOrderDto // 👈 Type sécurisé
+  ) {
+    return this.poService.create(workspaceId, dto);
+  }
+
+  /**
+   * Enregistrer une réception de marchandise (Mise à jour du stock)
+   */
+  @Post('receipts')
+  createReceipt(
+    @Headers('x-workspace-id') workspaceId: string, 
+    @Body() dto: CreatePurchaseReceiptDto // 👈 Type sécurisé
+  ) {
+    return this.receiptService.createReceipt(workspaceId, dto);
+  }
+}
+
+
+
+==================================================================
+FICHIER : purchase\\dto\create-purchase-order.dto.ts
+==================================================================
+
+import { IsArray, IsNotEmpty, IsNumber, IsString, ValidateNested, IsUUID, ArrayMinSize } from 'class-validator';
+import { Type } from 'class-transformer';
+
+class PurchaseOrderItemDto {
+  @IsString()
+  @IsNotEmpty()
+  itemId: string; // Aligné sur le schéma
+
+  @IsNumber()
+  quantity: number;
+
+  @IsNumber()
+  price_buy: number; // Prix d'achat convenu
+}
+
+export class CreatePurchaseOrderDto {
+  @IsString()
+  @IsNotEmpty()
+  supplierId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  reference: string;
+
+  @IsArray()
+  @ArrayMinSize(1, { message: "La commande doit contenir au moins un article." })
+  @ValidateNested({ each: true })
+  @Type(() => PurchaseOrderItemDto)
+  items: PurchaseOrderItemDto[]; // On utilise 'items' au lieu de 'lines'
+}
+
+
+
+==================================================================
+FICHIER : purchase\\dto\create-purchase-receipt.dto.ts
+==================================================================
+
+import { 
+  IsArray, 
+  IsNotEmpty, 
+  IsString, 
+  IsUUID, 
+  IsNumber, // 👈 C'était lui l'oubli !
+  ValidateNested, 
+  ArrayMinSize 
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+class ReceiptLineDto {
+  @IsString()
+  @IsNotEmpty()
+  itemId: string;
+
+  @IsNumber()
+  @IsNotEmpty()
+  quantity: number;
+}
+
+export class CreatePurchaseReceiptDto {
+  @IsUUID()
+  purchaseOrderId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  reference: string; // Numéro de BL / Référence de réception
+
+  @IsArray()
+  @ArrayMinSize(1)
+  @ValidateNested({ each: true })
+  @Type(() => ReceiptLineDto)
+  items: ReceiptLineDto[];
+}
+
+
+
+==================================================================
+FIN DE L'EXPORT - 15 fichiers export�s
+==================================================================

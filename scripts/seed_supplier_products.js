@@ -1,4 +1,4 @@
-﻿const { PrismaClient } = require('@prisma/client');
+const { PrismaClient } = require('@prisma/client');
 const p = new PrismaClient();
 const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 

@@ -1,18 +1,10 @@
+'use client';
+
 import { useState } from "react";
-import { EmptyState } from '../components/ui/empty-state';
-import { Tabs } from '../components/ui/tabs';
-import { Alert } from '../components/ui/alert';
-import { TextareaField } from '../components/ui/textarea-field';
-import { SelectField } from '../components/ui/select-field';
-import { ResponsiveGrid } from '../components/ui/responsive-grid';
-import { DataTable } from '../components/ui/data-table';
-import { DateField } from '../components/ui/date-field';
-import { TextField } from '../components/ui/text-field';
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 
 const API_BASE = "http://localhost:4000";
-const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -31,24 +23,50 @@ export default function LoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          password,
-          workspaceId: WORKSPACE_ID,
+          email: email.trim(),
+          password: password.trim(),
         }),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        login(data.accessToken, data.refreshToken);
-      } else {
-        setError(data.message || "Identifiants ou Workspace invalides");
+      let data;
+      try {
+        data = await res.json();
+      } catch {
+        setError("Réponse invalide du serveur.");
+        setLoading(false);
+        return;
       }
+
+      if (!res.ok) {
+        setError(data?.message || "Identifiants incorrects.");
+        setLoading(false);
+        return;
+      }
+
+      if (!data.access_token || !data.user) {
+        setError("Réponse invalide du serveur.");
+        setLoading(false);
+        return;
+      }
+
+      // 🔥 CORRECTION CRITIQUE : clé cohérente avec lib/api.ts
+      localStorage.setItem("access_token", data.access_token);
+
+      // 🔥 Stockage du workspace multi-tenant
+      const workspaceId = data.user?.memberships?.[0]?.workspaceId;
+      if (workspaceId) {
+        localStorage.setItem("current_workspace_id", workspaceId);
+      }
+
+      // 🔥 Mise à jour du contexte Auth
+      login(data.access_token, data.user);
+
+      // 🔥 Redirection
+      window.location.href = "/dashboard";
+
     } catch (err) {
-      console.error("Login error:", err);
-      setError(
-        "Impossible de joindre le serveur (VÃƒÆ’Ã‚Â©rifiez que le backend sur le port 4000 est lancÃƒÆ’Ã‚Â©)",
-      );
+      console.error("Erreur login:", err);
+      setError("Impossible de joindre le serveur.");
     } finally {
       setLoading(false);
     }
@@ -90,7 +108,7 @@ export default function LoginPage() {
           </label>
           <input
             type="password"
-            placeholder="ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¢"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -109,5 +127,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-

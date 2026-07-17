@@ -1,11 +1,3 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-@layer base {
-  body {
-    background-color: oklch(0.98 0 0);
-    color: oklch(0.22 0 0);
-    margin: 0;
-  }
-}
+@import "tailwindcss";
+/* Tes styles personnalisés ici */
+:root { --radius-2xl: 2rem; --card-spacing: 1rem; }

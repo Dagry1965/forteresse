@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Facturation mensuelle</title>
+
+  <style>
+    * { box-sizing: border-box; font-family: Arial, sans-serif; }
+    body { margin: 0; padding: 0; background: #f3f4f6; color: #111827; font-size: 12px; }
+    .page { width: 210mm; min-height: 297mm; padding: 20mm; margin: 0 auto; background: #ffffff; position: relative; }
+
+    .header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+    .header-left h1 { font-size: 22px; margin: 0; text-transform: uppercase; letter-spacing: 2px; }
+    .header-left p { margin: 2px 0; font-size: 11px; color: #6b7280; }
+
+    .header-right { text-align: right; font-size: 11px; }
+    .header-right h2 { margin: 0 0 5px 0; font-size: 16px; }
+
+    .section-title { font-size: 13px; font-weight: 600; margin: 20px 0 8px 0; text-transform: uppercase; letter-spacing: 1px; color: #374151; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+    th, td { border: 1px solid #e5e7eb; padding: 6px; text-align: left; }
+    th { background: #f9fafb; font-weight: 600; }
+
+    .totals { margin-top: 20px; width: 40%; margin-left: auto; font-size: 11px; }
+    .totals-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+    .totals-row.total { font-weight: 700; font-size: 12px; border-top: 1px solid #e5e7eb; padding-top: 4px; }
+
+    .footer { position: absolute; bottom: 15mm; left: 20mm; right: 20mm; font-size: 9px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 6px; display: flex; justify-content: space-between; }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <h1>Garage Nova</h1>
+        <p>Rue du Garage 12</p>
+        <p>1000 Lausanne</p>
+        <p>Tél : +41 21 000 00 00</p>
+      </div>
+
+      <div class="header-right">
+        <h2>FACTURATION MENSUELLE</h2>
+        <p><b>Période :</b> {{periodLabel}}</p>
+        <p><b>Entreprise :</b> {{company.name}}</p>
+      </div>
+    </div>
+
+    <!-- TABLEAU DES FACTURES -->
+    <div class="section-title">Détail des interventions facturées</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Facture</th>
+          <th>Date</th>
+          <th>Véhicule</th>
+          <th>Intervention</th>
+          <th>Total TTC (CHF)</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each invoices}}
+        <tr>
+          <td>{{this.id}}</td>
+          <td>{{formatDate this.createdAt}}</td>
+          <td>{{this.vehicle.make}} {{this.vehicle.model}} ({{this.vehicle.plateNumber}})</td>
+          <td>{{this.interventionId}}</td>
+          <td>{{formatMoney this.totalTTC}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <!-- TOTAUX -->
+    <div class="totals">
+      <div class="totals-row">
+        <span>Nombre d'interventions</span>
+        <span>{{count}}</span>
+      </div>
+
+      <div class="totals-row total">
+        <span>Total TTC</span>
+        <span>{{formatMoney total}} CHF</span>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <span>Garage Nova — IBAN CHxx xxxx xxxx xxxx — TVA CHE-xxx.xxx.xxx</span>
+      <span>Document généré automatiquement</span>
+    </div>
+
+  </div>
+</body>
+</html>

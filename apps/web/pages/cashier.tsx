@@ -1,230 +1,132 @@
-import React, { useEffect, useState } from "react";
-import { EmptyState } from '../components/ui/empty-state';
-import { Tabs } from '../components/ui/tabs';
-import { Alert } from '../components/ui/alert';
-import { TextareaField } from '../components/ui/textarea-field';
-import { SelectField } from '../components/ui/select-field';
-import { ResponsiveGrid } from '../components/ui/responsive-grid';
-import { DataTable } from '../components/ui/data-table';
-import { DateField } from '../components/ui/date-field';
-import { TextField } from '../components/ui/text-field';
-import { useAuth } from "../context/AuthContext";
-import { Modal } from "../components/ui/modal";
-import { Button } from "../components/ui/button";
+'use client';
 
-// Configuration API
-const API_BASE = "http://localhost:4000/api";
-const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { financeService } from "@/services/financeService";
+import { Button } from "../components/ui/button";
+import { Card } from "../components/ui/card";
+import { RefreshCcw } from "lucide-react";
+import { normalizeList } from "@/utils/normalize";
 
 export default function CashierPage() {
   const { token, logout } = useAuth();
   const [invoices, setInvoices] = useState<any[]>([]);
-  const [message, setMessage] = useState<{ text: string; type: string }>({
-    text: "",
-    type: "",
-  });
   const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState({ text: "", type: "" });
 
-  // ÃƒÆ’Ã¢â‚¬Â°tats pour le Modal d'encaissement
+  // Modal
   const [isModalOpen, setModalOpen] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const [amountToPay, setAmountToPay] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<
-    "carte" | "espÃƒÆ’Ã‚Â¨ces" | "virement"
-  >("carte");
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [amountToPay, setAmountToPay] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<"carte" | "espèces" | "virement">("carte");
 
-  // Charger les factures impayÃƒÆ’Ã‚Â©es
   const loadInvoices = async () => {
-    if (!token) return;
-    setLoading(true);
-
     try {
-      const res = await fetch(
-        `${API_BASE}/finance/unpaid?workspaceId=${WORKSPACE_ID}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "x-workspace-id": WORKSPACE_ID,
-          },
-        }
-      );
+      setLoading(true);
+      const data = await financeService.getUnpaidInvoices();
 
-      if (res.status === 401) {
-        logout();
-        return;
-      }
-
-      const data = await res.json();
-      setInvoices(Array.isArray(data) ? data : []);
+      // 🔥 Correction définitive : normalisation
+      setInvoices(normalizeList(data));
     } catch (err) {
       console.error("Erreur chargement factures", err);
-      setMessage({
-        text: "Erreur lors du chargement des factures",
-        type: "error",
-      });
+      if ((err as any)?.status === 401) logout();
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadInvoices();
+  React.useEffect(() => {
+    if (token) loadInvoices();
   }, [token]);
 
-  // Ouvrir la fenÃƒÆ’Ã‚Âªtre modale
-  const openPaymentModal = (invoice: any, remains: number) => {
+  const openPaymentModal = (invoice: any, remain: number) => {
     setSelectedInvoice(invoice);
-    setAmountToPay(remains);
-    setPaymentMethod("carte"); // MÃƒÆ’Ã‚Â©thode par dÃƒÆ’Ã‚Â©faut
+    setAmountToPay(remain);
+    setPaymentMethod("carte");
     setModalOpen(true);
   };
 
-  // Enregistrer le paiement via le Modal
   const processPayment = async () => {
     if (!selectedInvoice) return;
 
-    setIsProcessing(true);
-    setMessage({ text: "", type: "" });
-
     try {
-      const res = await fetch(`${API_BASE}/finance/payments`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          invoice_id: selectedInvoice.id,
-          workspaceId: WORKSPACE_ID,
-          amount: Number(amountToPay),
-          method: paymentMethod,
-        }),
+      await financeService.createPayment({
+        invoice_id: selectedInvoice.id,
+        amount: Number(amountToPay),
+        method: paymentMethod,
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage({
-          text: `ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Paiement de ${amountToPay}ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ encaissÃƒÆ’Ã‚Â© par ${paymentMethod} !`,
-          type: "success",
-        });
-        setModalOpen(false);
-        loadInvoices();
-      } else {
-        alert(data.message || "Erreur lors du paiement");
-      }
+      setMessage({
+        text: `Paiement de ${amountToPay}€ encaissé par ${paymentMethod} !`,
+        type: "success",
+      });
+      setModalOpen(false);
+      loadInvoices();
     } catch (err) {
-      alert("Erreur de connexion au serveur");
-    } finally {
-      setIsProcessing(false);
+      alert("Erreur lors du paiement");
     }
   };
 
-  if (!token) {
-    return (
-      <p className="p-6 text-slate-600">Chargement de la session...</p>
-    );
-  }
+  if (!token) return null;
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto font-sans">
-      {/* HEADER */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="m-0 text-2xl sm:text-3xl font-bold text-slate-900">
-          ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¦ Caisse & Encaissements
-        </h1>
-        <Button variant="secondary" onClick={loadInvoices} className="rounded-xl">
-          ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Actualiser
-        </Button>
+    <div className="flex flex-col gap-10 p-10">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-[oklch(0.22_0_0)] lowercase">
+            Caisse & Encaissements
+          </h1>
+          <p className="text-[oklch(0.45_0_0)]">Suivi des règlements clients</p>
+        </div>
+        <button onClick={loadInvoices} className="p-3 rounded-full border hover:bg-gray-100">
+          <RefreshCcw className={`w-5 h-5 ${loading ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
-      {/* MESSAGES */}
       {message.text && (
-        <div
-          className={[
-            "mb-5 rounded-lg border px-4 py-3 font-semibold",
-            message.type === "success"
-              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-              : "bg-red-50 border-red-200 text-red-700",
-          ].join(" ")}
-        >
+        <div className={`p-4 rounded-2xl ${message.type === "success" ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
           {message.text}
         </div>
       )}
 
-      {/* TABLEAU */}
       {loading ? (
-        <p className="text-slate-500">Analyse des factures en cours...</p>
-      ) : invoices.length === 0 ? (
-        <div className="p-10 text-center bg-white rounded-xl shadow-sm">
-          <p className="text-lg text-slate-500 m-0">
-            Toutes les factures sont rÃƒÆ’Ã‚Â©glÃƒÆ’Ã‚Â©es. Excellent travail !
-          </p>
-        </div>
+        <div className="text-center py-20">Chargement...</div>
+      ) : normalizeList(invoices).length === 0 ? (
+        <Card className="p-20 text-center">Toutes les factures sont réglées.</Card>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
-          <table className="w-full border-collapse">
-            <thead className="bg-slate-50 border-b border-slate-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-medium text-slate-600">
-                  Client / VÃƒÆ’Ã‚Â©hicule
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-slate-600">
-                  Total Facture
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-slate-600">
-                  DÃƒÆ’Ã‚Â©jÃƒÆ’Ã‚Â  payÃƒÆ’Ã‚Â©
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-slate-600">
-                  Reste ÃƒÆ’Ã‚Â  payer
-                </th>
-                <th className="px-4 py-3 text-center text-sm font-medium text-slate-600">
-                  Action
-                </th>
+        <div className="bg-white rounded-3xl shadow-sm border p-4">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="px-6 py-4 text-left text-xs font-bold text-[oklch(0.45_0_0)]">Client / Véhicule</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-[oklch(0.45_0_0)]">Total</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-[oklch(0.45_0_0)]">Déjà payé</th>
+                <th className="px-6 py-4 text-right text-xs font-bold text-[oklch(0.45_0_0)]">Reste</th>
+                <th className="px-6 py-4 text-center text-xs font-bold text-[oklch(0.45_0_0)]">Action</th>
               </tr>
             </thead>
             <tbody>
-              {invoices.map((inv) => {
+              {normalizeList(invoices).map((inv) => {
                 const total = inv.proforma?.total_amount || 0;
                 const paid = inv.total_paid || 0;
                 const remain = total - paid;
 
                 return (
-                  <tr
-                    key={inv.id}
-                    className="border-b last:border-none border-slate-100"
-                  >
-                    <td className="px-4 py-4 align-top">
-                      <div className="font-semibold text-slate-900 text-sm">
-                        {inv.proforma?.intervention?.appointment?.vehicle?.client
-                          ?.name || "Client Inconnu"}
+                  <tr key={inv.id} className="border-b hover:bg-[oklch(0.99_0_0)]">
+                    <td className="px-6 py-5">
+                      <div className="font-bold">
+                        {inv.proforma?.intervention?.appointment?.vehicle?.client?.name}
                       </div>
-                      <div className="mt-1 text-xs text-slate-500">
+                      <div className="text-xs text-[oklch(0.45_0_0)]">
                         {inv.proforma?.intervention?.appointment?.vehicle?.make}{" "}
-                        {inv.proforma?.intervention?.appointment?.vehicle?.model}{" "}
-                        (
-                        {
-                          inv.proforma?.intervention?.appointment?.vehicle
-                            ?.plateNumber
-                        }
-                        )
+                        {inv.proforma?.intervention?.appointment?.vehicle?.model}
                       </div>
                     </td>
-                    <td className="px-4 py-4 text-right text-sm text-slate-700">
-                      {total.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-                    </td>
-                    <td className="px-4 py-4 text-right text-sm text-emerald-600 font-medium">
-                      {paid.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-                    </td>
-                    <td className="px-4 py-4 text-right text-red-500 font-bold text-lg">
-                      {remain.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-                    </td>
-                    <td className="px-4 py-4 text-center">
-                      <Button
-                        variant="success"
-                        onClick={() => openPaymentModal(inv, remain)}
-                      >
+                    <td className="px-6 py-5 text-right font-medium">{total.toFixed(2)} €</td>
+                    <td className="px-6 py-5 text-right text-emerald-600">{paid.toFixed(2)} €</td>
+                    <td className="px-6 py-5 text-right text-red-500 font-bold text-lg">{remain.toFixed(2)} €</td>
+                    <td className="px-6 py-5 text-center">
+                      <Button onClick={() => openPaymentModal(inv, remain)}>
                         Encaisser
                       </Button>
                     </td>
@@ -236,85 +138,46 @@ export default function CashierPage() {
         </div>
       )}
 
-      {/* MODAL D'ENCAISSEMENT */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        title={
-          selectedInvoice
-            ? `Encaissement - Facture #${selectedInvoice.id.substring(0, 8)}`
-            : "Encaissement"
-        }
-        footer={
-          <>
-            <Button
-              variant="secondary"
-              onClick={() => setModalOpen(false)}
-              disabled={isProcessing}
-            >
-              Annuler
-            </Button>
-            <Button
-              variant="primary"
-              isLoading={isProcessing}
-              onClick={processPayment}
-            >
-              Valider le paiement
-            </Button>
-          </>
-        }
-      >
-        <div className="mb-4">
-          <label className="block mb-2 font-semibold text-slate-700">
-            Montant reÃƒÆ’Ã‚Â§u (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬)
-          </label>
-          <input
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={amountToPay}
-            onChange={(e) => setAmountToPay(Number(e.target.value))}
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-        </div>
+      {/* MODAL DE PAIEMENT */}
+      {isModalOpen && selectedInvoice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded-3xl w-full max-w-md">
+            <h2 className="text-xl font-bold mb-6">Encaisser Facture</h2>
 
-        <div className="mb-4">
-          <label className="block mb-2 font-semibold text-slate-700">
-            Moyen de paiement
-          </label>
-          <select
-            value={paymentMethod}
-            onChange={(e) =>
-              setPaymentMethod(e.target.value as "carte" | "espÃƒÆ’Ã‚Â¨ces" | "virement")
-            }
-            className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-          >
-            <option value="carte">ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Â³ Carte Bancaire</option>
-            <option value="espÃƒÆ’Ã‚Â¨ces">ÃƒÂ°Ã…Â¸Ã¢â‚¬â„¢Ã‚Âµ EspÃƒÆ’Ã‚Â¨ces</option>
-            <option value="virement">ÃƒÂ°Ã…Â¸Ã‚ÂÃ‚Â¦ Virement</option>
-          </select>
-        </div>
+            <div className="mb-4">
+              <label className="text-sm font-bold">Montant reçu</label>
+              <input
+                type="number"
+                value={amountToPay}
+                onChange={(e) => setAmountToPay(Number(e.target.value))}
+                className="w-full mt-1 border rounded-2xl px-4 py-3 text-2xl font-bold"
+              />
+            </div>
 
-        <div className="px-3 py-2 bg-slate-50 rounded-lg text-sm text-slate-600">
-          Le solde restant dÃƒÆ’Ã‚Â» pour ce client est de{" "}
-          <strong className="text-red-500">
-            {selectedInvoice
-              ? (
-                  selectedInvoice.proforma.total_amount -
-                  selectedInvoice.total_paid
-                ).toFixed(2)
-              : 0}{" "}
-            ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-          </strong>
-          .
+            <div className="mb-6">
+              <label className="text-sm font-bold">Moyen de paiement</label>
+              <select
+                value={paymentMethod}
+                onChange={(e) => setPaymentMethod(e.target.value as any)}
+                className="w-full mt-1 border rounded-2xl px-4 py-3"
+              >
+                <option value="carte">Carte bancaire</option>
+                <option value="espèces">Espèces</option>
+                <option value="virement">Virement</option>
+              </select>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setModalOpen(false)} className="flex-1">
+                Annuler
+              </Button>
+              <Button onClick={processPayment} className="flex-1">
+                Valider le paiement
+              </Button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
     </div>
   );
 }
-
-
-
-
-
-

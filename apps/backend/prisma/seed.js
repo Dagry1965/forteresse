@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("Démarrage du seed...");
+  console.log("DÃ©marrage du seed...");
   
   const admin = await prisma.user.upsert({
     where: { email: 'admin@forteresse.local' },
@@ -27,7 +27,7 @@ async function main() {
     }
   });
 
-  console.log("Seed terminé avec succès !");
+  console.log("Seed terminÃ© avec succÃ¨s !");
   console.log("Admin ID:", admin.id);
   console.log("Workspace ID:", workspace.id);
 }
@@ -40,3 +40,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

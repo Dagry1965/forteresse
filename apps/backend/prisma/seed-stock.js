@@ -2,16 +2,16 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('📦 Démarrage du Seed de Stock...');
+  console.log('ðŸ“¦ DÃ©marrage du Seed de Stock...');
 
-  // 1. Récupérer le Workspace existant
+  // 1. RÃ©cupÃ©rer le Workspace existant
   const workspace = await prisma.workspace.findFirst();
   if (!workspace) {
-    console.error("❌ Aucun Workspace trouvé. Lance d'abord le seed-full-cycle.js");
+    console.error("âŒ Aucun Workspace trouvÃ©. Lance d'abord le seed-full-cycle.js");
     return;
   }
 
-  // 2. Créer un Fournisseur
+  // 2. CrÃ©er un Fournisseur
   const supplier = await prisma.supplier.create({
     data: {
       workspaceId: workspace.id,
@@ -21,21 +21,21 @@ async function main() {
     }
   });
 
-  console.log(`✅ Fournisseur créé : ${supplier.name}`);
+  console.log(`âœ… Fournisseur crÃ©Ã© : ${supplier.name}`);
 
-  // 3. Créer des Produits (Catalogue)
+  // 3. CrÃ©er des Produits (Catalogue)
   const product1 = await prisma.product.create({
     data: {
       workspaceId: workspace.id,
       supplier_id: supplier.id,
       reference: 'FILT-HUILE-001',
-      name: 'Filtre à Huile Premium',
+      name: 'Filtre Ã  Huile Premium',
       purchase_price: 5.50,
       selling_price: 15.00,
       min_stock_alert: 5
     }
   });
-  // Initialiser l'inventaire à 0
+  // Initialiser l'inventaire Ã  0
   await prisma.inventory.create({ data: { product_id: product1.id, quantity: 0 } });
 
   const product2 = await prisma.product.create({
@@ -51,9 +51,9 @@ async function main() {
   });
   await prisma.inventory.create({ data: { product_id: product2.id, quantity: 0 } });
 
-  console.log(`✅ Produits créés : ${product1.name}, ${product2.name}`);
+  console.log(`âœ… Produits crÃ©Ã©s : ${product1.name}, ${product2.name}`);
 
-  // 4. Faire des Entrées en Stock (Mouvements)
+  // 4. Faire des EntrÃ©es en Stock (Mouvements)
   await prisma.$transaction([
     prisma.stockMovement.create({
       data: {
@@ -86,8 +86,8 @@ async function main() {
     })
   ]);
 
-  console.log(`✅ Stock mis à jour !`);
-  console.log(`ℹ️ Tu devrais avoir une alerte de stock sur les plaquettes (Quantité: 2, Alerte: 3).`);
+  console.log(`âœ… Stock mis Ã  jour !`);
+  console.log(`â„¹ï¸ Tu devrais avoir une alerte de stock sur les plaquettes (QuantitÃ©: 2, Alerte: 3).`);
 }
 
 main()
@@ -98,3 +98,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

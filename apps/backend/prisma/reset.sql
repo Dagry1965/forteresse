@@ -1,0 +1,51 @@
+PRAGMA foreign_keys = OFF;
+
+-- INTERVENTIONS
+DELETE FROM InterventionPart;
+DELETE FROM Intervention;
+
+-- INVENTORY
+DELETE FROM InventoryItem;
+DELETE FROM Inventory;
+
+-- STOCK
+DELETE FROM StockReception;
+DELETE FROM StockMovement;
+DELETE FROM StockItem;
+DELETE FROM StockCategory;
+
+-- PURCHASE ORDERS
+DELETE FROM PurchaseReceipt;
+DELETE FROM PurchaseOrderItem;
+DELETE FROM PurchaseOrder;
+
+-- PAYMENTS & BILLING
+DELETE FROM InvoicePayment;
+DELETE FROM Payment;
+DELETE FROM Invoice;
+DELETE FROM Proforma;
+
+-- APPOINTMENTS
+DELETE FROM Appointment;
+
+-- VEHICLES & CLIENTS
+DELETE FROM Vehicle;
+DELETE FROM Client;
+
+-- TIMESLOTS
+DELETE FROM TimeSlot;
+
+-- SUPPLIERS
+DELETE FROM Supplier;
+
+-- REFRESH TOKENS
+DELETE FROM RefreshToken;
+
+-- WORKSPACE MEMBERS & USERS
+DELETE FROM WorkspaceMember;
+DELETE FROM User;
+
+-- WORKSPACES
+DELETE FROM Workspace;
+
+PRAGMA foreign_keys = ON;

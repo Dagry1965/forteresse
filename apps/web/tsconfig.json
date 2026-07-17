@@ -3,7 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+       "@shared/*": ["../../packages/shared/*"]
     },
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],

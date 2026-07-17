@@ -1,0 +1,88 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
+
+import { InventoryService } from './inventory.service';
+import { PurchaseOrderService } from './purchase-order.service';
+import { PurchaseReceiptService } from './purchase-receipt.service';
+import { StockService } from './stock.service';
+
+import { InventoryFilterDto } from './dto/inventory-filter.dto';
+
+@Controller('inventory')
+export class InventoryController {
+  constructor(
+    private readonly purchaseOrderService: PurchaseOrderService,
+    private readonly purchaseReceiptService: PurchaseReceiptService,
+    private readonly stockService: StockService,
+    private readonly inventoryService: InventoryService,
+  ) {}
+
+  /**
+   * Lister les produits du stock.
+   */
+  @Get('products')
+  async listProducts(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Query() filter: InventoryFilterDto,
+  ) {
+    return this.inventoryService.listProducts({
+      ...filter,
+      workspace_id: workspaceId,
+    });
+  }
+
+  /**
+   * Générer automatiquement une commande depuis une alerte de stock.
+   */
+  @Post('products/:itemId/auto-purchase')
+  async autoGeneratePurchase(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('itemId') itemId: string,
+  ) {
+    return this.inventoryService.autoGeneratePurchase(
+      workspaceId,
+      itemId,
+    );
+  }
+
+  /**
+   * Enregistrer une réception fournisseur.
+   */
+  @Post('receipts')
+  async createReceipt(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() data: any,
+  ) {
+    return this.purchaseReceiptService.createReceipt(
+      workspaceId,
+      data,
+    );
+  }
+
+  /**
+   * Lister les réceptions.
+   */
+  @Get('receipts')
+  async findAllReceipts(
+    @Headers('x-workspace-id') workspaceId: string,
+  ) {
+    return this.purchaseReceiptService.findAll(workspaceId);
+  }
+
+@Post('purchases/auto-generate')
+async autoGeneratePurchaseFromAlert(
+  @Headers('x-workspace-id') workspaceId: string,
+  @Body('itemId') itemId: string,
+) {
+  return this.inventoryService.autoGeneratePurchase(workspaceId, itemId);
+}
+
+
+}

@@ -1,23 +1,28 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { AppModule } from './app.module';
+import { WorkspaceInterceptor } from './core/common/workspace.interceptor';
 import * as dotenv from 'dotenv';
+
 dotenv.config();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 🔥 Ajout du prefix global pour garder les routes /api/... côté frontend
+  // Préfixe global (important pour le frontend)
   app.setGlobalPrefix('api');
 
-  // CORS OK
+  // Intercepteur Multi-tenant
+  app.useGlobalInterceptors(new WorkspaceInterceptor());
+
+  // CORS
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
-  // Validation + formatage des erreurs
+  // Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -35,7 +40,27 @@ async function bootstrap() {
 
   const port = process.env.APP_PORT || '4000';
   await app.listen(Number(port));
-  console.log(`Backend listening on ${port}`);
+
+  console.log(`🚀 Forteresse ERP Backend listening on port ${port}`);
+  console.log(`🛡️  Multi-tenant Interceptor active`);
+
+  // =============================================
+  // ✅ LOG DES ROUTES (à enlever après debug)
+  // =============================================
+  const server = app.getHttpAdapter().getInstance();
+  const router = server._router || server.router;
+
+  const routes = router.stack
+    .filter((layer: any) => layer.route)
+    .map((layer: any) => {
+      const method = Object.keys(layer.route.methods)[0].toUpperCase();
+      return `${method} ${layer.route.path}`;
+    });
+
+  console.log('\n=== 📍 Routes disponibles ===');
+  routes.forEach((route: string) => console.log(route));
+  console.log('================================\n');
+  // =============================================
 }
 
 bootstrap();

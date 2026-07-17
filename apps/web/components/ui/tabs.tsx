@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 
 interface Tab {
   label: string;
@@ -15,17 +15,28 @@ export const Tabs = ({ tabs, defaultIndex = 0 }: TabsProps) => {
 
   return (
     <div>
-      <div className="flex border-b border-[oklch(0.92_0_0)] mb-6">
-        {tabs.map((tab, index) => (
-          <button
-            key={index}
-            onClick={() => setActiveIndex(index)}
-            className={\px-6 py-3 text-sm font-semibold transition-all \\}
-          >
-            {tab.label}
-          </button>
-        ))}
+      <div className="mb-6 flex border-b border-[oklch(0.92_0_0)]">
+        {tabs.map((tab, index) => {
+          const isActive = activeIndex === index;
+
+          return (
+            <button
+              key={`${tab.label}-${index}`}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              className={[
+                "px-6 py-3 text-sm font-semibold transition-all",
+                isActive
+                  ? "border-b-2 border-black text-black"
+                  : "text-gray-500 hover:text-black",
+              ].join(" ")}
+            >
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
+
       <div>{tabs[activeIndex]?.content}</div>
     </div>
   );

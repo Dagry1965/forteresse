@@ -15,8 +15,7 @@
   },
   "pnpm": {
     "overrides": {
-      "tailwindcss": "3.4.17",
-      "@tailwindcss/postcss": "3.4.17"
+           "typescript": "5.4.5"
     }
   }
 }

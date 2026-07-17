@@ -1,18 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { EmptyState } from '../components/ui/empty-state';
-import { Tabs } from '../components/ui/tabs';
-import { Alert } from '../components/ui/alert';
-import { TextareaField } from '../components/ui/textarea-field';
-import { SelectField } from '../components/ui/select-field';
-import { ResponsiveGrid } from '../components/ui/responsive-grid';
-import { DataTable } from '../components/ui/data-table';
-import { DateField } from '../components/ui/date-field';
-import { TextField } from '../components/ui/text-field';
-import { useRouter } from 'next/router';
-import { apiFetch } from '../utils/api';
-import { useAuth } from '../context/AuthContext';
+'use client';
 
-const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import { useAuth } from '../context/AuthContext';
+import { proformaService } from '@/services/proformaService';
+import { workshopService } from '@/services/workshopService';
+import { stockService } from '@/services/stockService';
+import { Button } from '../components/ui/button';
+import Section from '../components/section';
 
 export default function CreateProforma() {
   const { token } = useAuth();
@@ -23,28 +18,20 @@ export default function CreateProforma() {
   const [interventions, setInterventions] = useState<any[]>([]);
   const [interventionId, setInterventionId] = useState("");
   const [selectedLines, setSelectedLines] = useState<any[]>([]);
+  const [laborPrice, setLaborPrice] = useState(0);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(true);
-
-  // Pour la main d'oeuvre
-  const [laborPrice, setLaborPrice] = useState(0);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // 1. Charger les produits (Catalogue)
-      const resP = await apiFetch(`/api/inventory/products?workspaceId=${WORKSPACE_ID}`);
-      const dataP = await resP.json();
-      setProducts(Array.isArray(dataP) ? dataP : []);
-      
-      // 2. Charger les interventions ÃƒÆ’Ã‚Â  l'atelier
-      const resI = await apiFetch(`/api/interventions?workspaceId=${WORKSPACE_ID}`);
-      const dataI = await resI.json();
-      setInterventions(Array.isArray(dataI) ? dataI : []);
+      const prods = await stockService.getAll();
+      const intervs = await workshopService.getAll();
 
-      // Si on arrive depuis la page Atelier avec un ID d'intervention
+      setProducts(prods || []);
+      setInterventions(intervs || []);
+
       if (queryInterventionId) setInterventionId(queryInterventionId);
-
     } catch (err) {
       console.error("Erreur chargement", err);
     } finally {
@@ -56,170 +43,162 @@ export default function CreateProforma() {
     if (token && router.isReady) loadData();
   }, [token, router.isReady, queryInterventionId]);
 
-  const addLine = (p: any) => {
-    setSelectedLines([...selectedLines, { 
-        product_id: p.id, 
-        name: p.name, 
-        quantity: 1, 
-        price: Number(p.selling_price) 
-    }]);
+  const addLine = (product: any) => {
+    setSelectedLines([
+      ...selectedLines,
+      {
+        product_id: product.id,
+        name: product.name,
+        quantity: 1,
+        price: Number(product.selling_price),
+      },
+    ]);
   };
 
   const addLabor = () => {
     if (laborPrice <= 0) return;
-    setSelectedLines([...selectedLines, { 
-        product_id: null, 
-        name: "Main d'Ãƒâ€¦Ã¢â‚¬Å“uvre", 
-        quantity: 1, 
-        price: Number(laborPrice) 
-    }]);
+    setSelectedLines([
+      ...selectedLines,
+      {
+        product_id: null,
+        name: "Main d'œuvre",
+        quantity: 1,
+        price: Number(laborPrice),
+      },
+    ]);
     setLaborPrice(0);
   };
 
+  const removeLine = (index: number) => {
+    setSelectedLines(selectedLines.filter((_, i) => i !== index));
+  };
+
   const calculateTotal = () => {
-    return selectedLines.reduce((sum, l) => sum + (l.quantity * l.price), 0);
+    return selectedLines.reduce((sum, line) => sum + line.quantity * line.price, 0);
   };
 
   const submitProforma = async () => {
-    if (!interventionId) return alert("Veuillez sÃƒÆ’Ã‚Â©lectionner une intervention.");
+    if (!interventionId) return alert("Veuillez sélectionner une intervention.");
     if (selectedLines.length === 0) return alert("Le devis est vide.");
-    
+
     const payload = {
-      workspaceId: WORKSPACE_ID,
-      intervention_id: interventionId, // Doit correspondre au DTO Backend
-      lines: selectedLines.map(l => ({ 
-        product_id: l.product_id, 
-        description: l.name, 
-        quantity: l.quantity, 
-        unit_price: l.price 
-      }))
+      intervention_id: interventionId,
+      lines: selectedLines.map((line) => ({
+        product_id: line.product_id,
+        description: line.name,
+        quantity: line.quantity,
+        unit_price: line.price,
+      })),
     };
 
     try {
-        const res = await apiFetch('/api/proformas', {
-            method: 'POST',
-            body: JSON.stringify(payload)
-        });
-
-        if (res.ok) {
-            setMessage({ text: "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Devis gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â© avec succÃƒÆ’Ã‚Â¨s !", type: "success" });
-            setSelectedLines([]);
-            setTimeout(() => router.push('/workshop'), 1500);
-        } else {
-            const err = await res.json();
-            setMessage({ text: `ÃƒÂ¢Ã‚ÂÃ…â€™ Erreur : ${err.message}`, type: "error" });
-        }
+      await proformaService.create(payload);
+      setMessage({ text: "Devis créé avec succès !", type: "success" });
+      setSelectedLines([]);
+      setTimeout(() => router.push('/workshop'), 1500);
     } catch (err) {
-        setMessage({ text: "ÃƒÂ¢Ã‚ÂÃ…â€™ Impossible de joindre le serveur", type: "error" });
+      setMessage({ text: "Erreur lors de la création du devis", type: "error" });
     }
   };
 
-  if (!token) return <p style={{ padding: 24 }}>Veuillez vous connecter...</p>;
+  if (!token) return <p className="p-10">Veuillez vous connecter...</p>;
 
   return (
-    <div style={{ padding: 24, fontFamily: "sans-serif", maxWidth: '1000px', margin: '0 auto' }}>
-      <h1>ÃƒÂ°Ã…Â¸Ã‚Â§Ã‚Â¾ ÃƒÆ’Ã¢â‚¬Â°tablir un Devis (Proforma)</h1>
-      
-      <div style={{ background: '#f8fafc', padding: 20, borderRadius: 8, marginBottom: 20, border: '1px solid #e2e8f0' }}>
-        <label style={{ fontWeight: 'bold', display: 'block', marginBottom: 10 }}>Choisir l'Intervention liÃƒÆ’Ã‚Â©e :</label>
-        <select 
-            value={interventionId} 
-            onChange={e => setInterventionId(e.target.value)}
-            style={{ width: '100%', padding: '10px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+    <div className="max-w-5xl mx-auto p-8">
+      <h1 className="text-3xl font-bold mb-8 lowercase">Établir un Devis (Proforma)</h1>
+
+      <div className="mb-8">
+        <label className="font-bold text-sm">Intervention liée :</label>
+        <select
+          value={interventionId}
+          onChange={(e) => setInterventionId(e.target.value)}
+          className="w-full mt-2 border rounded-2xl px-4 py-3"
         >
-          <option value="">--- SÃƒÆ’Ã‚Â©lectionner l'intervention en cours ---</option>
-          {interventions.map(i => (
-            <option key={i.id} value={i.id}>
-              ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â§ {i.appointment?.vehicle?.plateNumber} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â {i.appointment?.vehicle?.client?.name} ({i.status})
+          <option value="">-- Sélectionner une intervention --</option>
+          {interventions.map((inter) => (
+            <option key={inter.id} value={inter.id}>
+              {inter.appointment?.vehicle?.plateNumber} — {inter.appointment?.vehicle?.client?.name} ({inter.status})
             </option>
           ))}
         </select>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px' }}>
-        {/* CATALOGUE */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Catalogue */}
         <div>
-          <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¦ Catalogue PiÃƒÆ’Ã‚Â¨ces</h3>
-          <div style={{ maxHeight: '400px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: 8, background: 'white' }}>
-            {products.map(p => (
-              <div key={p.id} style={{ padding: '12px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                    <strong>{p.name}</strong><br/>
-                    <small style={{ color: '#64748b' }}>Stock: {p.inventory?.quantity || 0} | RÃƒÆ’Ã‚Â©f: {p.reference}</small>
-                </div>
-                <button 
-                    onClick={() => addLine(p)}
-                    style={{ background: '#2563eb', color: 'white', border: 'none', padding: '6px 12px', borderRadius: 4, cursor: 'pointer' }}
+          <Section title="Catalogue Pièces">
+            <div className="max-h-[400px] overflow-auto border rounded-2xl">
+              {products.map((product) => (
+                <div
+                  key={product.id}
+                  className="flex justify-between items-center p-4 border-b hover:bg-gray-50"
                 >
-                    {p.selling_price}ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ +
-                </button>
-              </div>
-            ))}
-          </div>
+                  <div>
+                    <div className="font-medium">{product.name}</div>
+                    <div className="text-xs text-gray-500">Stock: {product.inventory?.quantity || 0}</div>
+                  </div>
+                  <Button onClick={() => addLine(product)} size="sm">
+                    {product.selling_price} €
+                  </Button>
+                </div>
+              ))}
+            </div>
 
-          <h3 style={{ marginTop: 24 }}>ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Main d'Ãƒâ€¦Ã¢â‚¬Å“uvre</h3>
-          <div style={{ display: 'flex', gap: 10 }}>
-            <input 
-                type="number" 
-                placeholder="Prix Main d'Ãƒâ€¦Ã¢â‚¬Å“uvre" 
-                value={laborPrice} 
-                onChange={e => setLaborPrice(Number(e.target.value))}
-                style={{ flex: 1, padding: 10, borderRadius: 6, border: '1px solid #cbd5e1' }}
-            />
-            <button onClick={addLabor} style={{ background: '#10b981', color: 'white', border: 'none', padding: '10px 20px', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold' }}>Ajouter</button>
-          </div>
+            {/* Main d'œuvre */}
+            <div className="mt-6">
+              <h3 className="font-bold mb-2">Main d'œuvre</h3>
+              <div className="flex gap-3">
+                <input
+                  type="number"
+                  placeholder="Prix main d'œuvre"
+                  value={laborPrice}
+                  onChange={(e) => setLaborPrice(Number(e.target.value))}
+                  className="flex-1 border rounded-2xl px-4 py-2"
+                />
+                <Button onClick={addLabor}>Ajouter</Button>
+              </div>
+            </div>
+          </Section>
         </div>
 
-        {/* RÃƒÆ’Ã¢â‚¬Â°CAPITULATIF */}
-        <div style={{ background: 'white', padding: 24, borderRadius: 12, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', height: 'fit-content' }}>
-          <h3>ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Â¹ RÃƒÆ’Ã‚Â©capitulatif Devis</h3>
-          {selectedLines.length === 0 ? (
-            <p style={{ color: '#64748b', textAlign: 'center', padding: 20 }}>Votre devis est vide.</p>
-          ) : (
-            <>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <tbody>
-                        {selectedLines.map((l, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                                <td style={{ padding: '10px 0' }}>{l.name}</td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold' }}>{l.price.toFixed(2)}ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬</td>
-                                <td style={{ textAlign: 'right' }}>
-                                    <button onClick={() => setSelectedLines(selectedLines.filter((_, idx) => idx !== i))} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¢</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                <div style={{ marginTop: 20, paddingTop: 20, borderTop: '2px solid #1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL TTC</span>
-                    <span style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b' }}>{calculateTotal().toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬</span>
+        {/* Récapitulatif */}
+        <div>
+          <Section title="Récapitulatif du Devis">
+            {selectedLines.length === 0 ? (
+              <p className="text-center py-10 text-gray-500">Votre devis est vide.</p>
+            ) : (
+              <>
+                <div className="space-y-3 mb-6">
+                  {selectedLines.map((line, index) => (
+                    <div key={index} className="flex justify-between items-center border-b pb-2">
+                      <span>{line.name}</span>
+                      <div className="flex items-center gap-4">
+                        <span className="font-bold">{(line.quantity * line.price).toFixed(2)} €</span>
+                        <button onClick={() => removeLine(index)} className="text-red-500">✕</button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <button 
-                    onClick={submitProforma} 
-                    style={{ width: '100%', background: '#1e293b', color: 'white', marginTop: 24, padding: '15px', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 'bold', fontSize: '1rem' }}
-                >
-                    GÃƒÆ’Ã¢â‚¬Â°NÃƒÆ’Ã¢â‚¬Â°RER LE DEVIS OFFICIEL
-                </button>
-            </>
-          )}
+
+                <div className="flex justify-between text-xl font-bold border-t pt-4">
+                  <span>Total</span>
+                  <span>{calculateTotal().toFixed(2)} €</span>
+                </div>
+
+                <Button onClick={submitProforma} className="w-full mt-6 py-6">
+                  Valider le devis
+                </Button>
+              </>
+            )}
+          </Section>
         </div>
       </div>
 
       {message.text && (
-        <div style={{ 
-            marginTop: 20, 
-            padding: 15, 
-            borderRadius: 8, 
-            background: message.type === 'success' ? '#dcfce7' : '#fee2e2',
-            color: message.type === 'success' ? '#166534' : '#991b1b',
-            textAlign: 'center',
-            fontWeight: 'bold'
-        }}>
-            {message.text}
+        <div className={`mt-6 p-4 rounded-2xl ${message.type === "success" ? "bg-green-100" : "bg-red-100"}`}>
+          {message.text}
         </div>
       )}
     </div>
   );
 }
-
-

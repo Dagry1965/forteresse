@@ -1,139 +1,167 @@
-import React, { useEffect, useState } from "react";
-import { EmptyState } from '../components/ui/empty-state';
-import { Tabs } from '../components/ui/tabs';
-import { Alert } from '../components/ui/alert';
-import { TextareaField } from '../components/ui/textarea-field';
-import { SelectField } from '../components/ui/select-field';
-import { ResponsiveGrid } from '../components/ui/responsive-grid';
-import { DataTable } from '../components/ui/data-table';
-import { DateField } from '../components/ui/date-field';
-import { TextField } from '../components/ui/text-field';
-import { CONFIG } from "../lib/config";
+﻿'use client';
 
-export default function ManageFinance() {
+import React, { useEffect, useState } from 'react';
+import { financeService } from '@/services/financeService';
+import { proformaService } from '@/services/proformaService';
+import { Button } from '../components/ui/button';
+import Section from '../components/section';
+import { Card } from '../components/ui/card';
+
+export default function ManageFinancePage() {
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [proformas, setProformas] = useState<any[]>([]);
-  const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<'invoices' | 'proformas'>('invoices');
 
-  const loadProformas = () => {
-    fetch(`${CONFIG.API_BASE}/finance/proformas`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (Array.isArray(data)) {
-          setProformas(data);
-        } else {
-          console.error("Le backend n'a pas renvoyÃƒÆ’Ã‚Â© un tableau:", data);
-          setProformas([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Erreur rÃƒÆ’Ã‚Â©seau:", err);
-        setProformas([]);
-      });
-  };
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [unpaidInvoices, allProformas] = await Promise.all([
+        financeService.getUnpaidInvoices(),
+        proformaService.getAll(),
+      ]);
 
-  useEffect(() => {
-    loadProformas();
-  }, []);
-
-  const approveProforma = async (id: string) => {
-    const res = await fetch(
-      `${CONFIG.API_BASE}/finance/proforma/${id}/approve`,
-      { method: "PATCH" },
-    );
-
-    if (res.ok) {
-      setMessage(
-        "ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Devis approuvÃƒÆ’Ã‚Â© ! Stock mis ÃƒÆ’Ã‚Â  jour et facture gÃƒÆ’Ã‚Â©nÃƒÆ’Ã‚Â©rÃƒÆ’Ã‚Â©e.",
-      );
-      loadProformas();
-    } else {
-      const err = await res.json();
-      alert(`Erreur: ${err.message}`);
+      setInvoices(unpaidInvoices || []);
+      setProformas(allProformas || []);
+    } catch (error) {
+      console.error("Erreur chargement finance", error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  return (
-    <div className="px-6 py-8 max-w-6xl mx-auto font-sans">
-      <h1 className="text-3xl font-bold text-slate-900 mb-4">
-        Gestion des Devis et Facturation
-      </h1>
+  useEffect(() => {
+    loadData();
+  }, []);
 
-      {message && (
-        <p className="mb-4 text-sm font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-md px-4 py-2">
-          {message}
-        </p>
+  const convertToInvoice = async (proformaId: string) => {
+    try {
+      await proformaService.convertToInvoice(proformaId);
+      alert("Facture crÃ©Ã©e avec succÃ¨s !");
+      loadData();
+    } catch (error) {
+      alert("Erreur lors de la crÃ©ation de la facture");
+    }
+  };
+
+  if (loading) {
+    return <div className="p-10">Chargement des donnÃ©es financiÃ¨res...</div>;
+  }
+
+  return (
+    <div className="p-10">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight lowercase">Gestion FinanciÃ¨re</h1>
+          <p className="text-[oklch(0.45_0_0)]">Factures, devis et suivi des paiements</p>
+        </div>
+        <Button onClick={loadData} variant="outline">
+          RafraÃ®chir
+        </Button>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-2 mb-6 border-b">
+        <button
+          onClick={() => setActiveTab('invoices')}
+          className={`px-6 py-3 font-bold text-sm rounded-t-xl transition-all ${
+            activeTab === 'invoices' 
+              ? 'bg-white border border-b-0' 
+              : 'text-[oklch(0.45_0_0)] hover:text-black'
+          }`}
+        >
+          Factures impayÃ©es ({invoices.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('proformas')}
+          className={`px-6 py-3 font-bold text-sm rounded-t-xl transition-all ${
+            activeTab === 'proformas' 
+              ? 'bg-white border border-b-0' 
+              : 'text-[oklch(0.45_0_0)] hover:text-black'
+          }`}
+        >
+          Devis en attente ({proformas.length})
+        </button>
+      </div>
+
+      {/* Contenu */}
+      {activeTab === 'invoices' && (
+        <Section title="Factures impayÃ©es">
+          {invoices.length === 0 ? (
+            <p className="text-[oklch(0.45_0_0)] py-8">Aucune facture impayÃ©e.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="py-4 text-left font-bold text-[oklch(0.45_0_0)]">Client</th>
+                    <th className="py-4 text-left font-bold text-[oklch(0.45_0_0)]">VÃ©hicule</th>
+                    <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">Montant</th>
+                    <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">PayÃ©</th>
+                    <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">Reste</th>
+                    <th className="py-4 text-center font-bold text-[oklch(0.45_0_0)]">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {invoices.map((invoice) => {
+                    const total = invoice.proforma?.total_amount || 0;
+                    const paid = invoice.total_paid || 0;
+                    const remain = total - paid;
+
+                    return (
+                      <tr key={invoice.id} className="border-b hover:bg-[oklch(0.99_0_0)]">
+                        <td className="py-4 font-medium">
+                          {invoice.proforma?.intervention?.appointment?.vehicle?.client?.name}
+                        </td>
+                        <td className="py-4 text-sm">
+                          {invoice.proforma?.intervention?.appointment?.vehicle?.plateNumber}
+                        </td>
+                        <td className="py-4 text-right font-medium">{total.toFixed(2)} â‚¬</td>
+                        <td className="py-4 text-right text-emerald-600">{paid.toFixed(2)} â‚¬</td>
+                        <td className="py-4 text-right text-red-500 font-bold">{remain.toFixed(2)} â‚¬</td>
+                        <td className="py-4 text-center">
+                          <Button size="sm" onClick={() => alert("Aller Ã  la caisse")}>
+                            Encaisser
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </Section>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <table className="w-full text-sm border-collapse">
-          <thead className="bg-slate-100">
-            <tr>
-              <th className="px-4 py-3 text-left">Client</th>
-              <th className="px-4 py-3 text-left">VÃƒÆ’Ã‚Â©hicule</th>
-              <th className="px-4 py-3 text-left">Total</th>
-              <th className="px-4 py-3 text-left">Statut</th>
-              <th className="px-4 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {proformas.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-6 text-center text-slate-500"
-                >
-                  Aucun devis trouvÃƒÆ’Ã‚Â©.
-                </td>
-              </tr>
-            ) : (
-              proformas.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b last:border-none border-slate-100"
-                >
-                  <td className="px-4 py-3">
-                    {p.intervention?.appointment?.vehicle?.client?.name ||
-                      "Inconnu"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.intervention?.appointment?.vehicle?.make}{" "}
-                    {p.intervention?.appointment?.vehicle?.model}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.total_amount?.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={[
-                        "inline-flex items-center rounded-md px-2 py-1 text-xs font-semibold",
-                        p.status === "approved"
-                          ? "bg-emerald-50 text-emerald-700"
-                          : "bg-amber-50 text-amber-700",
-                      ].join(" ")}
-                    >
-                      {p.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.status === "draft" && (
-                      <button
-                        onClick={() => approveProforma(p.id)}
-                        className="inline-flex items-center rounded-md bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-sky-700"
-                      >
-                        APPROUVER &amp; FACTURER
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+      {activeTab === 'proformas' && (
+        <Section title="Devis en attente de facturation">
+          {proformas.length === 0 ? (
+            <p className="text-[oklch(0.45_0_0)] py-8">Aucun devis en attente.</p>
+          ) : (
+            <div className="space-y-4">
+              {proformas.map((proforma) => (
+                <Card key={proforma.id} className="p-6 flex justify-between items-center">
+                  <div>
+                    <div className="font-bold">
+                      {proforma.intervention?.appointment?.vehicle?.client?.name}
+                    </div>
+                    <div className="text-sm text-[oklch(0.45_0_0)]">
+                      {proforma.intervention?.appointment?.vehicle?.plateNumber} â€¢ {proforma.total_amount} â‚¬
+                    </div>
+                  </div>
+                  <Button onClick={() => convertToInvoice(proforma.id)}>
+                    Transformer en facture
+                  </Button>
+                </Card>
+              ))}
+            </div>
+          )}
+        </Section>
+      )}
     </div>
   );
 }
-
 
 
 

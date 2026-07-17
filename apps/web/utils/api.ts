@@ -1,33 +1,50 @@
-// apps/web/utils/api.ts
+﻿const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
-const API_BASE = "http://localhost:4000";
-const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
+export async function apiFetch(
+  endpoint: string,
+  options: RequestInit = {},
+) {
+  const token =
+    typeof window !== "undefined"
+      ? localStorage.getItem("access_token")
+      : null;
 
-export async function apiFetch(endpoint: string, options: any = {}) {
-  // RÃƒÆ’Ã‚Â©cupÃƒÆ’Ã‚Â©ration du token depuis le localStorage (plus simple pour cet utilitaire hors React)
-  const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-  
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-workspace-id': WORKSPACE_ID,
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-    ...options.headers,
+  const workspaceId =
+    typeof window !== "undefined"
+      ? localStorage.getItem("current_workspace_id")
+      : null;
+
+  const headers: HeadersInit = {
+    "Content-Type": "application/json",
+    "x-workspace-id": workspaceId || "",
+    ...(token
+      ? { Authorization: `Bearer ${token}` }
+      : {}),
+    ...(options.headers || {}),
   };
 
-  const url = `${API_BASE}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+  const url =
+    API_BASE +
+    (endpoint.startsWith("/") ? endpoint : `/${endpoint}`);
 
   try {
-    const res = await fetch(url, { ...options, headers });
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
 
-    // Gestion automatique de la dÃƒÆ’Ã‚Â©connexion si le token est expirÃƒÆ’Ã‚Â©
-    if (res.status === 401 && typeof window !== 'undefined') {
-      localStorage.removeItem('access_token');
-      window.location.href = '/login';
+    if (
+      response.status === 401 &&
+      typeof window !== "undefined"
+    ) {
+      localStorage.removeItem("access_token");
+      window.location.href = "/login";
     }
 
-    return res;
-  } catch (err) {
-    console.error(`Erreur API (${endpoint}):`, err);
-    throw err;
+    return response;
+  } catch (error) {
+    console.error("Erreur réseau :", error);
+    throw error;
   }
 }

@@ -2,9 +2,9 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚀 Début du seed complet...');
+  console.log('ðŸš€ DÃ©but du seed complet...');
 
-  // 1. Créer un utilisateur (admin)
+  // 1. CrÃ©er un utilisateur (admin)
   const user = await prisma.user.upsert({
     where: { email: 'admin@forteresse.local' },
     update: {},
@@ -15,7 +15,7 @@ async function main() {
     },
   });
 
-  // 2. Créer un Workspace
+  // 2. CrÃ©er un Workspace
   const workspace = await prisma.workspace.create({
     data: {
       name: 'Garage Test Forteresse',
@@ -29,7 +29,7 @@ async function main() {
     },
   });
 
-  // 3. Créer un Client
+  // 3. CrÃ©er un Client
   const client = await prisma.client.create({
     data: {
       workspaceId: workspace.id,
@@ -39,7 +39,7 @@ async function main() {
     },
   });
 
-  // 4. Créer un Véhicule
+  // 4. CrÃ©er un VÃ©hicule
   const vehicle = await prisma.vehicle.create({
     data: {
       workspaceId: workspace.id,
@@ -51,18 +51,18 @@ async function main() {
     },
   });
 
-  // 5. Créer un Rendez-vous (RDV)
+  // 5. CrÃ©er un Rendez-vous (RDV)
   const appointment = await prisma.appointment.create({
     data: {
       user_id: user.id,
       vehicle_id: vehicle.id,
       scheduled_at: new Date('2026-06-20T09:00:00'),
       status: 'confirmed',
-      initial_description: 'Problème de démarrage',
+      initial_description: 'ProblÃ¨me de dÃ©marrage',
     },
   });
 
-  // 6. Créer une Intervention à partir du RDV
+  // 6. CrÃ©er une Intervention Ã  partir du RDV
   const intervention = await prisma.intervention.create({
     data: {
       appointment_id: appointment.id,
@@ -70,7 +70,7 @@ async function main() {
     },
   });
 
-  // 7. Créer un Proforma avec des lignes
+  // 7. CrÃ©er un Proforma avec des lignes
   const proforma = await prisma.proforma.create({
     data: {
       intervention_id: intervention.id,
@@ -89,7 +89,7 @@ async function main() {
             unit_price: 18,
           },
           {
-            description: 'Main d\'œuvre',
+            description: 'Main d\'Å“uvre',
             quantity: 2,
             unit_price: 65,
           },
@@ -101,14 +101,14 @@ async function main() {
     },
   });
 
-  // Mise à jour du total du Proforma
+  // Mise Ã  jour du total du Proforma
   const total = proforma.lines.reduce((sum, line) => sum + line.quantity * line.unit_price, 0);
   await prisma.proforma.update({
     where: { id: proforma.id },
     data: { total_amount: total },
   });
 
-  console.log('✅ Cycle complet créé avec succès !');
+  console.log('âœ… Cycle complet crÃ©Ã© avec succÃ¨s !');
   console.log('-----------------------------------');
   console.log('Workspace ID :', workspace.id);
   console.log('Client ID    :', client.id);
@@ -127,3 +127,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

@@ -5,7 +5,8 @@
       "@/*": ["./apps/web/*"],
       "@ui/*": ["./apps/web/components/ui/*"],
       "@components/*": ["./apps/web/components/*"],
-      "@lib/*": ["./apps/web/lib/*"]
+      "@lib/*": ["./apps/web/lib/*"],
+      "@shared/*": ["./packages/shared/*"] 
     },
     "incremental": true,
     "target": "es2017",

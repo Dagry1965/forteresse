@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🚀 Début du seed complet...');
+  console.log('ðŸš€ DÃ©but du seed complet...');
 
   const user = await prisma.user.upsert({
     where: { email: 'admin@forteresse.local' },
@@ -53,7 +53,7 @@ async function main() {
       vehicle_id: vehicle.id,
       scheduled_at: new Date('2026-06-20T09:00:00'),
       status: 'confirmed',
-      initial_description: 'Problème de démarrage',
+      initial_description: 'ProblÃ¨me de dÃ©marrage',
     },
   });
 
@@ -73,7 +73,7 @@ async function main() {
         create: [
           { description: 'Diagnostic complet', quantity: 1, unit_price: 80 },
           { description: "Bougies d'allumage (x4)", quantity: 4, unit_price: 18 },
-          { description: "Main d'œuvre", quantity: 2, unit_price: 65 },
+          { description: "Main d'Å“uvre", quantity: 2, unit_price: 65 },
         ],
       },
     },
@@ -86,7 +86,7 @@ async function main() {
     data: { total_amount: total },
   });
 
-  console.log('✅ Cycle complet créé avec succès !');
+  console.log('âœ… Cycle complet crÃ©Ã© avec succÃ¨s !');
   console.log('-----------------------------------');
   console.log('Workspace ID :', workspace.id);
   console.log('Client ID    :', client.id);
@@ -105,3 +105,4 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Facture</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: #f3f4f6;
+      color: #111827;
+      font-size: 12px;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 20mm;
+      margin: 0 auto;
+      background: #ffffff;
+      position: relative;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #e5e7eb;
+      padding-bottom: 10px;
+    }
+
+    .header-left h1 {
+      font-size: 22px;
+      margin: 0;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .header-left p {
+      margin: 2px 0;
+      font-size: 11px;
+      color: #6b7280;
+    }
+
+    .header-right {
+      text-align: right;
+      font-size: 11px;
+    }
+
+    .header-right h2 {
+      margin: 0 0 5px 0;
+      font-size: 16px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin: 20px 0 8px 0;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #374151;
+    }
+
+    .info-grid {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+    }
+
+    .info-block {
+      width: 48%;
+      border: 1px solid #e5e7eb;
+      padding: 8px;
+      border-radius: 4px;
+    }
+
+    .info-block p {
+      margin: 2px 0;
+    }
+
+    .label {
+      font-weight: 600;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+      font-size: 11px;
+    }
+
+    th, td {
+      border: 1px solid #e5e7eb;
+      padding: 6px;
+      text-align: left;
+    }
+
+    th {
+      background: #f9fafb;
+      font-weight: 600;
+    }
+
+    .totals {
+      margin-top: 10px;
+      width: 40%;
+      margin-left: auto;
+      font-size: 11px;
+    }
+
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .totals-row.total {
+      font-weight: 700;
+      font-size: 12px;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 4px;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 15mm;
+      left: 20mm;
+      right: 20mm;
+      font-size: 9px;
+      color: #9ca3af;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <h1>Garage Nova</h1>
+        <p>Rue du Garage 12</p>
+        <p>1000 Lausanne</p>
+        <p>Tél : +41 21 000 00 00</p>
+      </div>
+
+      <div class="header-right">
+        <h2>FACTURE</h2>
+        <p><span class="label">N° :</span> {{invoice.id}}</p>
+        <p><span class="label">Date :</span> {{invoice.createdAt}}</p>
+        <p><span class="label">Intervention :</span> {{invoice.interventionId}}</p>
+      </div>
+    </div>
+
+    <!-- CLIENT / VEHICULE -->
+    <div class="section-title">Informations</div>
+
+    <div class="info-grid">
+      <div class="info-block">
+        <p class="label">Client</p>
+        <p>{{client.name}}</p>
+        <p>{{client.address}}</p>
+        <p>{{client.zip}} {{client.city}}</p>
+      </div>
+
+      <div class="info-block">
+        <p class="label">Véhicule</p>
+        <p>{{vehicle.make}} {{vehicle.model}}</p>
+        <p>Immatriculation : {{vehicle.plateNumber}}</p>
+        <p>VIN : {{vehicle.vin}}</p>
+      </div>
+    </div>
+
+    <!-- PIECES -->
+    <div class="section-title">Pièces</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Libellé</th>
+          <th>Qté</th>
+          <th>PU (CHF)</th>
+          <th>Total (CHF)</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each invoice.parts}}
+        <tr>
+          <td>{{this.label}}</td>
+          <td>{{this.qty}}</td>
+          <td>{{this.unitPrice}}</td>
+          <td>{{multiply this.qty this.unitPrice}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <!-- MAIN D'OEUVRE -->
+    <div class="section-title">Main d’œuvre</div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Libellé</th>
+          <th>Heures</th>
+          <th>Taux (CHF)</th>
+          <th>Total (CHF)</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {{#each invoice.labor}}
+        <tr>
+          <td>{{this.label}}</td>
+          <td>{{this.hours}}</td>
+          <td>{{this.rate}}</td>
+          <td>{{multiply this.hours this.rate}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+
+    <!-- TOTAUX -->
+    <div class="totals">
+      <div class="totals-row">
+        <span>Total pièces</span>
+        <span>{{invoice.totalParts}} CHF</span>
+      </div>
+
+      <div class="totals-row">
+        <span>Total main d’œuvre</span>
+        <span>{{invoice.totalLabor}} CHF</span>
+      </div>
+
+      <div class="totals-row">
+        <span>TVA (7.7%)</span>
+        <span>{{invoice.vat}} CHF</span>
+      </div>
+
+      <div class="totals-row total">
+        <span>Total TTC</span>
+        <span>{{invoice.totalTTC}} CHF</span>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+      <span>Garage Nova — IBAN CHxx xxxx xxxx xxxx — TVA CHE-xxx.xxx.xxx</span>
+      <span>Payable à 30 jours net</span>
+    </div>
+
+  </div>
+</body>
+</html>

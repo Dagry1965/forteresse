@@ -26,7 +26,7 @@ async function main() {
       name: 'Test Part A',
       purchase_price: 10,
       selling_price: 15,
-      description: 'Pièce de test A',
+      description: 'PiÃ¨ce de test A',
     },
   });
 

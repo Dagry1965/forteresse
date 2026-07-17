@@ -1,12 +1,28 @@
-﻿{
+{
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./dist",
     "declaration": true,
     "sourceMap": false,
     "skipLibCheck": true,
-    "strictPropertyInitialization": false
+    "strictPropertyInitialization": false,
+
+    "baseUrl": "./src",
+    "paths": {
+      "@core/*": ["core/*"],
+      "@common/*": ["core/common/*"],
+      "@constants/*": ["core/common/constants/*"],
+      "@modules/*": ["modules/*"],
+      "@prisma/*": ["core/prisma/*"]
+    }
   },
-  "include": ["src//*"],
-  "exclude": ["/.spec.ts", "**/.test.ts", "/tests/", "node_modules"]
+  "include": ["src/**/*"],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "tests",
+    "node_modules",
+    "src/core/prisma/seed.ts",
+    "src/core/prisma/prisma-tenancy.extension.ts"
+  ]
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 
-// IcÃƒÆ’Ã‚Â´nes pro (Lucide)
+// Icônes pro (Lucide)
 import {
   LayoutDashboard,
   Users,
@@ -13,17 +13,22 @@ import {
   Package,
   ShoppingCart,
   CreditCard,
+  Receipt,           // ← Nouvel import
 } from "lucide-react";
+
+// Import Sonner
+import { Toaster } from "sonner";
 
 const menu_items = [
   { icon: <LayoutDashboard size={18} />, name: "dashboard", href: "/dashboard" },
   { icon: <Users size={18} />, name: "clients", href: "/clients" },
-  { icon: <Car size={18} />, name: "vÃƒÆ’Ã‚Â©hicules", href: "/vehicles" },
+  { icon: <Car size={18} />, name: "véhicules", href: "/vehicles" },
   { icon: <Calendar size={18} />, name: "rendez-vous", href: "/appointments" },
   { icon: <Wrench size={18} />, name: "atelier", href: "/workshop" },
   { icon: <Package size={18} />, name: "stock & catalogue", href: "/inventory" },
   { icon: <ShoppingCart size={18} />, name: "achats (po)", href: "/purchase-orders" },
   { icon: <CreditCard size={18} />, name: "caisse", href: "/cashier" },
+  { icon: <Receipt size={18} />, name: "facturation", href: "/billing" },   // ← Nouvel élément
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -79,7 +84,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={logout}
             className="w-full py-2 bg-destructive text-destructive-foreground rounded-md font-bold hover:opacity-90"
           >
-            dÃƒÆ’Ã‚Â©connexion
+            Déconnexion
           </button>
         </div>
       </aside>
@@ -90,6 +95,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+
+      {/* === TOASTER SONNER === */}
+      <Toaster 
+        position="top-center" 
+        richColors 
+        closeButton 
+      />
     </div>
   );
 }

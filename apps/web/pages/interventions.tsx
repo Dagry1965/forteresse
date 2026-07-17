@@ -1,138 +1,124 @@
-import React, { useEffect, useState } from "react";
-import { EmptyState } from '../components/ui/empty-state';
-import { Tabs } from '../components/ui/tabs';
-import { Alert } from '../components/ui/alert';
-import { TextareaField } from '../components/ui/textarea-field';
-import { SelectField } from '../components/ui/select-field';
-import { ResponsiveGrid } from '../components/ui/responsive-grid';
-import { DataTable } from '../components/ui/data-table';
-import { DateField } from '../components/ui/date-field';
-import { TextField } from '../components/ui/text-field';
-import { Button } from "../components/ui/button";
+'use client';
 
-const API_BASE = "http://localhost:4000";
+import React, { useEffect, useState } from 'react';
+import { workshopService } from '@/services/workshopService';
+import { Button } from '../components/ui/button';
+import Section from '../components/section';
+import { Card } from '../components/ui/card';
 
 export default function InterventionsPage() {
   const [interventions, setInterventions] = useState<any[]>([]);
-  const [diagnosis, setDiagnosis] = useState("");
-  const [selectedId, setSelectedId] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const loadInterventions = () => {
-    fetch(`${API_BASE}/interventions`)
-      .then((res) => res.json())
-      .then(setInterventions)
-      .catch((err) => {
-        console.error("Erreur chargement interventions:", err);
-        setInterventions([]);
-      });
+  const loadInterventions = async () => {
+    try {
+      setLoading(true);
+      const data = await workshopService.getAll();
+      setInterventions(data || []);
+    } catch (error) {
+      console.error("Erreur lors du chargement des interventions", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     loadInterventions();
   }, []);
 
-  const saveDiagnosis = async (id: string) => {
-    const res = await fetch(`${API_BASE}/interventions/${id}/diagnosis`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ diagnosis_text: diagnosis }),
-    });
-    if (res.ok) {
-      alert("ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Diagnostic enregistrÃƒÆ’Ã‚Â© ! PrÃƒÆ’Ã‚Âªt pour le devis.");
+  const updateStatus = async (id: string, newStatus: string) => {
+    try {
+      await workshopService.updateStatus(id, newStatus);
       loadInterventions();
-      setDiagnosis("");
-      setSelectedId("");
-    } else {
-      alert("Erreur lors de l'enregistrement du diagnostic.");
+    } catch (error) {
+      alert("Erreur lors du changement de statut");
     }
   };
 
-  return (
-    <div className="px-6 py-8 max-w-6xl mx-auto font-sans">
-      <h1 className="text-3xl font-bold text-slate-900 mb-6">
-        ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂºÃ‚Â ÃƒÂ¯Ã‚Â¸Ã‚Â Atelier : Interventions &amp; Diagnostics
-      </h1>
+  if (loading) {
+    return <div className="p-10">Chargement des interventions...</div>;
+  }
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        <table className="w-full text-sm border-collapse">
-          <thead className="bg-slate-100">
-            <tr>
-              <th className="px-4 py-3 text-left">Client</th>
-              <th className="px-4 py-3 text-left">VÃƒÆ’Ã‚Â©hicule</th>
-              <th className="px-4 py-3 text-left">Statut</th>
-              <th className="px-4 py-3 text-left">Diagnostic</th>
-              <th className="px-4 py-3 text-left">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {interventions.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={5}
-                  className="px-4 py-6 text-center text-slate-500"
-                >
-                  Aucune intervention trouvÃƒÆ’Ã‚Â©e.
-                </td>
-              </tr>
-            ) : (
-              interventions.map((i) => (
-                <tr
-                  key={i.id}
-                  className="border-b last:border-none border-slate-100"
-                >
-                  <td className="px-4 py-3">
-                    {i.appointment?.vehicle?.client?.name || "-"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {i.appointment?.vehicle?.make}{" "}
-                    {i.appointment?.vehicle?.model}
-                  </td>
-                  <td className="px-4 py-3">{i.status}</td>
-                  <td className="px-4 py-3">
-                    {i.diagnosis_text || (
-                      <span className="text-slate-400">
-                        En attente...
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSelectedId(i.id)}
-                    >
-                      Modifier Diagnostic
-                    </Button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+  return (
+    <div className="p-10">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight lowercase">Interventions</h1>
+          <p className="text-[oklch(0.45_0_0)]">Suivi des travaux en atelier</p>
+        </div>
       </div>
 
-      {selectedId && (
-        <div className="mt-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-4">
-          <h3 className="text-lg font-semibold text-slate-800 mb-3">
-            Saisir le diagnostic pour l'intervention sÃƒÆ’Ã‚Â©lectionnÃƒÆ’Ã‚Â©e
-          </h3>
-          <textarea
-            value={diagnosis}
-            onChange={(e) => setDiagnosis(e.target.value)}
-            placeholder="Ex: Disques de frein HS, PrÃƒÆ’Ã‚Â©voir remplacement..."
-            className="w-full min-h-[100px] rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
-          />
-          <Button
-            variant="primary"
-            onClick={() => saveDiagnosis(selectedId)}
-            className="mt-3"
-          >
-            VALIDER LE DIAGNOSTIC
-          </Button>
+      {interventions.length === 0 ? (
+        <Card className="p-20 text-center">
+          <p className="text-[oklch(0.45_0_0)]">Aucune intervention en cours.</p>
+        </Card>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-[oklch(0.98_0_0)]">
+                <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">Véhicule / Client</th>
+                <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">Motif</th>
+                <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Statut</th>
+                <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Date</th>
+                <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {interventions.map((intervention) => (
+                <tr key={intervention.id} className="border-b hover:bg-[oklch(0.99_0_0)]">
+                  <td className="px-6 py-5">
+                    <div className="font-bold">
+                      {intervention.appointment?.vehicle?.plateNumber}
+                    </div>
+                    <div className="text-xs text-[oklch(0.45_0_0)]">
+                      {intervention.appointment?.vehicle?.client?.name}
+                    </div>
+                  </td>
+                  <td className="px-6 py-5 text-sm text-[oklch(0.35_0_0)]">
+                    {intervention.appointment?.initial_description || "—"}
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <span className={`px-4 py-1 rounded-full text-xs font-bold ${
+                      intervention.status === 'completed' 
+                        ? 'bg-emerald-100 text-emerald-700' 
+                        : intervention.status === 'in_progress'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {intervention.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-5 text-center text-[oklch(0.45_0_0)]">
+                    {new Date(intervention.createdAt || intervention.created_at).toLocaleDateString('fr-FR')}
+                  </td>
+                  <td className="px-6 py-5 text-center">
+                    <div className="flex justify-center gap-2">
+                      {intervention.status !== 'completed' && (
+                        <>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => updateStatus(intervention.id, 'in_progress')}
+                          >
+                            En cours
+                          </Button>
+                          <Button 
+                            size="sm"
+                            onClick={() => updateStatus(intervention.id, 'completed')}
+                          >
+                            Terminer
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </div>
   );
 }
-
-

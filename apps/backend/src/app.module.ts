@@ -1,39 +1,52 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './auth/auth.module'; 
-import { ClientController } from './client.controller';
-import { VehicleController } from './vehicle.controller';
-import { AppointmentController } from './appointment.controller';
-import { InterventionController } from './intervention.controller';
-import { InventoryController } from './inventory.controller';
-import { QueueModule } from './queue.module';
-import { ReportsController } from './reports.controller';
-import { PurchaseModule } from './purchase/purchase.module'; 
-import { PurchaseReceiptModule } from './purchase-receipt/purchase-receipt.module';
-import { FinanceModule } from './finance/finance.module';
-import { AuditModule } from './audit/audit.module'; // <-- AJOUT 1
 
+// Core
+import { WorkspaceModule } from './core/workspace/workspace.module';
+import { PrismaModule } from './core/prisma/prisma.module';
+import { AuthModule } from './core/auth/auth.module';
+import { AuditModule } from './core/audit/audit.module';
+
+// Business Modules
+import { ClientsModule } from './modules/clients/clients.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { InvoicesModule } from './modules/invoices/invoices.module';
+import { AppointmentsModule } from './modules/appointments/appointments.module';
+import { VehiclesModule } from './modules/vehicles/vehicles.module';
+import { WorkshopModule } from './modules/workshop/workshop.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { TimeSlotsModule } from './modules/timeslots/timeslots.module';
+import { ProformasModule } from './modules/proformas/proformas.module'; 
+
+console.log({
+  InventoryModule,
+});
 
 @Module({
   imports: [
+    // Global Config
     ConfigModule.forRoot({ isGlobal: true }),
+    
+    // Core Modules
+    WorkspaceModule,
     PrismaModule,
-    AuditModule,     // <-- AJOUT 2 : Activation de la traçabilité globale
+    AuditModule,
     AuthModule,
-    QueueModule,
-    PurchaseModule, 
-    PurchaseReceiptModule,
+    
+    // Feature Modules
     FinanceModule, 
-    // ReminderModule est commenté pour l'instant à cause du bug Reflector
+    InvoicesModule,
+    AppointmentsModule, 
+    VehiclesModule,
+    ClientsModule,
+    WorkshopModule,
+    InventoryModule,
+    SuppliersModule,
+    TimeSlotsModule,
+    ProformasModule,
   ],
-  controllers: [
-    ClientController,
-    VehicleController,
-    AppointmentController,
-    InterventionController,
-    InventoryController,
-    ReportsController,
-  ],
+  controllers: [], // 👈 Nettoyé (InvoicesController est déjà dans InvoicesModule)
+  providers: [],
 })
 export class AppModule {}

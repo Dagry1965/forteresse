@@ -1,2 +1,0 @@
-﻿Get-Clipboard | Out-File -FilePath .\apps\backend\prisma\schema.prisma -Encoding utf8
-

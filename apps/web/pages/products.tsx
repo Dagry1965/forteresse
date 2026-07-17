@@ -1,103 +1,139 @@
-import React, { useEffect, useState } from "react";
-import { EmptyState } from '../components/ui/empty-state';
-import { Tabs } from '../components/ui/tabs';
-import { Alert } from '../components/ui/alert';
-import { TextareaField } from '../components/ui/textarea-field';
-import { SelectField } from '../components/ui/select-field';
-import { ResponsiveGrid } from '../components/ui/responsive-grid';
-import { DataTable } from '../components/ui/data-table';
-import { DateField } from '../components/ui/date-field';
-import { TextField } from '../components/ui/text-field';
-import { CONFIG } from "../lib/config";
+'use client';
 
-type Product = {
-  id: string;
-  reference: string | null;
-  name: string;
-  purchase_price: number;
-  selling_price: number;
-  min_stock_alert: number;
-  inventory?: { quantity: number } | null;
-  supplier?: { name: string } | null;
-};
+import React, { useEffect, useState } from 'react';
+import { stockService } from '@/services/stockService';
+import { Button } from '../components/ui/button';
+import Section from '../components/section';
+import { Card } from '../components/ui/card';
+import { normalizeList } from '@/utils/normalize';
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  async function load() {
-    setLoading(true);
+  const loadProducts = async () => {
     try {
-      const res = await fetch(
-        `${CONFIG.API_BASE}/inventory/products?workspaceId=${CONFIG.WORKSPACE_ID}`,
-      );
-      const json = await res.json();
-      setProducts(Array.isArray(json) ? json : []);
+      setLoading(true);
+
+      const raw = await stockService.getAll();
+
+      // 🔥 Normalisation backend
+      const list = normalizeList(raw);
+
+      setProducts(list);
+      setFilteredProducts(list);
     } catch (error) {
-      console.error("Erreur chargement produits:", error);
-      setProducts([]);
+      console.error("Erreur lors du chargement des produits", error);
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    load();
+    loadProducts();
   }, []);
 
+  // Filtre en temps réel
+  useEffect(() => {
+    const base = normalizeList(products);
+
+    const filtered = base.filter((product) =>
+      product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.reference?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    setFilteredProducts(filtered);
+  }, [searchTerm, products]);
+
+  if (loading) {
+    return <div className="p-10">Chargement du catalogue...</div>;
+  }
+
+  const safeFiltered = normalizeList(filteredProducts);
+
   return (
-    <div className="px-6 py-8 max-w-6xl mx-auto font-sans">
-      <h1 className="text-3xl font-bold text-slate-900 mb-4">
-        Catalogue Produits - Forteresse
-      </h1>
+    <div className="p-10">
+      <div className="flex justify-between items-center mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight lowercase">Catalogue Produits</h1>
+          <p className="text-[oklch(0.45_0_0)]">Gestion du stock et des prix</p>
+        </div>
+        <Button onClick={() => alert("Fonctionnalité à venir : Ajouter un produit")}>
+          + Ajouter un produit
+        </Button>
+      </div>
 
-      {loading && (
-        <p className="text-slate-600 mb-4">Chargement...</p>
-      )}
+      {/* Barre de recherche */}
+      <div className="mb-6">
+        <input
+          type="text"
+          placeholder="Rechercher par nom ou référence..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="w-full max-w-md border border-[oklch(0.92_0_0)] rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-[oklch(0.45_0_0)]"
+        />
+      </div>
 
-      {!loading && products.length === 0 && (
-        <p className="text-slate-500">Aucun produit dans ce catalogue.</p>
-      )}
-
-      {products.length > 0 && (
-        <div className="mt-4 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm border-collapse">
-            <thead className="bg-slate-100">
-              <tr>
-                <th className="px-4 py-3 text-left">RÃƒÆ’Ã‚Â©f</th>
-                <th className="px-4 py-3 text-left">Nom</th>
-                <th className="px-4 py-3 text-left">Fournisseur</th>
-                <th className="px-4 py-3 text-left">Stock</th>
-                <th className="px-4 py-3 text-left">Alerte min</th>
-                <th className="px-4 py-3 text-left">Prix achat</th>
-                <th className="px-4 py-3 text-left">Prix vente</th>
+      {safeFiltered.length === 0 ? (
+        <Card className="p-20 text-center">
+          <p className="text-[oklch(0.45_0_0)]">Aucun produit trouvé.</p>
+        </Card>
+      ) : (
+        <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b bg-[oklch(0.98_0_0)]">
+                <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">Produit</th>
+                <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">Référence</th>
+                <th className="px-6 py-4 text-right font-bold text-[oklch(0.45_0_0)]">Prix d'achat</th>
+                <th className="px-6 py-4 text-right font-bold text-[oklch(0.45_0_0)]">Prix de vente</th>
+                <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Stock</th>
+                <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {products.map((p) => (
-                <tr
-                  key={p.id}
-                  className="border-b last:border-none border-slate-100"
-                >
-                  <td className="px-4 py-2">{p.reference || "-"}</td>
-                  <td className="px-4 py-2">{p.name}</td>
-                  <td className="px-4 py-2">
-                    {p.supplier?.name || "-"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.inventory?.quantity ?? 0}
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.min_stock_alert}
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.purchase_price.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-                  </td>
-                  <td className="px-4 py-2">
-                    {p.selling_price.toFixed(2)} ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬
-                  </td>
-                </tr>
-              ))}
+              {safeFiltered.map((product) => {
+                const stock = product.inventory?.quantity || 0;
+                const isLowStock = stock < 5;
+
+                return (
+                  <tr key={product.id} className="border-b hover:bg-[oklch(0.99_0_0)]">
+                    <td className="px-6 py-5 font-medium">{product.name}</td>
+                    <td className="px-6 py-5 text-[oklch(0.45_0_0)] font-mono text-sm">
+                      {product.reference || '—'}
+                    </td>
+                    <td className="px-6 py-5 text-right">
+                      {product.purchase_price ? `${product.purchase_price} €` : '—'}
+                    </td>
+                    <td className="px-6 py-5 text-right font-bold">
+                      {product.selling_price} €
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <span
+                        className={`px-4 py-1 rounded-full text-xs font-bold ${
+                          isLowStock 
+                            ? 'bg-red-100 text-red-700' 
+                            : 'bg-emerald-100 text-emerald-700'
+                        }`}
+                      >
+                        {stock} unités
+                      </span>
+                    </td>
+                    <td className="px-6 py-5 text-center">
+                      <div className="flex justify-center gap-2">
+                        <Button size="sm" variant="outline">
+                          Modifier
+                        </Button>
+                        <Button size="sm" variant="outline" className="text-red-600 hover:bg-red-50">
+                          Supprimer
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -105,5 +141,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-
-

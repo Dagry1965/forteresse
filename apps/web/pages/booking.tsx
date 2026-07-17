@@ -1,3 +1,5 @@
+﻿'use client';
+
 import React, { useState } from "react";
 import { Button } from "../components/ui/button";
 import { TextField } from "../components/ui/text-field";
@@ -5,74 +7,246 @@ import { DateField } from "../components/ui/date-field";
 import { Alert } from "../components/ui/alert";
 import Section from "../components/section";
 
-const WORKSPACE_ID = "a1ae9e3a-2ff0-49f3-8e4d-f504f1332971";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function BookingPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+
   const [formData, setFormData] = useState({
-    name: "", email: "", phone: "",
-    plateNumber: "", make: "", model: "",
-    scheduled_at: "", description: ""
+    name: "",
+    email: "",
+    phone: "",
+    plateNumber: "",
+    make: "",
+    model: "",
+    scheduled_at: "",
+    description: "",
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const res = await fetch("http://localhost:4000/api/public/appointments", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...formData, workspaceId: WORKSPACE_ID })
-      });
-      if (res.ok) setSuccess(true);
-      else alert("erreur lors de l'envoi");
-    } catch (err) {
-      alert("impossible de joindre le serveur");
-    } finally { setLoading(false); }
+  const handleChange = (field: string, value: string) => {
+    setFormData((previous) => ({
+      ...previous,
+      [field]: value,
+    }));
   };
 
-  if (success) return (
-    <div className="flex h-screen items-center justify-center p-6 bg-[oklch(0.98_0_0)] font-sans">
-      <div className="max-w-md w-full text-center flex flex-col gap-6">
-        <Alert type="success" title="demande reÃƒÆ’Ã‚Â§ue !">
-          votre rendez-vous est en cours de validation. nous vous recontacterons trÃƒÆ’Ã‚Â¨s vite.
-        </Alert>
-        <Button onClick={() => window.location.reload()} className="py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px]">nouvelle demande</Button>
+  const goToNextStep = () => {
+    if (!formData.name || !formData.email || !formData.phone) {
+      alert("Veuillez remplir vos coordonnées.");
+      return;
+    }
+
+    setStep(2);
+  };
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (
+      !formData.plateNumber ||
+      !formData.make ||
+      !formData.model ||
+      !formData.scheduled_at
+    ) {
+      alert("Veuillez remplir les informations obligatoires.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const workspaceId =
+        typeof window !== "undefined"
+          ? localStorage.getItem("current_workspace_id")
+          : null;
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/public/appointments`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...formData,
+            workspaceId,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Erreur lors de l'envoi.");
+      }
+
+      setSuccess(true);
+    } catch (error) {
+      console.error("Erreur de prise de rendez-vous :", error);
+      alert("Impossible d'envoyer la demande de rendez-vous.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[oklch(0.98_0_0)] p-6">
+        <div className="w-full max-w-md text-center">
+          <Alert type="success" title="Demande reçue !">
+            Votre rendez-vous est en cours de validation. Nous vous
+            recontacterons très vite.
+          </Alert>
+
+          <Button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-6 w-full rounded-2xl py-6"
+          >
+            Faire une nouvelle demande
+          </Button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-[oklch(0.98_0_0)] p-10 font-sans flex flex-col items-center gap-12">
-      <div className="text-center flex flex-col gap-2">
-        <h1 className="text-4xl font-bold tracking-tighter lowercase">prendre rendez-vous</h1>
-        <p className="text-[oklch(0.45_0_0)] font-medium italic">votre garage forteresse ÃƒÆ’Ã‚Â  votre service</p>
+    <div className="flex min-h-screen flex-col items-center bg-[oklch(0.98_0_0)] p-6 md:p-10">
+      <div className="mb-10 text-center">
+        <h1 className="text-4xl font-bold tracking-tighter">
+          Prendre rendez-vous
+        </h1>
+
+        <p className="mt-2 text-[oklch(0.45_0_0)]">
+          Votre garage Forteresse à votre service
+        </p>
       </div>
 
-      <div className="max-w-xl w-full">
-        <Section title={step === 1 ? "vos coordonnÃƒÆ’Ã‚Â©es" : "votre vÃƒÆ’Ã‚Â©hicule"}>
+      <div className="w-full max-w-xl">
+        <Section
+          title={
+            step === 1
+              ? "Vos coordonnées"
+              : "Votre véhicule et le rendez-vous"
+          }
+        >
           <form onSubmit={handleSubmit} className="flex flex-col gap-6">
             {step === 1 ? (
               <>
-                <TextField label="nom complet" required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
-                <TextField label="email" type="email" required value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-                <TextField label="tÃƒÆ’Ã‚Â©lÃƒÆ’Ã‚Â©phone" required value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-                <Button type="button" onClick={() => setStep(2)} className="py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px]">ÃƒÆ’Ã‚Â©tape suivante</Button>
+                <TextField
+                  label="Nom complet"
+                  required
+                  value={formData.name}
+                  onChange={(event) =>
+                    handleChange("name", event.target.value)
+                  }
+                />
+
+                <TextField
+                  label="Email"
+                  type="email"
+                  required
+                  value={formData.email}
+                  onChange={(event) =>
+                    handleChange("email", event.target.value)
+                  }
+                />
+
+                <TextField
+                  label="Téléphone"
+                  required
+                  value={formData.phone}
+                  onChange={(event) =>
+                    handleChange("phone", event.target.value)
+                  }
+                />
+
+                <Button
+                  type="button"
+                  onClick={goToNextStep}
+                  className="w-full"
+                >
+                  Continuer
+                </Button>
               </>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField label="immatriculation" required value={formData.plateNumber} onChange={e => setFormData({...formData, plateNumber: e.target.value})} className="font-mono" />
-                  <TextField label="marque" required value={formData.make} onChange={e => setFormData({...formData, make: e.target.value})} />
+                <TextField
+                  label="Immatriculation"
+                  required
+                  value={formData.plateNumber}
+                  onChange={(event) =>
+                    handleChange("plateNumber", event.target.value)
+                  }
+                />
+
+                <TextField
+                  label="Marque"
+                  required
+                  value={formData.make}
+                  onChange={(event) =>
+                    handleChange("make", event.target.value)
+                  }
+                />
+
+                <TextField
+                  label="Modèle"
+                  required
+                  value={formData.model}
+                  onChange={(event) =>
+                    handleChange("model", event.target.value)
+                  }
+                />
+
+                <DateField
+                  label="Date souhaitée"
+                  required
+                  value={formData.scheduled_at}
+                  onChange={(event) =>
+                    handleChange("scheduled_at", event.target.value)
+                  }
+                />
+
+                <div className="flex flex-col gap-2">
+                  <label
+                    htmlFor="booking-description"
+                    className="text-sm font-medium"
+                  >
+                    Description du besoin
+                  </label>
+
+                  <textarea
+                    id="booking-description"
+                    rows={5}
+                    value={formData.description}
+                    onChange={(event) =>
+                      handleChange("description", event.target.value)
+                    }
+                    placeholder="Décrivez la panne ou le service souhaité"
+                    className="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-                <TextField label="modÃƒÆ’Ã‚Â¨le" required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} />
-                <DateField label="date souhaitÃƒÆ’Ã‚Â©e" required value={formData.scheduled_at} onChange={e => setFormData({...formData, scheduled_at: e.target.value})} />
-                <TextField label="motif" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
-                <div className="flex gap-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1 py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px]">retour</Button>
-                  <Button type="submit" className="flex-[2] py-6 rounded-2xl font-bold uppercase tracking-widest text-[10px]" disabled={loading}>{loading ? "envoi..." : "confirmer le rdv"}</Button>
+
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="w-full"
+                  >
+                    Retour
+                  </Button>
+
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full"
+                  >
+                    {loading
+                      ? "Envoi en cours..."
+                      : "Envoyer la demande"}
+                  </Button>
                 </div>
               </>
             )}
@@ -82,5 +256,3 @@ export default function BookingPage() {
     </div>
   );
 }
-// DÃƒÆ’Ã‚Â©sactivation sidebar admin
-BookingPage.getLayout = (page: any) => page;
