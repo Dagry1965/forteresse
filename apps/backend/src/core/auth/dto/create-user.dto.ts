@@ -1,5 +1,5 @@
-// create-user.dto.ts
-import { IsEmail, IsString, IsUUID } from 'class-validator';
+﻿// create-user.dto.ts
+import { IsEmail, IsString } from 'class-validator';
 
 export class CreateUserDto {
   @IsEmail()
@@ -14,6 +14,7 @@ export class CreateUserDto {
   @IsString()
   role: string;
 
-  @IsUUID()
+  @IsString()
   workspace_id: string;
 }
+
