@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -6,6 +6,7 @@ interface User {
   id: string;
   email: string;
   name?: string;
+  role?: "ADMIN" | "MEMBER" | "MECHANIC";
   memberships?: any[];
 }
 
@@ -26,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // 🔥 Chargement initial depuis localStorage
+  // ðŸ”¥ Chargement initial depuis localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem("access_token");
     const storedUser = localStorage.getItem("user");
@@ -40,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoadingAuth(false);
   }, []);
 
-  // 🔥 Login
+  // ðŸ”¥ Login
   const login = (accessToken: string, userData: User) => {
     localStorage.setItem("access_token", accessToken);
     localStorage.setItem("user", JSON.stringify(userData));
@@ -50,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(true);
   };
 
-  // 🔥 Logout
+  // ðŸ”¥ Logout
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user");
@@ -81,3 +82,4 @@ export const useAuth = () => {
   if (!ctx) throw new Error("useAuth must be used inside AuthProvider");
   return ctx;
 };
+

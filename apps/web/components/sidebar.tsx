@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   LayoutDashboard,
@@ -36,7 +36,10 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
         <SidebarItem icon={<LayoutDashboard />} label="dashboard" href="/dashboard" />
         <SidebarItem icon={<Users />} label="clients" href="/clients" />
-        <SidebarItem icon={<Car />} label="véhicules" href="/vehicules" />
+        {user?.role === "ADMIN" && (
+          <SidebarItem icon={<Users />} label="utilisateurs" href="/utilisateurs" />
+        )}
+        <SidebarItem icon={<Car />} label="vÃ©hicules" href="/vehicules" />
         <SidebarItem icon={<Calendar />} label="rendez-vous" href="/rendezvous" />
         <SidebarItem icon={<Wrench />} label="atelier" href="/atelier" />
         <SidebarItem icon={<Package />} label="stock & catalogue" href="/stock" />
@@ -44,7 +47,7 @@ export default function Sidebar() {
         <SidebarItem icon={<CreditCard />} label="caisse" href="/caisse" />
       </nav>
 
-      {/* FOOTER — DÉCONNEXION */}
+      {/* FOOTER â€” DÃ‰CONNEXION */}
       <div className="px-3 py-4 border-t border-[oklch(0.35_0_0)]">
         <button
           onClick={() => {
@@ -54,9 +57,10 @@ export default function Sidebar() {
           className="w-full flex items-center gap-3 px-4 py-3 rounded-md bg-red-600 text-white font-semibold hover:bg-red-700 transition"
         >
           <LogOut size={18} />
-          Déconnexion
+          DÃ©connexion
         </button>
       </div>
     </aside>
   );
 }
+
