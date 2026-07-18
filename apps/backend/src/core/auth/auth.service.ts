@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon2 from 'argon2';
@@ -25,25 +25,25 @@ export class AuthService {
       },
     });
 
-    // 2. Vérification identité
+    // 2. VÃ©rification identitÃ©
     if (!user || !user.password) {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    // 🔥 TEST TEMPORAIRE : bypass du mot de passe
-    const isPasswordValid = true;
+    // ðŸ”¥ TEST TEMPORAIRE : bypass du mot de passe
+    const isPasswordValid = await argon2.verify(user.password, password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    // 3. Vérification des accès Workspace
+    // 3. VÃ©rification des accÃ¨s Workspace
     if (!user.workspaceMembers || user.workspaceMembers.length === 0) {
-      throw new ForbiddenException("Accès refusé : vous n'êtes rattaché à aucun garage.");
+      throw new ForbiddenException("AccÃ¨s refusÃ© : vous n'Ãªtes rattachÃ© Ã  aucun garage.");
     }
 
     const defaultMembership = user.workspaceMembers[0];
 
-    // 4. Payload JWT (🔥 rôle pris depuis WorkspaceMember)
+    // 4. Payload JWT (ðŸ”¥ rÃ´le pris depuis WorkspaceMember)
     const payload = {
       sub: user.id,
       email: user.email,
@@ -51,7 +51,7 @@ export class AuthService {
       workspaceId: defaultMembership.workspace_id,
     };
 
-    // 5. Retour API aligné avec le front (🔥 aucun undefined)
+    // 5. Retour API alignÃ© avec le front (ðŸ”¥ aucun undefined)
     const response = {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -68,7 +68,7 @@ export class AuthService {
       },
     };
 
-    console.log(">>> PAYLOAD RENVOYÉ =", response);
+    console.log(">>> PAYLOAD RENVOYÃ‰ =", response);
 
     return response;
   }
@@ -82,3 +82,4 @@ export class AuthService {
     return null;
   }
 }
+
