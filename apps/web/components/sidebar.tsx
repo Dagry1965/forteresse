@@ -36,7 +36,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
         <SidebarItem icon={<LayoutDashboard />} label="dashboard" href="/dashboard" />
         <SidebarItem icon={<Users />} label="clients" href="/clients" />
-        {user?.role === "ADMIN" && (
+        {user?.memberships?.some((membership) => membership.role === "ADMIN") && (
           <SidebarItem icon={<Users />} label="utilisateurs" href="/utilisateurs" />
         )}
         <SidebarItem icon={<Car />} label="vÃ©hicules" href="/vehicules" />
@@ -63,4 +63,5 @@ export default function Sidebar() {
     </aside>
   );
 }
+
 
