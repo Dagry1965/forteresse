@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 
-const API_BASE = "http://localhost:4000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -32,7 +32,7 @@ export default function LoginPage() {
       try {
         data = await res.json();
       } catch {
-        setError("Réponse invalide du serveur.");
+        setError("RÃ©ponse invalide du serveur.");
         setLoading(false);
         return;
       }
@@ -44,24 +44,24 @@ export default function LoginPage() {
       }
 
       if (!data.access_token || !data.user) {
-        setError("Réponse invalide du serveur.");
+        setError("RÃ©ponse invalide du serveur.");
         setLoading(false);
         return;
       }
 
-      // 🔥 CORRECTION CRITIQUE : clé cohérente avec lib/api.ts
+      // ðŸ”¥ CORRECTION CRITIQUE : clÃ© cohÃ©rente avec lib/api.ts
       localStorage.setItem("access_token", data.access_token);
 
-      // 🔥 Stockage du workspace multi-tenant
+      // ðŸ”¥ Stockage du workspace multi-tenant
       const workspaceId = data.user?.memberships?.[0]?.workspaceId;
       if (workspaceId) {
         localStorage.setItem("current_workspace_id", workspaceId);
       }
 
-      // 🔥 Mise à jour du contexte Auth
+      // ðŸ”¥ Mise Ã  jour du contexte Auth
       login(data.access_token, data.user);
 
-      // 🔥 Redirection
+      // ðŸ”¥ Redirection
       window.location.href = "/dashboard";
 
     } catch (err) {
@@ -108,7 +108,7 @@ export default function LoginPage() {
           </label>
           <input
             type="password"
-            placeholder="••••••••"
+            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
