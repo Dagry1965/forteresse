@@ -128,6 +128,7 @@ export default function UtilisateursPage() {
       </div>
 
       <form
+        autoComplete="off"
         onSubmit={handleCreate}
         className="grid grid-cols-1 md:grid-cols-2 gap-4 border rounded-lg p-5"
       >
@@ -144,6 +145,8 @@ export default function UtilisateursPage() {
         <input
           className="border rounded-md px-3 py-2"
           type="email"
+          name="new-user-email"
+          autoComplete="off"
           placeholder="Adresse email"
           value={form.email}
           onChange={(event) =>
@@ -155,6 +158,8 @@ export default function UtilisateursPage() {
         <input
           className="border rounded-md px-3 py-2"
           type="password"
+          name="new-user-password"
+          autoComplete="new-password"
           placeholder="Mot de passe temporaire"
           value={form.password}
           onChange={(event) =>
@@ -193,3 +198,4 @@ export default function UtilisateursPage() {
     </div>
   );
 }
+
