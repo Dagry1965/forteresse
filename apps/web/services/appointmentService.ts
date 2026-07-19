@@ -1,4 +1,4 @@
-﻿import { API } from '../lib/api';
+import { API } from '../lib/api';
 
 export interface Appointment {
   id: string;
@@ -34,7 +34,7 @@ export const appointmentService = {
     try {
       return await API.post('/api/appointments', data);
     } catch (error: any) {
-      console.error('[appointmentService] Erreur crÃ©ation:', error);
+      console.error('[appointmentService] Erreur création:', error);
       throw error;
     }
   },
@@ -43,7 +43,7 @@ export const appointmentService = {
     try {
       return await API.patch(`/api/appointments/${id}`, data);
     } catch (error: any) {
-      console.error('[appointmentService] Erreur mise Ã  jour:', error);
+      console.error('[appointmentService] Erreur mise à jour:', error);
       throw error;
     }
   },

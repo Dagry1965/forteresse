@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { financeService } from '@/services/financeService';
@@ -37,26 +37,26 @@ export default function ManageFinancePage() {
   const convertToInvoice = async (proformaId: string) => {
     try {
       await proformaService.convertToInvoice(proformaId);
-      alert("Facture crÃ©Ã©e avec succÃ¨s !");
+      alert("Facture créée avec succès !");
       loadData();
     } catch (error) {
-      alert("Erreur lors de la crÃ©ation de la facture");
+      alert("Erreur lors de la création de la facture");
     }
   };
 
   if (loading) {
-    return <div className="p-10">Chargement des donnÃ©es financiÃ¨res...</div>;
+    return <div className="p-10">Chargement des données financières...</div>;
   }
 
   return (
     <div className="p-10">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight lowercase">Gestion FinanciÃ¨re</h1>
+          <h1 className="text-3xl font-bold tracking-tight lowercase">Gestion Financière</h1>
           <p className="text-[oklch(0.45_0_0)]">Factures, devis et suivi des paiements</p>
         </div>
         <Button onClick={loadData} variant="outline">
-          RafraÃ®chir
+          Rafraîchir
         </Button>
       </div>
 
@@ -70,7 +70,7 @@ export default function ManageFinancePage() {
               : 'text-[oklch(0.45_0_0)] hover:text-black'
           }`}
         >
-          Factures impayÃ©es ({invoices.length})
+          Factures impayées ({invoices.length})
         </button>
         <button
           onClick={() => setActiveTab('proformas')}
@@ -86,18 +86,18 @@ export default function ManageFinancePage() {
 
       {/* Contenu */}
       {activeTab === 'invoices' && (
-        <Section title="Factures impayÃ©es">
+        <Section title="Factures impayées">
           {invoices.length === 0 ? (
-            <p className="text-[oklch(0.45_0_0)] py-8">Aucune facture impayÃ©e.</p>
+            <p className="text-[oklch(0.45_0_0)] py-8">Aucune facture impayée.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b">
                     <th className="py-4 text-left font-bold text-[oklch(0.45_0_0)]">Client</th>
-                    <th className="py-4 text-left font-bold text-[oklch(0.45_0_0)]">VÃ©hicule</th>
+                    <th className="py-4 text-left font-bold text-[oklch(0.45_0_0)]">Véhicule</th>
                     <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">Montant</th>
-                    <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">PayÃ©</th>
+                    <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">Payé</th>
                     <th className="py-4 text-right font-bold text-[oklch(0.45_0_0)]">Reste</th>
                     <th className="py-4 text-center font-bold text-[oklch(0.45_0_0)]">Action</th>
                   </tr>
@@ -116,11 +116,11 @@ export default function ManageFinancePage() {
                         <td className="py-4 text-sm">
                           {invoice.proforma?.intervention?.appointment?.vehicle?.plateNumber}
                         </td>
-                        <td className="py-4 text-right font-medium">{total.toFixed(2)} â‚¬</td>
-                        <td className="py-4 text-right text-emerald-600">{paid.toFixed(2)} â‚¬</td>
-                        <td className="py-4 text-right text-red-500 font-bold">{remain.toFixed(2)} â‚¬</td>
+                        <td className="py-4 text-right font-medium">{total.toFixed(2)} €</td>
+                        <td className="py-4 text-right text-emerald-600">{paid.toFixed(2)} €</td>
+                        <td className="py-4 text-right text-red-500 font-bold">{remain.toFixed(2)} €</td>
                         <td className="py-4 text-center">
-                          <Button size="sm" onClick={() => alert("Aller Ã  la caisse")}>
+                          <Button size="sm" onClick={() => alert("Aller à la caisse")}>
                             Encaisser
                           </Button>
                         </td>
@@ -147,7 +147,7 @@ export default function ManageFinancePage() {
                       {proforma.intervention?.appointment?.vehicle?.client?.name}
                     </div>
                     <div className="text-sm text-[oklch(0.45_0_0)]">
-                      {proforma.intervention?.appointment?.vehicle?.plateNumber} â€¢ {proforma.total_amount} â‚¬
+                      {proforma.intervention?.appointment?.vehicle?.plateNumber} • {proforma.total_amount} €
                     </div>
                   </div>
                   <Button onClick={() => convertToInvoice(proforma.id)}>

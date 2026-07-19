@@ -1,4 +1,4 @@
-﻿const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export async function api<T = any>(
   url: string,
@@ -19,11 +19,11 @@ export async function api<T = any>(
       ...(options.headers || {}),
     };
 
-    // ðŸ”¥ LOG 1 : RequÃªte sortante
-    console.log(`%cðŸš€ API CALL: ${options.method || 'GET'} ${fullUrl}`, 'color: #00bfff; font-weight: bold;');
-    console.log('ðŸ“¤ Headers:', { 
+    // 🔥 LOG 1 : Requête sortante
+    console.log(`%c🚀 API CALL: ${options.method || 'GET'} ${fullUrl}`, 'color: #00bfff; font-weight: bold;');
+    console.log('📤 Headers:', { 
         "x-workspace-id": workspaceId, 
-        "Authorization": accessToken ? "Bearer (prÃ©sent)" : "Manquant" 
+        "Authorization": accessToken ? "Bearer (présent)" : "Manquant" 
     });
 
     const res = await fetch(fullUrl, {
@@ -42,8 +42,8 @@ export async function api<T = any>(
 
     // === GESTION DES ERREURS ===
     if (!res.ok) {
-      // ðŸ”¥ LOG 2 : Erreur API
-      console.error(`%câŒ API ERROR [${res.status}]: ${fullUrl}`, 'color: #ff4500; font-weight: bold;', json);
+      // 🔥 LOG 2 : Erreur API
+      console.error(`%c❌ API ERROR [${res.status}]: ${fullUrl}`, 'color: #ff4500; font-weight: bold;', json);
 
       return Promise.reject({
         status: res.status,
@@ -52,8 +52,8 @@ export async function api<T = any>(
       });
     }
 
-    // ðŸ”¥ LOG 3 : SuccÃ¨s API
-    console.log(`%câœ… API SUCCESS: ${fullUrl}`, 'color: #32cd32; font-weight: bold;', json);
+    // 🔥 LOG 3 : Succès API
+    console.log(`%c✅ API SUCCESS: ${fullUrl}`, 'color: #32cd32; font-weight: bold;', json);
 
     return json as T;
   };
@@ -63,7 +63,7 @@ export async function api<T = any>(
     return await doFetch(token);
   } catch (error: any) {
     if (error?.status === 401 && refreshToken) {
-      console.warn("ðŸ”„ Tentative de refresh token...");
+      console.warn("🔄 Tentative de refresh token...");
       try {
         const refreshRes = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
           method: "POST",
@@ -75,18 +75,18 @@ export async function api<T = any>(
           const data = await refreshRes.json();
           const newAccessToken = data.accessToken || data.access_token;
           localStorage.setItem("token", newAccessToken);
-          console.log("âœ… Token rafraÃ®chi, on rejoue la requÃªte initiale.");
+          console.log("✅ Token rafraîchi, on rejoue la requête initiale.");
           return await doFetch(newAccessToken);
         } else {
-          console.error("âŒ Refresh token invalide, dÃ©connexion.");
+          console.error("❌ Refresh token invalide, déconnexion.");
           localStorage.clear();
           window.location.href = "/login";
-          return Promise.reject({ message: "Session expirÃ©e" });
+          return Promise.reject({ message: "Session expirée" });
         }
       } catch {
         localStorage.clear();
         window.location.href = "/login";
-        return Promise.reject({ message: "Session expirÃ©e" });
+        return Promise.reject({ message: "Session expirée" });
       }
     }
 
@@ -161,11 +161,11 @@ export async function reserveAppointment({
   date,
 }: ReserveAppointmentParams) {
   if (!vehicleId) {
-    throw new Error("Veuillez sélectionner un véhicule.");
+    throw new Error("Veuillez s�lectionner un v�hicule.");
   }
 
   if (!timeSlotId) {
-    throw new Error("Veuillez sélectionner un créneau.");
+    throw new Error("Veuillez s�lectionner un cr�neau.");
   }
 
   const vehicle = await API.get<{
@@ -184,7 +184,7 @@ export async function reserveAppointment({
 
   if (!clientId) {
     throw new Error(
-      "Aucun client n'est associé à ce véhicule.",
+      "Aucun client n'est associ� � ce v�hicule.",
     );
   }
 

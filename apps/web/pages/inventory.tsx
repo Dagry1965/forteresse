@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { stockService } from '@/services/stockService';
@@ -18,7 +18,7 @@ export default function InventoryPage() {
 
       const res = await stockService.getAll();
 
-      // ðŸ”¥ Normalisation ultra-sÃ©curisÃ©e
+      // 🔥 Normalisation ultra-sécurisée
       const list = res ?? [];
 
       setProducts(list);
@@ -36,7 +36,7 @@ export default function InventoryPage() {
     loadInventory();
   }, []);
 
-  // Recherche en temps rÃ©el â€” toujours sur un tableau
+  // Recherche en temps réel — toujours sur un tableau
   useEffect(() => {
     const filtered = products.filter((product) =>
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,7 +56,7 @@ export default function InventoryPage() {
           <h1 className="text-3xl font-bold tracking-tight lowercase">Inventaire</h1>
           <p className="text-[oklch(0.45_0_0)]">Gestion des stocks et mouvements</p>
         </div>
-        <Button onClick={() => alert("FonctionnalitÃ© Ã  venir : Ajuster le stock")}>
+        <Button onClick={() => alert("Fonctionnalité à venir : Ajuster le stock")}>
           Ajuster le stock
         </Button>
       </div>
@@ -74,7 +74,7 @@ export default function InventoryPage() {
 
       {filteredProducts.length === 0 ? (
         <Card className="p-20 text-center">
-          <p className="text-[oklch(0.45_0_0)]">Aucun produit trouvÃ©.</p>
+          <p className="text-[oklch(0.45_0_0)]">Aucun produit trouvé.</p>
         </Card>
       ) : (
         <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
@@ -82,7 +82,7 @@ export default function InventoryPage() {
             <thead>
               <tr className="border-b bg-[oklch(0.98_0_0)]">
                 <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">Produit</th>
-                <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">RÃ©fÃ©rence</th>
+                <th className="px-6 py-4 text-left font-bold text-[oklch(0.45_0_0)]">Référence</th>
                 <th className="px-6 py-4 text-right font-bold text-[oklch(0.45_0_0)]">Prix de vente</th>
                 <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Stock actuel</th>
                 <th className="px-6 py-4 text-center font-bold text-[oklch(0.45_0_0)]">Statut</th>
@@ -99,10 +99,10 @@ export default function InventoryPage() {
                   <tr key={product.id} className="border-b hover:bg-[oklch(0.99_0_0)]">
                     <td className="px-6 py-5 font-medium">{product.name}</td>
                     <td className="px-6 py-5 text-[oklch(0.45_0_0)] font-mono text-sm">
-                      {product.reference || 'â€”'}
+                      {product.reference || '—'}
                     </td>
                     <td className="px-6 py-5 text-right font-bold">
-                      {product.selling_price} â‚¬
+                      {product.selling_price} €
                     </td>
                     <td className="px-6 py-5 text-center font-bold text-lg">
                       {quantity}

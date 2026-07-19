@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { financeService } from '@/services/financeService';
@@ -38,7 +38,7 @@ export default function FleetInvoicingPage() {
       });
   }, []);
 
-  // 2. Charger les dossiers du client sÃ©lectionnÃ©
+  // 2. Charger les dossiers du client sélectionné
   useEffect(() => {
     if (!selectedClientId) {
       setPendingItems([]);
@@ -62,7 +62,7 @@ export default function FleetInvoicingPage() {
 
   const handleGenerateInvoice = async () => {
     if (selectedIds.length === 0)
-      return toast.error('SÃ©lectionnez au moins un dossier');
+      return toast.error('Sélectionnez au moins un dossier');
 
     try {
       setLoading(true);
@@ -72,11 +72,11 @@ export default function FleetInvoicingPage() {
         appointment_ids: selectedIds,
       });
 
-      toast.success('Facture groupÃ©e gÃ©nÃ©rÃ©e !');
+      toast.success('Facture groupée générée !');
      router.push('/dashboard'); 
     } catch (error) {
       console.error(error);
-      toast.error('Erreur lors de la gÃ©nÃ©ration de la facture flotte');
+      toast.error('Erreur lors de la génération de la facture flotte');
     } finally {
       setLoading(false);
     }
@@ -100,7 +100,7 @@ export default function FleetInvoicingPage() {
         </h1>
       </div>
 
-      {/* Ã‰tape 1 : Choix du client */}
+      {/* Étape 1 : Choix du client */}
       <Card className="p-6 border-blue-100 bg-blue-50/30 rounded-2xl">
         <label className="block text-xs font-black uppercase text-slate-500 mb-2">
           Choisir le client entreprise
@@ -114,7 +114,7 @@ export default function FleetInvoicingPage() {
             setSelectedIds([]);
           }}
         >
-          <option value="">-- SÃ©lectionner un compte flotte --</option>
+          <option value="">-- Sélectionner un compte flotte --</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -123,11 +123,11 @@ export default function FleetInvoicingPage() {
         </select>
       </Card>
 
-      {/* Ã‰tape 2 : Liste des travaux */}
+      {/* Étape 2 : Liste des travaux */}
       {selectedClientId && (
         <div className="space-y-4">
           <h2 className="text-sm font-black uppercase text-slate-400">
-            Travaux terminÃ©s en attente de facturation
+            Travaux terminés en attente de facturation
           </h2>
 
           <div className="grid gap-3">
@@ -156,7 +156,7 @@ export default function FleetInvoicingPage() {
                     <div>
                       <p className="font-black text-slate-900">
                         {item.vehicle?.registration || 'Sans immat.'} -{' '}
-                        {item.vehicle?.brand || 'VÃ©hicule inconnu'}
+                        {item.vehicle?.brand || 'Véhicule inconnu'}
                       </p>
                       <p className="text-xs text-slate-500 font-medium">
                         RDV du{' '}
@@ -173,7 +173,7 @@ export default function FleetInvoicingPage() {
                         item.total ||
                         0
                       ).toLocaleString()}{' '}
-                      â‚¬
+                      €
                     </p>
                     <p className="text-[10px] font-bold text-blue-600 uppercase">
                       TTC
@@ -190,7 +190,7 @@ export default function FleetInvoicingPage() {
                   className="mx-auto text-slate-300 mb-4"
                 />
                 <p className="text-slate-400 font-bold uppercase text-xs tracking-widest">
-                  Aucun dossier prÃªt pour la facturation.
+                  Aucun dossier prêt pour la facturation.
                 </p>
               </div>
             )}
@@ -198,16 +198,16 @@ export default function FleetInvoicingPage() {
         </div>
       )}
 
-      {/* Ã‰tape 3 : Barre d'action flottante */}
+      {/* Étape 3 : Barre d'action flottante */}
       {selectedIds.length > 0 && (
         <div className="fixed bottom-8 left-0 right-0 flex justify-center px-4 z-50">
           <Card className="w-full max-w-2xl p-4 shadow-2xl border-blue-500 bg-white flex justify-between items-center rounded-2xl ring-4 ring-blue-500/10">
             <div>
               <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                Total sÃ©lectionnÃ©
+                Total sélectionné
               </p>
               <p className="text-3xl font-black text-blue-600">
-                {totalSelected.toLocaleString()} â‚¬
+                {totalSelected.toLocaleString()} €
               </p>
             </div>
 
@@ -217,7 +217,7 @@ export default function FleetInvoicingPage() {
               disabled={loading}
             >
               <FileStack size={20} />
-              GÃ‰NÃ‰RER LA FACTURE ({selectedIds.length})
+              GÉNÉRER LA FACTURE ({selectedIds.length})
             </Button>
           </Card>
         </div>

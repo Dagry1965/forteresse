@@ -1,4 +1,4 @@
-﻿// components/ui/data-table.tsx
+// components/ui/data-table.tsx
 
 'use client';
 
@@ -31,7 +31,7 @@ export function DataTable<T extends { id?: string | number }>({
   onEdit,
   onDelete,
   loading = false,
-  emptyMessage = "Aucune donnÃ©e",
+  emptyMessage = "Aucune donnée",
   searchable = true,
   pageSize = 10,
 }: DataTableProps<T>) {
@@ -39,11 +39,11 @@ export function DataTable<T extends { id?: string | number }>({
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
-  // âœ… Protection importante
+  // ✅ Protection importante
   if (!Array.isArray(data)) {
     return (
       <div className="p-8 text-center text-red-500 border rounded-2xl">
-        Erreur : Les donnÃ©es reÃ§ues ne sont pas valides.
+        Erreur : Les données reçues ne sont pas valides.
       </div>
     );
   }
@@ -86,7 +86,7 @@ export function DataTable<T extends { id?: string | number }>({
             className="w-full max-w-sm border rounded-2xl px-4 py-2 text-sm"
           />
           <span className="text-sm text-slate-500">
-            {filteredData.length} rÃ©sultat{filteredData.length > 1 ? 's' : ''}
+            {filteredData.length} résultat{filteredData.length > 1 ? 's' : ''}
           </span>
         </div>
       )}
@@ -147,7 +147,7 @@ export function DataTable<T extends { id?: string | number }>({
             disabled={currentPage === 1} 
             onClick={() => setCurrentPage(p => p - 1)}
           >
-            PrÃ©cÃ©dent
+            Précédent
           </Button>
           <span className="text-sm">Page {currentPage} / {totalPages}</span>
           <Button 

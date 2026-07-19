@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { appointmentService } from '@/services/appointmentService';
@@ -22,12 +22,12 @@ export default function DashboardPage() {
       const interventions = await workshopService.getAll();
       const invoices = await financeService.getUnpaidInvoices();
 
-      // ðŸ”¥ Normalisation ultra-sÃ©curisÃ©e
+      // 🔥 Normalisation ultra-sécurisée
       const interList = interventions ?? [];
 
       const invoiceList = invoices ?? [];
 
-      // ðŸ”¥ IMPORTANT : plus aucun filter â†’ reduce est 100% safe
+      // 🔥 IMPORTANT : plus aucun filter → reduce est 100% safe
       const ongoing = interList.reduce((count, item) => {
         return item?.status !== 'completed' ? count + 1 : count;
       }, 0);
@@ -74,7 +74,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="border rounded-xl p-6">
-          <div className="text-sm text-[oklch(0.45_0_0)]">Factures impayÃ©es</div>
+          <div className="text-sm text-[oklch(0.45_0_0)]">Factures impayées</div>
           <div className="text-4xl font-bold">{stats.unpaidInvoices}</div>
         </div>
       </div>
@@ -83,8 +83,8 @@ export default function DashboardPage() {
         <h2 className="text-xl font-bold mb-4">Actions rapides</h2>
         <div className="flex gap-4">
           <Button>Nouveau rendez-vous</Button>
-          <Button>GÃ©rer les clients</Button>
-          <Button>Aller Ã  la caisse</Button>
+          <Button>Gérer les clients</Button>
+          <Button>Aller à la caisse</Button>
         </div>
       </div>
     </div>

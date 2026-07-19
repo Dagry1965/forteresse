@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { workshopService } from '@/services/workshopService';
@@ -18,7 +18,7 @@ export default function WorkshopPage() {
       const intervsRaw = await workshopService.getAll();
       const pendingRaw = await appointmentService.getPending();
 
-      // ðŸ”¥ Normalisation backend
+      // 🔥 Normalisation backend
       const intervs = normalizeList(intervsRaw);
       const pending = normalizeList(pendingRaw);
 
@@ -38,10 +38,10 @@ export default function WorkshopPage() {
   const startFromAppointment = async (appointmentId: string) => {
     try {
       await appointmentService.startIntervention(appointmentId);
-      alert("Intervention dÃ©marrÃ©e !");
+      alert("Intervention démarrée !");
       loadData();
     } catch (err) {
-      alert("Erreur lors du dÃ©marrage de l'intervention");
+      alert("Erreur lors du démarrage de l'intervention");
     }
   };
 
@@ -73,7 +73,7 @@ export default function WorkshopPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="font-bold">
-                        {inter.appointment?.vehicle?.plateNumber} â€” {inter.appointment?.vehicle?.client?.name}
+                        {inter.appointment?.vehicle?.plateNumber} — {inter.appointment?.vehicle?.client?.name}
                       </div>
                       <div className="text-sm text-[oklch(0.45_0_0)]">
                         {inter.appointment?.initial_description}
@@ -102,7 +102,7 @@ export default function WorkshopPage() {
         </Section>
 
         {/* Rendez-vous en attente */}
-        <Section title="Rendez-vous Ã  dÃ©marrer">
+        <Section title="Rendez-vous à démarrer">
           {pendingAppointments.length === 0 ? (
             <p className="text-[oklch(0.45_0_0)]">Aucun rendez-vous en attente.</p>
           ) : (
@@ -112,11 +112,11 @@ export default function WorkshopPage() {
                   <div>
                     <div className="font-bold">{appt.vehicle?.client?.name}</div>
                     <div className="text-sm text-[oklch(0.45_0_0)]">
-                      {appt.vehicle?.make} {appt.vehicle?.model} â€” {appt.vehicle?.plateNumber}
+                      {appt.vehicle?.make} {appt.vehicle?.model} — {appt.vehicle?.plateNumber}
                     </div>
                   </div>
                   <Button onClick={() => startFromAppointment(appt.id)}>
-                    DÃ©marrer intervention
+                    Démarrer intervention
                   </Button>
                 </div>
               ))}

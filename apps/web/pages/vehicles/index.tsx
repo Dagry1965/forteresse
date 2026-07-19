@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState } from "react";
 import { vehicleService } from "@/services/vehicleService";
@@ -23,7 +23,7 @@ export default function VehiclesListPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [vehicleToDelete, setVehicleToDelete] = useState<any | null>(null);
 
-  // ðŸ‘‰ Ajout des erreurs
+  // 👉 Ajout des erreurs
   const [errors, setErrors] = useState<any>({});
 
   const {
@@ -51,16 +51,16 @@ export default function VehiclesListPage() {
       if (!isEditing && result?.id) {
         router.push(`/vehicles/${result.id}`);
       } else {
-        toast.success(isEditing ? 'VÃ©hicule modifiÃ© avec succÃ¨s' : 'VÃ©hicule crÃ©Ã© avec succÃ¨s');
+        toast.success(isEditing ? 'Véhicule modifié avec succès' : 'Véhicule créé avec succès');
       }
     },
   });
 
-  // ðŸ‘‰ Fonction de validation + soumission
+  // 👉 Fonction de validation + soumission
  const handleFormSubmit = async () => {
   const newErrors: any = {};
 
-  // === RÃˆGLE 1 : Client obligatoire ===
+  // === RÈGLE 1 : Client obligatoire ===
   if (!formData.clientId) {
     newErrors.clientId = "Le client est obligatoire";
   }
@@ -72,7 +72,7 @@ export default function VehiclesListPage() {
     newErrors.make = "La marque est obligatoire";
   }
   if (!formData.model?.trim()) {
-    newErrors.model = "Le modÃ¨le est obligatoire";
+    newErrors.model = "Le modèle est obligatoire";
   }
 
   if (Object.keys(newErrors).length > 0) {
@@ -84,15 +84,15 @@ export default function VehiclesListPage() {
   await handleSubmit();
 };
 
-  // Chargement des vÃ©hicules
+  // Chargement des véhicules
   const loadVehicles = async () => {
     try {
       setLoading(true);
       const data = await vehicleService.getAll();
       setVehicles(data || []);
     } catch (err) {
-      console.error("Erreur chargement vÃ©hicules", err);
-      toast.error("Erreur lors du chargement des vÃ©hicules");
+      console.error("Erreur chargement véhicules", err);
+      toast.error("Erreur lors du chargement des véhicules");
     } finally {
       setLoading(false);
     }
@@ -119,11 +119,11 @@ export default function VehiclesListPage() {
   const columns: Column<any>[] = [
     { key: 'plateNumber', header: 'Immatriculation' },
     { key: 'make', header: 'Marque' },
-    { key: 'model', header: 'ModÃ¨le' },
+    { key: 'model', header: 'Modèle' },
     {
       key: 'client',
       header: 'Client',
-      render: (v) => v.client?.name || 'â€”',
+      render: (v) => v.client?.name || '—',
     },
   ];
 
@@ -155,7 +155,7 @@ const handleOpenEdit = (vehicle: any) => {
 
     try {
       await vehicleService.delete(vehicleToDelete.id);
-      toast.success("VÃ©hicule supprimÃ© avec succÃ¨s");
+      toast.success("Véhicule supprimé avec succès");
       loadVehicles();
     } catch (error: any) {
       const message =
@@ -172,8 +172,8 @@ const handleOpenEdit = (vehicle: any) => {
   return (
     <div className="p-10">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Gestion des vÃ©hicules</h1>
-        <Button onClick={handleOpenCreate}>Nouveau vÃ©hicule</Button>
+        <h1 className="text-3xl font-bold">Gestion des véhicules</h1>
+        <Button onClick={handleOpenCreate}>Nouveau véhicule</Button>
       </div>
 
       <DataTable
@@ -187,7 +187,7 @@ const handleOpenEdit = (vehicle: any) => {
         onDelete={handleDelete}
       />
 
-      {/* Modale de crÃ©ation / Ã©dition */}
+      {/* Modale de création / édition */}
       <EntityFormModal
         isOpen={isModalOpen}
         onClose={() => {
@@ -195,7 +195,7 @@ const handleOpenEdit = (vehicle: any) => {
           resetForm();
           setErrors({});
         }}
-        title={isEditing ? "Modifier le vÃ©hicule" : "Nouveau vÃ©hicule"}
+        title={isEditing ? "Modifier le véhicule" : "Nouveau véhicule"}
         onSubmit={handleFormSubmit}
         isSubmitting={isSubmitting}
       >
@@ -212,7 +212,7 @@ const handleOpenEdit = (vehicle: any) => {
                 if (errors.clientId) setErrors({ ...errors, clientId: '' });
               }}
             >
-              <option value="">-- SÃ©lectionner un client --</option>
+              <option value="">-- Sélectionner un client --</option>
               {clientsList.map((client: any) => (
                 <option key={client.id} value={client.id}>
                   {client.name}
@@ -258,12 +258,12 @@ const handleOpenEdit = (vehicle: any) => {
             )}
           </div>
 
-          {/* ModÃ¨le */}
+          {/* Modèle */}
           <div>
-            <label className="block text-sm font-medium mb-1">ModÃ¨le *</label>
+            <label className="block text-sm font-medium mb-1">Modèle *</label>
             <input
               className={`w-full border rounded-2xl px-4 py-3 ${errors.model ? 'border-red-500' : ''}`}
-              placeholder="ModÃ¨le"
+              placeholder="Modèle"
               value={formData.model}
               onChange={(e) => {
                 setFormData({ ...formData, model: e.target.value });
@@ -282,10 +282,10 @@ const handleOpenEdit = (vehicle: any) => {
       <ConfirmDialog
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        title="Supprimer ce vÃ©hicule ?"
+        title="Supprimer ce véhicule ?"
         description={
           vehicleToDelete
-            ? `ÃŠtes-vous sÃ»r de vouloir supprimer le vÃ©hicule "${vehicleToDelete.plateNumber}" ?`
+            ? `Êtes-vous sûr de vouloir supprimer le véhicule "${vehicleToDelete.plateNumber}" ?`
             : ""
         }
         onConfirm={confirmDeletion}

@@ -1,10 +1,10 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { interventionService, Intervention } from '@/services/interventionService';
 import { stockService } from '@/services/stockService';
-// âœ… AJOUT DE L'IMPORT DES CONSTANTES
+// ✅ AJOUT DE L'IMPORT DES CONSTANTES
 import { CASE_STATUS } from '../../../../../../shared/constants/status.constants';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -21,7 +21,7 @@ import {
   Save,
   Undo2,
   FileText,
-  Play // âœ… AjoutÃ© pour l'Ã©tat en cours
+  Play // ✅ Ajouté pour l'état en cours
 } from 'lucide-react';
 
 export default function CaseDetailPage() {
@@ -29,18 +29,18 @@ export default function CaseDetailPage() {
   const router = useRouter();
   const id = params?.id as string;
 
-  /* ================= Ã‰TATS DU DOSSIER ================= */
+  /* ================= ÉTATS DU DOSSIER ================= */
   const [dossier, setDossier] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState(false); // âœ… Ã‰tat pour sÃ©curiser les clics
+  const [actionLoading, setActionLoading] = useState(false); // ✅ État pour sécuriser les clics
   const [stockItems, setStockItems] = useState<any[]>([]);
   
-  // Ã‰tats pour la recherche de piÃ¨ces
+  // États pour la recherche de pièces
   const [searchPart, setSearchTermPart] = useState('');
   const [activeSearchPhase, setActiveSearchPhase] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
-  /* ================= CHARGEMENT DES DONNÃ‰ES ================= */
+  /* ================= CHARGEMENT DES DONNÉES ================= */
   
   const fetchFullDossier = useCallback(async () => {
     if (!id) return;
@@ -48,12 +48,12 @@ export default function CaseDetailPage() {
     try {
       setLoading(true);
 
-      // 1. On rÃ©cupÃ¨re l'intervention pour avoir le case_id
+      // 1. On récupère l'intervention pour avoir le case_id
       const currentInt = await interventionService.getOne(id);
       
-      // 2. On rÃ©cupÃ¨re le dossier complet
+      // 2. On récupère le dossier complet
       if (!currentInt.case_id) {
-        throw new Error("Cette intervention n'est associée à aucun dossier.");
+        throw new Error("Cette intervention n'est associ�e � aucun dossier.");
       }
 
       const data = await interventionService.getCaseDetails(currentInt.case_id);
@@ -87,13 +87,13 @@ export default function CaseDetailPage() {
     try {
       await interventionService.createNewPhase(
         dossier.id, 
-        "Nouveau problÃ¨me dÃ©tectÃ© (ex: fuite, piÃ¨ce usÃ©e au dÃ©montage...)"
+        "Nouveau problème détecté (ex: fuite, pièce usée au démontage...)"
       );
 
-      toast.success("Nouvelle phase de travail ajoutÃ©e");
+      toast.success("Nouvelle phase de travail ajoutée");
       fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur lors de la crÃ©ation");
+      toast.error("Erreur lors de la création");
     }
   };
 
@@ -108,7 +108,7 @@ export default function CaseDetailPage() {
         status: status as any,
       });
 
-      toast.success("Mise Ã  jour enregistrÃ©e");
+      toast.success("Mise à jour enregistrée");
       fetchFullDossier();
     } catch (e) {
       toast.error("Erreur lors de la sauvegarde");
@@ -122,7 +122,7 @@ export default function CaseDetailPage() {
         quantity: 1,
       });
 
-      toast.success("PiÃ¨ce ajoutÃ©e Ã  la phase");
+      toast.success("Pièce ajoutée à la phase");
       setSearchTermPart('');
       setActiveSearchPhase(null);
       fetchFullDossier();
@@ -134,37 +134,37 @@ export default function CaseDetailPage() {
   const handleRemovePart = async (partId: string) => {
     try {
       await interventionService.removePart(partId);
-      toast.success("PiÃ¨ce retirÃ©e");
+      toast.success("Pièce retirée");
       fetchFullDossier();
     } catch (e) {
       toast.error("Erreur de suppression");
     }
   };
 
-  /* ================= GÃ‰NÃ‰RATION PROFORMA ================= */
+  /* ================= GÉNÉRATION PROFORMA ================= */
   
   const handleGenerateProforma = async () => {
     try {
       setActionLoading(true);
       const proforma = await interventionService.generateProforma(dossier.id);
-      toast.success(`Proforma ${proforma.reference} gÃ©nÃ©rÃ©e !`);
+      toast.success(`Proforma ${proforma.reference} générée !`);
       router.push(`/billing/proforma/${proforma.id}`);
     } catch (e) {
-      toast.error("Erreur lors de la gÃ©nÃ©ration du devis global");
+      toast.error("Erreur lors de la génération du devis global");
     } finally {
       setActionLoading(false);
     }
   };
 
-  /* ================= VALIDATION ACCORD CLIENT (CORRIGÃ‰) ================= */
+  /* ================= VALIDATION ACCORD CLIENT (CORRIGÉ) ================= */
 
   const handleApproveCase = async () => {
     try {
       setActionLoading(true);
-      // âœ… Appel conforme Ã  votre architecture /case/:id/status
+      // ✅ Appel conforme à votre architecture /case/:id/status
       await interventionService.updateCaseStatus(dossier.id, CASE_STATUS.IN_PROGRESS);
 
-      toast.success("Accord client enregistrÃ© ! Travaux lancÃ©s.");
+      toast.success("Accord client enregistré ! Travaux lancés.");
       await fetchFullDossier();
     } catch (e) {
       toast.error("Erreur lors de la validation");
@@ -230,7 +230,7 @@ export default function CaseDetailPage() {
             </h1>
 
             <p className="text-sm text-slate-500 font-medium italic">
-              PropriÃ©taire : {dossier.client?.name} â€” Immatriculation :{' '}
+              Propriétaire : {dossier.client?.name} — Immatriculation :{' '}
               {dossier.vehicle?.registration}
             </p>
           </div>
@@ -268,7 +268,7 @@ export default function CaseDetailPage() {
               )}
 
               <div className="flex gap-6">
-                {/* Pastille NumÃ©ro */}
+                {/* Pastille Numéro */}
                 <div
                   className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg z-10 ${
                     phase.status === 'COMPLETED'
@@ -295,8 +295,8 @@ export default function CaseDetailPage() {
 
                         <h3 className="font-black text-xs uppercase text-slate-700 tracking-widest">
                           {index === 0
-                            ? "Diagnostic de dÃ©part"
-                            : "Travaux SupplÃ©mentaires"}
+                            ? "Diagnostic de départ"
+                            : "Travaux Supplémentaires"}
                         </h3>
                       </div>
 
@@ -314,7 +314,7 @@ export default function CaseDetailPage() {
                         <option value="PENDING">EN ATTENTE</option>
                         <option value="DIAGNOSIS">DIAGNOSTIC</option>
                         <option value="IN_PROGRESS">EN COURS</option>
-                        <option value="COMPLETED">TERMINÃ‰ âœ…</option>
+                        <option value="COMPLETED">TERMINÉ ✅</option>
                       </select>
                     </div>
 
@@ -322,7 +322,7 @@ export default function CaseDetailPage() {
                       {/* Description technique */}
                       <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 block">
-                          Notes du mÃ©canicien
+                          Notes du mécanicien
                         </label>
 
                         <textarea 
@@ -335,15 +335,15 @@ export default function CaseDetailPage() {
                               phase.status
                             )
                           }
-                          placeholder="DÃ©crivez les pannes ou les travaux effectuÃ©s..."
+                          placeholder="Décrivez les pannes ou les travaux effectués..."
                         />
                       </div>
 
-                      {/* Section PiÃ¨ces de cette phase */}
+                      {/* Section Pièces de cette phase */}
                       <div className="pt-4 border-t border-slate-100">
                         <div className="flex justify-between items-center mb-4">
                           <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-widest">
-                            PiÃ¨ces & Fournitures Phase {index + 1}
+                            Pièces & Fournitures Phase {index + 1}
                           </h4>
 
                           <Button 
@@ -361,7 +361,7 @@ export default function CaseDetailPage() {
                           </Button>
                         </div>
 
-                        {/* Moteur de recherche local Ã  la phase */}
+                        {/* Moteur de recherche local à la phase */}
                         {activeSearchPhase === phase.id && (
                           <div className="relative mb-6 animate-in fade-in slide-in-from-top-2">
                             <Search
@@ -372,7 +372,7 @@ export default function CaseDetailPage() {
                             <input 
                               autoFocus
                               className="w-full pl-10 pr-4 py-3 bg-blue-50/50 border-2 border-blue-200 rounded-xl text-sm outline-none"
-                              placeholder="Taper le nom d'une piÃ¨ce..."
+                              placeholder="Taper le nom d'une pièce..."
                               value={searchPart}
                               onChange={(e) => setSearchTermPart(e.target.value)}
                             />
@@ -398,7 +398,7 @@ export default function CaseDetailPage() {
                                       </span>
 
                                       <span className="text-blue-600 font-black text-sm">
-                                        {item.price_sell} â‚¬
+                                        {item.price_sell} €
                                       </span>
                                     </div>
                                   ))}
@@ -407,7 +407,7 @@ export default function CaseDetailPage() {
                           </div>
                         )}
 
-                        {/* Liste des piÃ¨ces de la phase */}
+                        {/* Liste des pièces de la phase */}
                         {phase.InterventionPart && phase.InterventionPart.length > 0 ? (
                           <div className="space-y-2">
                             {phase.InterventionPart.map((p: any) => (
@@ -431,7 +431,7 @@ export default function CaseDetailPage() {
 
                                 <div className="flex items-center gap-4">
                                   <span className="font-mono font-bold text-slate-900">
-                                    {p.price_snapshot} â‚¬
+                                    {p.price_snapshot} €
                                   </span>
 
                                   <button
@@ -446,7 +446,7 @@ export default function CaseDetailPage() {
                           </div>
                         ) : (
                           <p className="text-center py-6 text-slate-400 text-xs italic bg-slate-50/50 rounded-xl border border-dashed">
-                            Aucune piÃ¨ce ajoutÃ©e pour le moment
+                            Aucune pièce ajoutée pour le moment
                           </p>
                         )}
                       </div>
@@ -468,7 +468,7 @@ export default function CaseDetailPage() {
 
             <div className="text-center">
               <p className="font-black uppercase tracking-tighter text-sm">
-                Signaler un nouveau problÃ¨me dÃ©couvert
+                Signaler un nouveau problème découvert
               </p>
 
               <p className="text-[11px] font-medium opacity-60 italic">
@@ -478,7 +478,7 @@ export default function CaseDetailPage() {
           </button>
         </div>
 
-        {/* COLONNE DROITE : RÃ‰SUMÃ‰ FINANCIER GLOBAL */}
+        {/* COLONNE DROITE : RÉSUMÉ FINANCIER GLOBAL */}
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-6">
             
@@ -489,7 +489,7 @@ export default function CaseDetailPage() {
               </div>
 
               <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-8">
-                RÃ©sumÃ© Financier Dossier
+                Résumé Financier Dossier
               </h3>
               
               <div className="space-y-4 relative z-10">
@@ -499,7 +499,7 @@ export default function CaseDetailPage() {
                   </span>
 
                   <span className="font-mono font-bold">
-                    {totalHT.toLocaleString('fr-FR')} â‚¬
+                    {totalHT.toLocaleString('fr-FR')} €
                   </span>
                 </div>
 
@@ -507,7 +507,7 @@ export default function CaseDetailPage() {
                   <span className="text-slate-400">TVA 20%</span>
 
                   <span className="font-mono">
-                    {tva.toLocaleString('fr-FR')} â‚¬
+                    {tva.toLocaleString('fr-FR')} €
                   </span>
                 </div>
                 
@@ -517,7 +517,7 @@ export default function CaseDetailPage() {
                   </p>
 
                   <p className="text-4xl font-black tracking-tighter">
-                    {totalTTC.toLocaleString('fr-FR')} â‚¬
+                    {totalTTC.toLocaleString('fr-FR')} €
                   </p>
                 </div>
               </div>
@@ -530,10 +530,10 @@ export default function CaseDetailPage() {
                 onClick={handleGenerateProforma}
                 disabled={actionLoading}
               >
-                <FileText size={20} /> GÃ©nÃ©rer Proforma Global
+                <FileText size={20} /> Générer Proforma Global
               </Button>
 
-              {/* âœ… BOUTON ACCORD CLIENT DYNAMIQUE */}
+              {/* ✅ BOUTON ACCORD CLIENT DYNAMIQUE */}
               {(dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS' || dossier.status === 'INVOICED') && (
                 <Button 
                   className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-xl font-bold flex gap-2 shadow-lg animate-pulse"
@@ -544,11 +544,11 @@ export default function CaseDetailPage() {
                 </Button>
               )}
 
-              {/* âœ… Ã‰TAT TRAVAUX EN COURS */}
+              {/* ✅ ÉTAT TRAVAUX EN COURS */}
               {dossier.status === 'IN_PROGRESS' && (
                 <div className="p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl flex items-center gap-3 text-blue-700">
                   <Play size={20} className="animate-pulse" />
-                  <span className="font-black text-[10px] uppercase tracking-widest">RÃ©paration en cours</span>
+                  <span className="font-black text-[10px] uppercase tracking-widest">Réparation en cours</span>
                 </div>
               )}
               
@@ -561,14 +561,14 @@ export default function CaseDetailPage() {
               </Button>
             </div>
 
-            {/* Indicateur de devis envoyÃ© */}
+            {/* Indicateur de devis envoyé */}
             {dossier.status === 'INVOICED' && (
               <div className="p-4 bg-green-50 border-2 border-green-100 rounded-2xl flex items-center gap-4 animate-pulse">
                 <CheckCircle2 className="text-green-600" size={24} />
 
                 <div>
                   <p className="text-xs font-black text-green-900 uppercase">
-                    Devis EnvoyÃ©
+                    Devis Envoyé
                   </p>
 
                   <p className="text-[10px] text-green-700 font-medium">
@@ -585,7 +585,7 @@ export default function CaseDetailPage() {
   );
 }
 
-/* ================= ICÃ”NES LOCALES ================= */
+/* ================= ICÔNES LOCALES ================= */
 
 function LayoutList({ size, className }: { size?: number; className?: string }) {
   return (

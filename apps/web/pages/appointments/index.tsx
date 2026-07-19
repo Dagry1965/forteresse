@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
@@ -23,7 +23,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AppointmentUiMapper } from '@/shared/mappers/appointmentUiMapper';
 
 export default function AppointmentsPage() {
-  /* ================= Ã‰TATS ================= */
+  /* ================= ÉTATS ================= */
   const [appointments, setAppointments] = useState<any[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -32,7 +32,7 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // âœ… CHANGEMENT : 'list' par dÃ©faut au lieu de 'calendar'
+  // ✅ CHANGEMENT : 'list' par défaut au lieu de 'calendar'
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -45,7 +45,7 @@ export default function AppointmentsPage() {
   const [filterDate, setFilterDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // Ã‰tats pour l'annulation
+  // États pour l'annulation
   const [cancelDialogOpen, setCancelModalOpen] = useState(false);
   const [apptToCancel, setApptToCancel] = useState<string | null>(null);
 
@@ -66,7 +66,7 @@ export default function AppointmentsPage() {
         localStorage.getItem("current_workspace_id") || undefined;
 
       if (!workspaceId) {
-        toast.error("Aucun espace de travail sélectionné.");
+        toast.error("Aucun espace de travail s�lectionn�.");
         setLoading(false);
         return;
       }
@@ -80,7 +80,7 @@ export default function AppointmentsPage() {
       setClients(cls || []);
       setVehicles(vehs || []);
     } catch (e) {
-      toast.error('Erreur de chargement des donnÃ©es');
+      toast.error('Erreur de chargement des données');
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export default function AppointmentsPage() {
       const slots = await appointmentService.getAvailableSlots(date, workspaceId);
       setAvailableSlots(slots || []);
     } catch (e) {
-      toast.error('Erreur lors de la rÃ©cupÃ©ration des crÃ©neaux');
+      toast.error('Erreur lors de la récupération des créneaux');
     } finally {
       setLoadingSlots(false);
     }
@@ -142,11 +142,11 @@ export default function AppointmentsPage() {
   const handleStartWorkshop = async (id: string) => {
     try {
       await appointmentService.startIntervention(id);
-      toast.success('VÃ©hicule envoyÃ© Ã  lâ€™atelier (Diagnostic)');
+      toast.success('Véhicule envoyé à l’atelier (Diagnostic)');
       fetchInitialData();
     } catch (e: any) {
       toast.error(
-        e.response?.data?.message || "Erreur lors de l'envoi Ã  l'atelier",
+        e.response?.data?.message || "Erreur lors de l'envoi à l'atelier",
       );
     }
   };
@@ -196,10 +196,10 @@ export default function AppointmentsPage() {
     if (!apptToCancel) return;
     try {
       await appointmentService.cancel(apptToCancel);
-      toast.success('Le rendez-vous a Ã©tÃ© annulÃ©');
+      toast.success('Le rendez-vous a été annulé');
       fetchInitialData();
     } catch (e: any) {
-      toast.error("Erreur lors de lâ€™annulation");
+      toast.error("Erreur lors de l’annulation");
     } finally {
       setCancelModalOpen(false);
       setApptToCancel(null);
@@ -232,10 +232,10 @@ export default function AppointmentsPage() {
 
       if (isEditing && form.id) {
         await appointmentService.update(form.id, payload);
-        toast.success('Rendez-vous mis Ã  jour');
+        toast.success('Rendez-vous mis à jour');
       } else {
         await appointmentService.create(payload);
-        toast.success('Rendez-vous crÃ©Ã©');
+        toast.success('Rendez-vous créé');
       }
 
       setModalOpen(false);
@@ -244,7 +244,7 @@ export default function AppointmentsPage() {
       const errorMsg =
         e.response?.data?.message ||
         e.message ||
-        'Erreur lors de lâ€™enregistrement';
+        'Erreur lors de l’enregistrement';
       toast.error(errorMsg);
     }
   };
@@ -266,9 +266,9 @@ export default function AppointmentsPage() {
           >
             <option value="">Rendez-vous actifs</option>
             <option value="PENDING">En attente</option>
-            <option value="CONFIRMED">ConfirmÃ©</option>
-            <option value="COMPLETED">ConsommÃ©s / Atelier</option>
-            <option value="CANCELLED">AnnulÃ©s</option>
+            <option value="CONFIRMED">Confirmé</option>
+            <option value="COMPLETED">Consommés / Atelier</option>
+            <option value="CANCELLED">Annulés</option>
           </select>
 
           <input
@@ -288,7 +288,7 @@ export default function AppointmentsPage() {
                 setSearchTerm('');
               }}
             >
-              RÃ©initialiser
+              Réinitialiser
             </Button>
           )}
         </div>
@@ -296,20 +296,20 @@ export default function AppointmentsPage() {
         <div className="relative max-w-md">
           <input
             type="text"
-            placeholder="Rechercher un client ou un vÃ©hicule..."
+            placeholder="Rechercher un client ou un véhicule..."
             className="w-full border rounded-full px-10 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <span className="absolute left-4 top-2.5 text-gray-400 text-xs">
-            ðŸ”
+            🔍
           </span>
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
               className="absolute right-4 top-2.5 text-gray-400 hover:text-gray-600"
             >
-              âœ•
+              ✕
             </button>
           )}
         </div>
@@ -364,20 +364,20 @@ export default function AppointmentsPage() {
                       day: '2-digit',
                       month: 'short',
                     })
-                  : 'â€”',
+                  : '—',
             },
             {
               key: 'client',
               header: 'Client',
-              render: (r) => r.client?.name || 'â€”',
+              render: (r) => r.client?.name || '—',
             },
             {
               key: 'vehicle',
-              header: 'VÃ©hicule',
+              header: 'Véhicule',
               render: (r) =>
                 r.vehicle
                   ? `${r.vehicle.brand || ''} ${r.vehicle.model || ''}`.trim()
-                  : 'â€”',
+                  : '—',
             },
             {
               key: 'time',
@@ -385,7 +385,7 @@ export default function AppointmentsPage() {
               render: (r) => {
                 const startStr = r.time_slot?.start || r.startTime;
                 const endStr = r.time_slot?.end || r.endTime;
-                if (!startStr) return 'â€”';
+                if (!startStr) return '—';
                 const start = new Date(startStr).toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -394,7 +394,7 @@ export default function AppointmentsPage() {
                   hour: '2-digit',
                   minute: '2-digit',
                 });
-                return `${start} â†’ ${end}`;
+                return `${start} → ${end}`;
               },
             },
             {
@@ -434,7 +434,7 @@ export default function AppointmentsPage() {
                       className="bg-orange-500 hover:bg-orange-600 text-white"
                       onClick={() => handleStartWorkshop(r.id || r._id)}
                     >
-                      ðŸ”§ Atelier
+                      🔧 Atelier
                     </Button>
                   )}
 
@@ -473,7 +473,7 @@ export default function AppointmentsPage() {
       >
         <div className="space-y-4 py-4">
           <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-blue-700 text-sm font-semibold flex items-center gap-2">
-            <span>ðŸ“…</span>
+            <span>📅</span>
             <span className="capitalize">
               {new Date(
                 selectedDate.split('T')[0],
@@ -499,7 +499,7 @@ export default function AppointmentsPage() {
                 })
               }
             >
-              <option value="">SÃ©lectionner un client</option>
+              <option value="">Sélectionner un client</option>
               {clients.map((c) => (
                 <option key={c.id || c._id} value={c.id || c._id}>
                   {c.name}
@@ -509,7 +509,7 @@ export default function AppointmentsPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">VÃ©hicule</label>
+            <label className="text-sm font-medium">Véhicule</label>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
               value={form.vehicleId}
@@ -518,7 +518,7 @@ export default function AppointmentsPage() {
                 setForm({ ...form, vehicleId: e.target.value })
               }
             >
-              <option value="">SÃ©lectionner un vÃ©hicule</option>
+              <option value="">Sélectionner un véhicule</option>
               {vehicles
                 .filter(
                   (v) =>
@@ -533,7 +533,7 @@ export default function AppointmentsPage() {
           </div>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">CrÃ©neau horaire</label>
+            <label className="text-sm font-medium">Créneau horaire</label>
             <select
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={form.startTime}
@@ -560,7 +560,7 @@ export default function AppointmentsPage() {
                   `${new Date(s.start).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit',
-                  })} â†’ ${new Date(s.end).toLocaleTimeString('fr-FR', {
+                  })} → ${new Date(s.end).toLocaleTimeString('fr-FR', {
                     hour: '2-digit',
                     minute: '2-digit',
                   })}`;
@@ -599,7 +599,7 @@ export default function AppointmentsPage() {
         onOpenChange={setCancelModalOpen}
         onConfirm={confirmCancel}
         title="Annuler le rendez-vous"
-        description="ÃŠtes-vous sÃ»r de vouloir annuler ce rendez-vous ? Cette action est irrÃ©versible."
+        description="Êtes-vous sûr de vouloir annuler ce rendez-vous ? Cette action est irréversible."
         confirmText="Annuler"
         cancelText="Retour"
         variant="destructive"

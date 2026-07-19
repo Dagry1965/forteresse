@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchVehicles, fetchEnterpriseVehicles } from "../lib/api";
 import { CONFIG } from "../lib/config";
 
@@ -27,7 +27,7 @@ export default function VehicleSelector({
 
   return (
     <select className="border p-2 rounded w-full mb-4" onChange={(e) => onSelect(e.target.value)}>
-      <option value="">SÃ©lectionner un vÃ©hicule</option>
+      <option value="">Sélectionner un véhicule</option>
       {vehicles.map((v: any) => (
         <option key={v.id} value={v.id}>
           {v.make} {v.model} ({v.plateNumber})

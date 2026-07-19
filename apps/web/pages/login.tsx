@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
@@ -32,7 +32,7 @@ export default function LoginPage() {
       try {
         data = await res.json();
       } catch {
-        setError("RÃ©ponse invalide du serveur.");
+        setError("Réponse invalide du serveur.");
         setLoading(false);
         return;
       }
@@ -44,24 +44,24 @@ export default function LoginPage() {
       }
 
       if (!data.access_token || !data.user) {
-        setError("RÃ©ponse invalide du serveur.");
+        setError("Réponse invalide du serveur.");
         setLoading(false);
         return;
       }
 
-      // ðŸ”¥ CORRECTION CRITIQUE : clÃ© cohÃ©rente avec lib/api.ts
+      // 🔥 CORRECTION CRITIQUE : clé cohérente avec lib/api.ts
       localStorage.setItem("access_token", data.access_token);
 
-      // ðŸ”¥ Stockage du workspace multi-tenant
+      // 🔥 Stockage du workspace multi-tenant
       const workspaceId = data.user?.memberships?.[0]?.workspaceId;
       if (workspaceId) {
         localStorage.setItem("current_workspace_id", workspaceId);
       }
 
-      // ðŸ”¥ Mise Ã  jour du contexte Auth
+      // 🔥 Mise à jour du contexte Auth
       login(data.access_token, data.user);
 
-      // ðŸ”¥ Redirection
+      // 🔥 Redirection
       window.location.href = "/dashboard";
 
     } catch (err) {
@@ -108,7 +108,7 @@ export default function LoginPage() {
           </label>
           <input
             type="password"
-            placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+            placeholder="••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required

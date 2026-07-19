@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { financeService } from '@/services/financeService';
@@ -27,18 +27,18 @@ export function PaymentReminders() {
     loadReminders();
   }, []);
 
-  // ðŸ‘‰ Fonction Encaisser
+  // 👉 Fonction Encaisser
 const handleQuickPay = async (scheduleId: string) => {
   try {
     // On appelle le service frontend qui, lui, appellera l'API
     await financeService.recordPayment({
       schedule_id: scheduleId,
       method: 'CB', 
-      user_id: 'votre-id-user' // Ã€ dynamiser plus tard avec l'auth
+      user_id: 'votre-id-user' // À dynamiser plus tard avec l'auth
     });
     
-    toast.success("Paiement encaissÃ© avec succÃ¨s !");
-    // On recharge la page pour mettre Ã  jour le dashboard
+    toast.success("Paiement encaissé avec succès !");
+    // On recharge la page pour mettre à jour le dashboard
     window.location.reload();
   } catch (err: any) {
     toast.error("Erreur lors de l'encaissement");
@@ -59,7 +59,7 @@ const handleQuickPay = async (scheduleId: string) => {
     return (
       <Card className="p-6 flex items-center gap-3 text-slate-600">
         <Clock size={20} className="text-blue-500" />
-        <span>Aucune relance Ã  effectuer</span>
+        <span>Aucune relance à effectuer</span>
       </Card>
     );
   }
@@ -68,7 +68,7 @@ const handleQuickPay = async (scheduleId: string) => {
     <Card className="p-6 space-y-4 border-red-200 shadow-sm">
       <div className="flex items-center gap-2 text-red-600 font-bold">
         <AlertTriangle size={20} />
-        Relances financiÃ¨res urgentes
+        Relances financières urgentes
       </div>
 
       <div className="space-y-3">
@@ -79,27 +79,27 @@ const handleQuickPay = async (scheduleId: string) => {
           >
             <div>
               <p className="font-black text-slate-900 leading-tight">
-                {reminder.invoice?.client?.name || "Client Ã  identifier"}
+                {reminder.invoice?.client?.name || "Client à identifier"}
               </p>
 
               <p className="text-[10px] text-slate-500 font-bold uppercase">
-                Facture {reminder.invoice?.reference || "RÃ©fÃ©rence inconnue"}
+                Facture {reminder.invoice?.reference || "Référence inconnue"}
               </p>
             </div>
 
             <div className="text-right">
               <p className="text-red-600 font-black text-lg">
-                {reminder.amount?.toLocaleString()} â‚¬
+                {reminder.amount?.toLocaleString()} €
               </p>
 
-              <p className="text-xs text-slate-500">Ã‰chÃ©ance dÃ©passÃ©e</p>
+              <p className="text-xs text-slate-500">Échéance dépassée</p>
               <p className="text-sm font-bold text-red-700">
                 {reminder.due_date
                   ? new Date(reminder.due_date).toLocaleDateString()
                   : "Date inconnue"}
               </p>
 
-              {/* ðŸ‘‰ Bouton Encaisser */}
+              {/* 👉 Bouton Encaisser */}
               <Button
                 className="mt-2"
                 onClick={() => handleQuickPay(reminder.id)}

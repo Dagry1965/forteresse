@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { reserveAppointment } from "../lib/api";
 import { CONFIG } from "../lib/config";
 import TimeSlotPicker from "../components/rendezvous/TimeSlotPicker";
@@ -23,7 +23,7 @@ export default function RendezVousPublic() {
         publicOrigin: true,
       });
 
-      setMessage("Rendez-vous enregistrÃ© !");
+      setMessage("Rendez-vous enregistré !");
     } catch (e: any) {
       setMessage(e.message);
     }
@@ -47,7 +47,7 @@ export default function RendezVousPublic() {
       <DescriptionField value={description} onChange={setDescription} />
 
       <button onClick={submit} className="bg-blue-600 text-white px-4 py-2 rounded">
-        RÃ©server
+        Réserver
       </button>
 
       {message && <p className="mt-4">{message}</p>}

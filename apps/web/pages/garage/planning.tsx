@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { fetchAppointmentsByDate } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 
@@ -25,7 +25,7 @@ export default function PlanningGarage() {
     <div className="p-10 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Planning atelier</h1>
 
-      {/* SÃ©lecteur de date */}
+      {/* Sélecteur de date */}
       <input
         type="date"
         className="border p-2 rounded mb-6"
@@ -51,9 +51,9 @@ export default function PlanningGarage() {
               })}
             </p>
 
-            {/* VÃ©hicule */}
+            {/* Véhicule */}
             <p>
-              <b>VÃ©hicule :</b> {a.vehicle.make} {a.vehicle.model} (
+              <b>Véhicule :</b> {a.vehicle.make} {a.vehicle.model} (
               {a.vehicle.plateNumber})
             </p>
 

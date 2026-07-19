@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchTimeSlots } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 
@@ -33,10 +33,10 @@ export default function TimeSlotPicker({
 
   return (
     <select className="border p-2 rounded w-full mb-4" onChange={(e) => onSelect(e.target.value)}>
-      <option value="">SÃ©lectionner une plage</option>
+      <option value="">Sélectionner une plage</option>
       {slots.map((s: any) => (
         <option key={s.id} value={s.id}>
-          {new Date(s.startTime).toLocaleTimeString()} â†’ {new Date(s.endTime).toLocaleTimeString()}
+          {new Date(s.startTime).toLocaleTimeString()} → {new Date(s.endTime).toLocaleTimeString()}
         </option>
       ))}
     </select>

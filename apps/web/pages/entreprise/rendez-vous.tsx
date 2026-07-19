@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import { reserveAppointment } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 import TimeSlotPicker from "../../components/rendezvous/TimeSlotPicker";
@@ -12,7 +12,7 @@ export default function RendezVousEntreprise() {
   const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
 
-  // âš ï¸ Ã€ remplacer par les vraies valeurs
+  // ⚠️ À remplacer par les vraies valeurs
   const companyId =
     typeof window !== "undefined"
       ? localStorage.getItem("companyId") || "COMPANY_ID"
@@ -32,10 +32,10 @@ export default function RendezVousEntreprise() {
         date,
         initialDescription: description,
         companyId,
-        publicOrigin: false, // âš ï¸ IMPORTANT : entreprise
+        publicOrigin: false, // ⚠️ IMPORTANT : entreprise
       });
 
-      setMessage("Rendez-vous entreprise confirmÃ© !");
+      setMessage("Rendez-vous entreprise confirmé !");
     } catch (e: any) {
       setMessage(e.message);
     }
@@ -45,7 +45,7 @@ export default function RendezVousEntreprise() {
     <div className="max-w-xl mx-auto py-10">
       <h1 className="text-3xl font-bold mb-6">Rendez-vous entreprise</h1>
 
-      {/* SÃ©lection date */}
+      {/* Sélection date */}
       <input
         type="date"
         className="border p-2 rounded w-full mb-4"
@@ -53,14 +53,14 @@ export default function RendezVousEntreprise() {
         onChange={(e) => setDate(e.target.value)}
       />
 
-      {/* Plages filtrÃ©es par companyId */}
+      {/* Plages filtrées par companyId */}
       <TimeSlotPicker
         date={date}
         companyId={companyId}
         onSelect={setSlot}
       />
 
-      {/* VÃ©hicules de la flotte */}
+      {/* Véhicules de la flotte */}
       <VehicleSelector
         companyId={companyId}
         onSelect={setVehicle}
@@ -74,7 +74,7 @@ export default function RendezVousEntreprise() {
         onClick={submit}
         className="bg-blue-600 text-white px-4 py-2 rounded"
       >
-        RÃ©server
+        Réserver
       </button>
 
       {message && <p className="mt-4">{message}</p>}

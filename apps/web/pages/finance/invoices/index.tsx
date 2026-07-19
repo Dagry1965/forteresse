@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { financeService } from '@/services/financeService';
@@ -51,7 +51,7 @@ export default function InvoicesListPage() {
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50/50 border-b text-[10px] font-black text-slate-400 uppercase tracking-widest">
               <tr>
-                <th className="p-5">RÃ©fÃ©rence</th>
+                <th className="p-5">Référence</th>
                 <th className="p-5">Client</th>
                 <th className="p-5">Date</th>
                 <th className="p-5 text-center">Statut</th>
@@ -77,7 +77,7 @@ export default function InvoicesListPage() {
                     </span>
                   </td>
                   <td className="p-5 text-right font-black text-slate-900">
-                    {Number(invoice.total).toLocaleString()} â‚¬
+                    {Number(invoice.total).toLocaleString()} €
                   </td>
                   <td className="p-5 text-right">
                     <Button 

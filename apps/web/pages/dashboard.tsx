@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -41,7 +41,7 @@ export default function DashboardPage() {
     overdueCount: 0,
   });
 
-  const [chartData, setChartData] = useState([]);   // â† DonnÃ©es du graphique
+  const [chartData, setChartData] = useState([]);   // ← Données du graphique
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,17 +61,17 @@ export default function DashboardPage() {
         invoicesRes,
         stockRes,
         remindersRes,
-        statsRes                     // â† Nouvel appel
+        statsRes                     // ← Nouvel appel
       ] = await Promise.all([
         appointmentService.getPending(workspaceId).catch(() => []),
         interventionService.getAll().catch(() => []),
         financeService.getUnpaidInvoices(workspaceId).catch(() => []),
         inventoryService.getStockValue(workspaceId).catch(() => ({ value: 0 })),
         financeService.getOverdueReminders(workspaceId).catch(() => []),
-        financeService.getStats(workspaceId).catch(() => ({ turnover: [] }))   // â† Ajout
+        financeService.getStats(workspaceId).catch(() => ({ turnover: [] }))   // ← Ajout
       ]);
 
-      // Mise Ã  jour des statistiques KPI
+      // Mise à jour des statistiques KPI
       setStats({
         pendingAppointments: Array.isArray(pendingRes) ? pendingRes.length : 0,
         ongoingInterventions: Array.isArray(interventionsRes)
@@ -87,7 +87,7 @@ export default function DashboardPage() {
         overdueCount: Array.isArray(remindersRes) ? remindersRes.length : 0,
       });
 
-      // Mise Ã  jour des donnÃ©es du graphique
+      // Mise à jour des données du graphique
       setChartData(statsRes.turnover || []);
 
     } catch (err: any) {
@@ -124,10 +124,10 @@ export default function DashboardPage() {
             Vue d'ensemble
           </div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">
-            Bonjour, {user.name?.split(' ')[0]} ðŸ‘‹
+            Bonjour, {user.name?.split(' ')[0]} 👋
           </h1>
           <p className="text-slate-500 font-medium mt-1">
-            Voici l'activitÃ© de <span className="text-slate-900 font-bold">{workspace?.name || 'votre garage'}</span> aujourd'hui.
+            Voici l'activité de <span className="text-slate-900 font-bold">{workspace?.name || 'votre garage'}</span> aujourd'hui.
           </p>
         </div>
         
@@ -160,7 +160,7 @@ export default function DashboardPage() {
             <Card className="p-6 hover:scale-[1.02] transition-transform cursor-pointer" onClick={() => router.push('/workshop/board')}>
               <div className="flex justify-between">
                 <div>
-                  <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">En rÃ©paration</p>
+                  <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">En réparation</p>
                   <p className="text-4xl font-black mt-2">{stats.ongoingInterventions}</p>
                 </div>
                 <Wrench size={32} className="text-blue-500" />
@@ -173,7 +173,7 @@ export default function DashboardPage() {
             >
               <div className="flex justify-between">
                 <div>
-                  <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">ImpayÃ©s</p>
+                  <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Impayés</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-4xl font-black mt-2">{stats.unpaidInvoices}</p>
                     {stats.overdueCount > 0 && (
@@ -192,7 +192,7 @@ export default function DashboardPage() {
                 <div>
                   <p className="text-sm text-slate-500 font-bold uppercase tracking-wider">Valeur Stock</p>
                   <p className="text-3xl font-black mt-2 text-blue-600">
-                    {stats.stockValue.toLocaleString()} â‚¬
+                    {stats.stockValue.toLocaleString()} €
                   </p>
                 </div>
                 <Package size={32} className="text-blue-400" />
@@ -205,7 +205,7 @@ export default function DashboardPage() {
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-xl font-black text-slate-900 uppercase tracking-tighter">
-                  Performance FinanciÃ¨re
+                  Performance Financière
                 </h2>
                 <p className="text-sm text-slate-500 font-medium">
                   Chiffre d'affaires HT des 6 derniers mois
@@ -226,7 +226,7 @@ export default function DashboardPage() {
           <div>
             <h2 className="text-lg font-black uppercase tracking-tighter mb-6 flex items-center gap-2">
               <ChevronRight size={20} className="text-blue-600" />
-              AccÃ¨s Rapide
+              Accès Rapide
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
@@ -263,9 +263,9 @@ export default function DashboardPage() {
                 <Info size={20} />
               </div>
               <div>
-                <p className="font-bold text-sm">TrÃ©sorerie</p>
+                <p className="font-bold text-sm">Trésorerie</p>
                 <p className="text-xs text-slate-400 mt-1 leading-relaxed italic">
-                  "ClÃ´turez vos interventions terminÃ©es pour gÃ©nÃ©rer les factures rapidement et maintenir un cash-flow sain."
+                  "Clôturez vos interventions terminées pour générer les factures rapidement et maintenir un cash-flow sain."
                 </p>
               </div>
             </div>

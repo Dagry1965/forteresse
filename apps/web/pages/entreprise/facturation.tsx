@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { API } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 
@@ -30,7 +30,7 @@ export default function FacturationEntreprise() {
     <div className="p-10 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Facturation mensuelle</h1>
 
-      {/* SÃ©lecteurs */}
+      {/* Sélecteurs */}
       <div className="flex gap-4 mb-6">
         <select
           className="border p-2 rounded"
@@ -57,14 +57,14 @@ export default function FacturationEntreprise() {
         </select>
       </div>
 
-      {/* RÃ©sultats */}
+      {/* Résultats */}
       {summary && (
         <div className="border p-4 rounded bg-white shadow-sm">
           <p>
             <b>Entreprise :</b> {summary.company.name}
           </p>
           <p>
-            <b>PÃ©riode :</b> {summary.periodLabel}
+            <b>Période :</b> {summary.periodLabel}
           </p>
           <p>
             <b>Nombre d'interventions :</b> {summary.count}
@@ -82,17 +82,17 @@ export default function FacturationEntreprise() {
               )
             }
           >
-            TÃ©lÃ©charger PDF
+            Télécharger PDF
           </button>
 
           <h2 className="text-xl font-semibold mt-6 mb-3">
-            DÃ©tail des factures
+            Détail des factures
           </h2>
 
           <ul className="space-y-2">
             {summary.invoices.map((inv: any) => (
               <li key={inv.id} className="border p-3 rounded">
-                Facture {inv.id} â€” {inv.totalTTC} CHF â€”{" "}
+                Facture {inv.id} — {inv.totalTTC} CHF —{" "}
                 {new Date(inv.createdAt).toLocaleDateString()}
               </li>
             ))}

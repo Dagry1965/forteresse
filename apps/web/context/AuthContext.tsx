@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loadingAuth, setLoadingAuth] = useState(true);
 
-  // ðŸ”¥ Chargement initial depuis localStorage
+  // 🔥 Chargement initial depuis localStorage
   useEffect(() => {
     const storedToken = localStorage.getItem("access_token");
     const storedUser = localStorage.getItem("user");
@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoadingAuth(false);
   }, []);
 
-  // ðŸ”¥ Login
+  // 🔥 Login
   const login = (accessToken: string, userData: User) => {
     localStorage.setItem("access_token", accessToken);
     localStorage.setItem("user", JSON.stringify(userData));
@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsAuthenticated(true);
   };
 
-  // ðŸ”¥ Logout
+  // 🔥 Logout
   const logout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user");

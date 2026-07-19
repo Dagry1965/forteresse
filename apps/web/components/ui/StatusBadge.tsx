@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 
 type StatusType = 'draft' | 'confirmed' | 'received' | 'paid' | 'unpaid' | 'partially_paid' | 'in_progress' | 'completed';
 
@@ -31,3 +31,4 @@ export const StatusBadge = ({ status }: { status: string }) => {
     </span>
   );
 };
+
