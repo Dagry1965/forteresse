@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 
 // Core
@@ -17,7 +17,8 @@ import { WorkshopModule } from './modules/workshop/workshop.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TimeSlotsModule } from './modules/timeslots/timeslots.module';
-import { ProformasModule } from './modules/proformas/proformas.module'; 
+import { ProformasModule } from './modules/proformas/proformas.module';
+import { UsersModule } from './modules/users/users.module'; 
 
 console.log({
   InventoryModule,
@@ -45,8 +46,10 @@ console.log({
     SuppliersModule,
     TimeSlotsModule,
     ProformasModule,
+    UsersModule,
   ],
-  controllers: [], // 👈 Nettoyé (InvoicesController est déjà dans InvoicesModule)
+  controllers: [], // ðŸ‘ˆ NettoyÃ© (InvoicesController est dÃ©jÃ  dans InvoicesModule)
   providers: [],
 })
 export class AppModule {}
+
