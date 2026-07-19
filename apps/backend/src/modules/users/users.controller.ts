@@ -1,5 +1,6 @@
-import {
+﻿import {
   Controller,
+  UseGuards,
   Get,
   Post,
   Patch,
@@ -11,7 +12,12 @@ import {
 import { UsersService } from '../../core/auth/users.service';
 import { CreateUserDto } from '../../core/auth/dto/create-user.dto';
 import { UpdateUserDto } from '../../core/auth/dto/update-user.dto';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -44,3 +50,4 @@ export class UsersController {
     return this.usersService.remove(id);
   }
 }
+
