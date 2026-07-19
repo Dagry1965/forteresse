@@ -62,7 +62,15 @@ export class UsersService {
 
   async findAll(workspaceId?: string) {
     return this.prisma.user.findMany({
-      where: workspaceId ? { workspace_id: workspaceId } : undefined,
+      where: workspaceId
+        ? {
+            workspaceMembers: {
+              some: {
+                workspace_id: workspaceId,
+              },
+            },
+          }
+        : undefined,
       select: {
         id: true,
         email: true,
@@ -153,3 +161,4 @@ export class UsersService {
     });
   }
 }
+
