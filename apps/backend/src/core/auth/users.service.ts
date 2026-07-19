@@ -145,20 +145,27 @@ export class UsersService {
   }
 
   async remove(id: string) {
-    return this.prisma.$transaction(async (tx) => {
-      await tx.workspaceMember.deleteMany({
-        where: { user_id: id },
-      });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
 
-      return tx.user.delete({
-        where: { id },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      });
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable.');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        deleted_at: new Date(),
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        deleted_at: true,
+      },
     });
   }
 }
+
 

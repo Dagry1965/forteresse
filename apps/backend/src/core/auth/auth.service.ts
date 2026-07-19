@@ -26,7 +26,7 @@ export class AuthService {
     });
 
     // 2. VÃ©rification identitÃ©
-    if (!user || !user.password) {
+    if (!user || !user.password || user.deleted_at) {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
@@ -82,4 +82,5 @@ export class AuthService {
     return null;
   }
 }
+
 
