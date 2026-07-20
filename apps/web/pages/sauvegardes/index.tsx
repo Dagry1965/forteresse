@@ -12,6 +12,7 @@ import {
 export default function SauvegardesPage() {
   const [backups, setBackups] = useState<BackupLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [running, setRunning] = useState(false);
 
   const loadBackups = async () => {
     try {
@@ -31,6 +32,20 @@ export default function SauvegardesPage() {
   useEffect(() => {
     loadBackups();
   }, []);
+
+  const runBackup = async () => {
+    try {
+      setRunning(true);
+      const result = await backupService.run();
+      toast.success(result.message);
+      await loadBackups();
+    } catch (error) {
+      console.error(error);
+      toast.error("Impossible de lancer la sauvegarde");
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const columns: Column<BackupLog>[] = [
     {
@@ -86,13 +101,22 @@ export default function SauvegardesPage() {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={loadBackups}
-          disabled={loading}
-        >
-          {loading ? "Actualisation..." : "Actualiser"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={runBackup}
+            disabled={running || loading}
+          >
+            {running ? "Sauvegarde en cours..." : "Lancer une sauvegarde"}
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={loadBackups}
+            disabled={loading || running}
+          >
+            {loading ? "Actualisation..." : "Actualiser"}
+          </Button>
+        </div>
       </div>
 
       <DataTable
@@ -103,3 +127,4 @@ export default function SauvegardesPage() {
     </div>
   );
 }
+

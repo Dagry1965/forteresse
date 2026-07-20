@@ -34,6 +34,24 @@ function getAuthHeaders(): HeadersInit {
 }
 
 export const backupService = {
+  async run(): Promise<{ success: boolean; message: string }> {
+    const response = await fetch(
+      `${API_URL}/api/backups/run`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(
+        `Impossible de lancer la sauvegarde (${response.status})`,
+      );
+    }
+
+    return response.json();
+  },
+
   async getAll(limit = 30): Promise<BackupLog[]> {
     const response = await fetch(
       `${API_URL}/api/backups?limit=${limit}`,
@@ -51,5 +69,6 @@ export const backupService = {
     return response.json();
   },
 };
+
 
 
