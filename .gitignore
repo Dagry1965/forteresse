@@ -38,3 +38,4 @@ _archive_prisma/
 *.backup
 
 apps/backend/credentials.json
+apps/backend/token.json
