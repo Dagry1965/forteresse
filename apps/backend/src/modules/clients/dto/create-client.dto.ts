@@ -1,7 +1,7 @@
-import { IsEmail, IsOptional, IsString, IsUUID, IsIn } from 'class-validator';
+import { IsEmail, IsOptional, IsString, IsIn } from 'class-validator';
 
 export class CreateClientDto {
-  @IsUUID()
+  @IsString()
   workspaceId: string;
 
   @IsString()
