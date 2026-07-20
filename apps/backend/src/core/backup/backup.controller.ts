@@ -1,6 +1,7 @@
 ﻿import {
   Controller,
   Get,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -8,6 +9,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RolesGuard } from '../auth/roles.guard';
 import { PrismaService } from '../prisma/prisma.service';
+import { BackupService } from './backup.service';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN')
@@ -15,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 export class BackupController {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly backupService: BackupService,
   ) {}
 
   @Get()
@@ -33,5 +36,15 @@ export class BackupController {
       },
       take,
     });
+  }
+
+  @Post('run')
+  async runBackup() {
+    await this.backupService.createDailyBackup();
+
+    return {
+      success: true,
+      message: 'Sauvegarde terminée',
+    };
   }
 }
