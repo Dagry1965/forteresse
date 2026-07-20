@@ -6,6 +6,7 @@ import { google } from 'googleapis';
 export class GoogleDriveService {
   private readonly logger = new Logger(GoogleDriveService.name);
   private readonly folderName = 'AMARKHYS Backups';
+  private readonly retentionCount = 30;
 
   async uploadBackup(filePath: string, fileName: string): Promise<void> {
     const tokenBase64 = process.env.GOOGLE_DRIVE_TOKEN_BASE64;
@@ -48,6 +49,37 @@ export class GoogleDriveService {
     this.logger.log(
       `Sauvegarde envoyée sur Google Drive : ${response.data.name}`,
     );
+
+    await this.removeOldBackups(drive, folderId);
+  }
+
+  private async removeOldBackups(
+    drive: ReturnType<typeof google.drive>,
+    folderId: string,
+  ): Promise<void> {
+    const response = await drive.files.list({
+      q: `'${folderId}' in parents and trashed = false`,
+      fields: 'files(id,name,createdTime)',
+      orderBy: 'createdTime desc',
+      pageSize: 1000,
+    });
+
+    const backups = response.data.files ?? [];
+    const filesToDelete = backups.slice(this.retentionCount);
+
+    for (const file of filesToDelete) {
+      if (!file.id) {
+        continue;
+      }
+
+      await drive.files.delete({
+        fileId: file.id,
+      });
+
+      this.logger.log(
+        `Ancienne sauvegarde Google Drive supprimée : ${file.name}`,
+      );
+    }
   }
 
   private async getOrCreateFolder(
@@ -86,4 +118,5 @@ export class GoogleDriveService {
     return createdFolder.data.id;
   }
 }
+
 
