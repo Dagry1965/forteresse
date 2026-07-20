@@ -3,8 +3,6 @@ node_modules/
 .turbo/
 .vercel/
 dist/
-*.db
-*.db-journal
 repo-mirror.git/
 .DS_Store
 
@@ -18,11 +16,6 @@ apps/backend/.env.*
 apps/web/.env
 apps/web/.env.*
 
-# Dépendances et builds
-node_modules/
-.next/
-dist/
-
 # Bases locales
 *.db
 *.db-journal
@@ -33,9 +26,6 @@ dist/
 _archive_prisma/
 *.backup
 
-# Sauvegardes et archives locales
-_archive_prisma/
-*.backup
-
+# Identifiants Google locaux
 apps/backend/credentials.json
 apps/backend/token.json
