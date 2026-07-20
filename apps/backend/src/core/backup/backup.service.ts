@@ -2,9 +2,13 @@
 import { Cron } from '@nestjs/schedule';
 import { copyFile, readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
+import { GoogleDriveService } from './google-drive.service';
 
 @Injectable()
 export class BackupService {
+  constructor(
+    private readonly googleDriveService: GoogleDriveService,
+  ) {}
   private readonly logger = new Logger(BackupService.name);
   private readonly dataDir = '/data';
   private readonly databasePath = join(this.dataDir, 'dev.db');
@@ -28,6 +32,11 @@ export class BackupService {
       await copyFile(this.databasePath, backupPath);
 
       this.logger.log(`Sauvegarde créée : ${backupPath}`);
+
+      await this.googleDriveService.uploadBackup(
+        backupPath,
+        `${this.backupPrefix}${timestamp}.db`,
+      );
 
       await this.removeOldBackups();
     } catch (error) {
@@ -58,5 +67,6 @@ export class BackupService {
     }
   }
 }
+
 
 
