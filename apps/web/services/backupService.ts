@@ -11,7 +11,9 @@ const API_URL =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
 
 function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("access_token") ??
+    localStorage.getItem("token");
 
   return {
     "Content-Type": "application/json",
@@ -41,3 +43,4 @@ export const backupService = {
     return response.json();
   },
 };
+
