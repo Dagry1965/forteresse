@@ -36,3 +36,5 @@ _archive_prisma/
 # Sauvegardes et archives locales
 _archive_prisma/
 *.backup
+
+apps/backend/credentials.json
