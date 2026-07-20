@@ -1,19 +1,16 @@
-﻿import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { copyFile, readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
 
 @Injectable()
-export class BackupService implements OnModuleInit {
+export class BackupService {
   private readonly logger = new Logger(BackupService.name);
   private readonly dataDir = '/data';
   private readonly databasePath = join(this.dataDir, 'dev.db');
   private readonly backupPrefix = 'dev-backup-auto-';
   private readonly retentionCount = 7;
 
-  async onModuleInit(): Promise<void> {
-    await this.createDailyBackup();
-  }
 
   @Cron('0 2 * * *')
   async createDailyBackup(): Promise<void> {
@@ -61,4 +58,5 @@ export class BackupService implements OnModuleInit {
     }
   }
 }
+
 
