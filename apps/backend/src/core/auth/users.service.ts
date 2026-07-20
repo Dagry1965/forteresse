@@ -144,6 +144,28 @@ export class UsersService {
     };
   }
 
+  async restore(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur introuvable.');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        deleted_at: null,
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        deleted_at: true,
+      },
+    });
+  }
   async remove(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -167,5 +189,6 @@ export class UsersService {
     });
   }
 }
+
 
 

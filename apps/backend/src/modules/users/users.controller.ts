@@ -45,9 +45,14 @@ export class UsersController {
     return this.usersService.update(id, dto);
   }
 
+  @Patch(':id/restore')
+  restore(@Param('id') id: string) {
+    return this.usersService.restore(id);
+  }
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(id);
   }
 }
+
 
