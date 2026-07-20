@@ -4,13 +4,11 @@ import Database from 'better-sqlite3';
 import { readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
 import { GoogleDriveService } from './google-drive.service';
-import { BackupAlertService } from './backup-alert.service';
 
 @Injectable()
 export class BackupService {
   constructor(
     private readonly googleDriveService: GoogleDriveService,
-    private readonly backupAlertService: BackupAlertService,
   ) {}
 
   private readonly logger = new Logger(BackupService.name);
@@ -61,7 +59,6 @@ export class BackupService {
         error instanceof Error ? error.stack : String(error),
       );
 
-      await this.backupAlertService.sendFailureAlert(error);
     } finally {
       database?.close();
     }
@@ -119,4 +116,5 @@ export class BackupService {
     }
   }
 }
+
 

@@ -1,5 +1,4 @@
 ﻿import { Module } from '@nestjs/common';
-import { BackupAlertService } from './backup-alert.service';
 import { BackupService } from './backup.service';
 import { GoogleDriveService } from './google-drive.service';
 
@@ -7,7 +6,6 @@ import { GoogleDriveService } from './google-drive.service';
   providers: [
     BackupService,
     GoogleDriveService,
-    BackupAlertService,
   ],
 })
 export class BackupModule {}
