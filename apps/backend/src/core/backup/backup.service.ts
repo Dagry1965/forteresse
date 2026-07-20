@@ -1,6 +1,7 @@
 ﻿import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { copyFile, readdir, stat, unlink } from 'fs/promises';
+import Database from 'better-sqlite3';
+import { readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
 import { GoogleDriveService } from './google-drive.service';
 
@@ -9,13 +10,12 @@ export class BackupService {
   constructor(
     private readonly googleDriveService: GoogleDriveService,
   ) {}
+
   private readonly logger = new Logger(BackupService.name);
   private readonly dataDir = '/data';
   private readonly databasePath = join(this.dataDir, 'dev.db');
   private readonly backupPrefix = 'dev-backup-auto-';
   private readonly retentionCount = 7;
-
-
 
   @Cron('0 2 * * *')
   async createDailyBackup(): Promise<void> {
@@ -23,20 +23,31 @@ export class BackupService {
       .toISOString()
       .replace(/[:.]/g, '-');
 
+    const backupFileName =
+      `${this.backupPrefix}${timestamp}.db`;
+
     const backupPath = join(
       this.dataDir,
-      `${this.backupPrefix}${timestamp}.db`,
+      backupFileName,
     );
+
+    let database: Database.Database | undefined;
 
     try {
       await stat(this.databasePath);
-      await copyFile(this.databasePath, backupPath);
 
-      this.logger.log(`Sauvegarde créée : ${backupPath}`);
+      database = new Database(this.databasePath, {
+        readonly: true,
+        fileMustExist: true,
+      });
+
+      await database.backup(backupPath);
+
+      this.logger.log(`Sauvegarde SQLite créée : ${backupPath}`);
 
       await this.googleDriveService.uploadBackup(
         backupPath,
-        `${this.backupPrefix}${timestamp}.db`,
+        backupFileName,
       );
 
       await this.removeOldBackups();
@@ -45,6 +56,8 @@ export class BackupService {
         'Échec de la sauvegarde automatique',
         error instanceof Error ? error.stack : String(error),
       );
+    } finally {
+      database?.close();
     }
   }
 
@@ -64,12 +77,10 @@ export class BackupService {
 
     for (const file of filesToDelete) {
       await unlink(join(this.dataDir, file));
-      this.logger.log(`Ancienne sauvegarde supprimée : ${file}`);
+
+      this.logger.log(
+        `Ancienne sauvegarde supprimée : ${file}`,
+      );
     }
   }
 }
-
-
-
-
-
