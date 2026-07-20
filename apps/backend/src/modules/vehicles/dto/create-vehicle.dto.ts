@@ -1,8 +1,8 @@
-import { IsIn, IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
 import { VEHICLE_STATUS } from '../../../../../../shared/constants/status.constants';
 
 export class CreateVehicleDto {
-  @IsUUID()
+  @IsString()
   clientId: string;
 
   @IsString()

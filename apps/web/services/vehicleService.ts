@@ -1,4 +1,4 @@
-﻿import { API } from '@/lib/api';
+import { API } from '@/lib/api';
 
 export interface Vehicle {
   id: string;
@@ -57,7 +57,25 @@ export const vehicleService = {
 
   async create(data: Partial<Vehicle>) {
     try {
-      return await API.post<Vehicle>('/api/vehicles', data);
+      const workspaceId =
+        localStorage.getItem("current_workspace_id");
+
+      if (!workspaceId) {
+        throw new Error("Aucun workspace sélectionné");
+      }
+
+      const payload = {
+        ...data,
+        workspaceId,
+        brand: data.brand ?? data.make,
+        registration:
+          data.registration ?? data.plateNumber,
+      };
+
+      return await API.post<Vehicle>(
+        "/api/vehicles",
+        payload,
+      );
     } catch (error: any) {
       console.error('[vehicleService] Erreur création:', error);
       throw error;
