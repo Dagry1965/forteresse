@@ -45,6 +45,8 @@ export class BackupService {
 
       this.logger.log(`Sauvegarde SQLite créée : ${backupPath}`);
 
+      this.verifyBackupIntegrity(backupPath);
+
       await this.googleDriveService.uploadBackup(
         backupPath,
         backupFileName,
@@ -58,6 +60,35 @@ export class BackupService {
       );
     } finally {
       database?.close();
+    }
+  }
+
+  private verifyBackupIntegrity(backupPath: string): void {
+    const backupDatabase = new Database(backupPath, {
+      readonly: true,
+      fileMustExist: true,
+    });
+
+    try {
+      const result = backupDatabase
+        .prepare('PRAGMA integrity_check')
+        .all() as Array<{ integrity_check: string }>;
+
+      const isValid =
+        result.length === 1 &&
+        result[0]?.integrity_check === 'ok';
+
+      if (!isValid) {
+        throw new Error(
+          `Échec du contrôle d’intégrité : ${JSON.stringify(result)}`,
+        );
+      }
+
+      this.logger.log(
+        `Intégrité de la sauvegarde vérifiée : ${backupPath}`,
+      );
+    } finally {
+      backupDatabase.close();
     }
   }
 
