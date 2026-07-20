@@ -15,11 +15,19 @@ function getAuthHeaders(): HeadersInit {
     localStorage.getItem("access_token") ??
     localStorage.getItem("token");
 
+  const workspaceId =
+    localStorage.getItem("current_workspace_id");
+
   return {
     "Content-Type": "application/json",
     ...(token
       ? {
           Authorization: `Bearer ${token}`,
+        }
+      : {}),
+    ...(workspaceId
+      ? {
+          "x-workspace-id": workspaceId,
         }
       : {}),
   };
@@ -43,4 +51,5 @@ export const backupService = {
     return response.json();
   },
 };
+
 
