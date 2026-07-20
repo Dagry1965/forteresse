@@ -1,11 +1,13 @@
 ﻿import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 // Core
 import { WorkspaceModule } from './core/workspace/workspace.module';
 import { PrismaModule } from './core/prisma/prisma.module';
 import { AuthModule } from './core/auth/auth.module';
 import { AuditModule } from './core/audit/audit.module';
+import { BackupModule } from './core/backup/backup.module';
 
 // Business Modules
 import { ClientsModule } from './modules/clients/clients.module';
@@ -28,12 +30,14 @@ console.log({
   imports: [
     // Global Config
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     
     // Core Modules
     WorkspaceModule,
     PrismaModule,
     AuditModule,
     AuthModule,
+    BackupModule,
     
     // Feature Modules
     FinanceModule, 
@@ -52,4 +56,6 @@ console.log({
   providers: [],
 })
 export class AppModule {}
+
+
 
