@@ -1,4 +1,4 @@
-﻿import { API } from '@/lib/api';
+import { API } from '@/lib/api';
 
 export interface Client {
   id: string;
@@ -30,7 +30,18 @@ export const clientService = {
   },
 
   async create(data: any) {
-    return API.post('/api/clients', data);
+    const workspaceId =
+      data.workspaceId ??
+      localStorage.getItem("current_workspace_id");
+
+    if (!workspaceId) {
+      throw new Error("Aucun workspace sélectionné");
+    }
+
+    return API.post("/api/clients", {
+      ...data,
+      workspaceId,
+    });
   },
 
   async update(id: string, data: any) {
