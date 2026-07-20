@@ -34,6 +34,12 @@ export default function SauvegardesPage() {
   }, []);
 
   const runBackup = async () => {
+    const confirmed = window.confirm(
+      "Voulez-vous vraiment lancer une sauvegarde maintenant ?",
+    );
+
+    if (!confirmed) return;
+
     try {
       setRunning(true);
       const result = await backupService.run();
@@ -127,4 +133,5 @@ export default function SauvegardesPage() {
     </div>
   );
 }
+
 
