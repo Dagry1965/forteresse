@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 // ====================== MODELS ======================
@@ -664,4 +664,21 @@ model PaymentSchedule {
 
   @@index([invoice_id])
   @@index([workspace_id])
+}
+
+model BackupLog {
+  id String @id @default(cuid())
+
+  file_name String?
+
+  status String
+
+  destination String?
+
+  error_message String?
+
+  created_at DateTime @default(now())
+
+  @@index([status])
+  @@index([created_at])
 }

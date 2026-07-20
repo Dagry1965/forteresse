@@ -3,12 +3,14 @@ import { Cron } from '@nestjs/schedule';
 import Database from 'better-sqlite3';
 import { readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
+import { PrismaService } from '../prisma/prisma.service';
 import { GoogleDriveService } from './google-drive.service';
 
 @Injectable()
 export class BackupService {
   constructor(
     private readonly googleDriveService: GoogleDriveService,
+    private readonly prisma: PrismaService,
   ) {}
 
   private readonly logger = new Logger(BackupService.name);
@@ -53,12 +55,46 @@ export class BackupService {
       );
 
       await this.removeOldBackups();
+
+      await this.prisma.backupLog.create({
+        data: {
+          file_name: backupFileName,
+          status: 'SUCCESS',
+          destination: 'LOCAL_AND_GOOGLE_DRIVE',
+        },
+      });
+
+      this.logger.log(
+        `Journal de sauvegarde enregistré : ${backupFileName}`,
+      );
     } catch (error) {
+      const errorMessage =
+        error instanceof Error
+          ? error.stack ?? error.message
+          : String(error);
+
       this.logger.error(
         'Échec de la sauvegarde automatique',
-        error instanceof Error ? error.stack : String(error),
+        errorMessage,
       );
 
+      try {
+        await this.prisma.backupLog.create({
+          data: {
+            file_name: backupFileName,
+            status: 'FAILED',
+            destination: 'LOCAL_AND_GOOGLE_DRIVE',
+            error_message: errorMessage,
+          },
+        });
+      } catch (logError) {
+        this.logger.error(
+          'Impossible d’enregistrer le journal de sauvegarde',
+          logError instanceof Error
+            ? logError.stack
+            : String(logError),
+        );
+      }
     } finally {
       database?.close();
     }
@@ -116,5 +152,3 @@ export class BackupService {
     }
   }
 }
-
-
