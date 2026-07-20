@@ -1,9 +1,9 @@
-import React from "react";
+﻿import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 
-// Icônes pro (Lucide)
+// IcÃ´nes pro (Lucide)
 import {
   LayoutDashboard,
   Users,
@@ -13,7 +13,8 @@ import {
   Package,
   ShoppingCart,
   CreditCard,
-  Receipt,           // ← Nouvel import
+  Receipt,
+  DatabaseBackup,
 } from "lucide-react";
 
 // Import Sonner
@@ -23,13 +24,14 @@ const menu_items = [
   { icon: <LayoutDashboard size={18} />, name: "dashboard", href: "/dashboard" },
   { icon: <Users size={18} />, name: "clients", href: "/clients" },
   { icon: <Users size={18} />, name: "utilisateurs", href: "/utilisateurs", adminOnly: true },
-  { icon: <Car size={18} />, name: "véhicules", href: "/vehicles" },
+  { icon: <DatabaseBackup size={18} />, name: "sauvegardes", href: "/sauvegardes", adminOnly: true },
+  { icon: <Car size={18} />, name: "vÃ©hicules", href: "/vehicles" },
   { icon: <Calendar size={18} />, name: "rendez-vous", href: "/appointments" },
   { icon: <Wrench size={18} />, name: "atelier", href: "/workshop" },
   { icon: <Package size={18} />, name: "stock & catalogue", href: "/inventory" },
   { icon: <ShoppingCart size={18} />, name: "achats (po)", href: "/purchase-orders" },
   { icon: <CreditCard size={18} />, name: "caisse", href: "/cashier" },
-  { icon: <Receipt size={18} />, name: "facturation", href: "/billing" },   // ← Nouvel élément
+  { icon: <Receipt size={18} />, name: "facturation", href: "/billing" },   // â† Nouvel Ã©lÃ©ment
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -87,7 +89,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={logout}
             className="w-full py-2 bg-destructive text-destructive-foreground rounded-md font-bold hover:opacity-90"
           >
-            Déconnexion
+            DÃ©connexion
           </button>
         </div>
       </aside>
@@ -108,3 +110,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
