@@ -77,20 +77,31 @@ export default function UtilisateursPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeactivate = async (id: string) => {
     const confirmed = window.confirm(
-      "Supprimer définitivement cet utilisateur ?"
+      "Désactiver cet utilisateur ?"
     );
 
     if (!confirmed) return;
 
     try {
       await userService.delete(id);
-      toast.success("Utilisateur supprimé");
+      toast.success("Utilisateur désactivé");
       await loadUsers();
     } catch (error) {
       console.error(error);
-      toast.error("Impossible de supprimer l'utilisateur");
+      toast.error("Impossible de désactiver l'utilisateur");
+    }
+  };
+
+  const handleRestore = async (id: string) => {
+    try {
+      await userService.restore(id);
+      toast.success("Utilisateur réactivé");
+      await loadUsers();
+    } catch (error) {
+      console.error(error);
+      toast.error("Impossible de réactiver l'utilisateur");
     }
   };
 
@@ -104,17 +115,41 @@ export default function UtilisateursPage() {
         user.workspaceMembers?.[0]?.role ?? "MEMBER",
     },
     {
+      key: "status",
+      header: "Statut",
+      render: (user) => (
+        <span
+          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+            user.deleted_at
+              ? "bg-red-100 text-red-700"
+              : "bg-emerald-100 text-emerald-700"
+          }`}
+        >
+          {user.deleted_at ? "Désactivé" : "Actif"}
+        </span>
+      ),
+    },
+    {
       key: "actions",
       header: "Actions",
-      render: (user) => (
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={() => handleDelete(user.id)}
-        >
-          Supprimer
-        </Button>
-      ),
+      render: (user) =>
+        user.deleted_at ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleRestore(user.id)}
+          >
+            Réactiver
+          </Button>
+        ) : (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => handleDeactivate(user.id)}
+          >
+            Désactiver
+          </Button>
+        ),
     },
   ];
 
@@ -198,4 +233,6 @@ export default function UtilisateursPage() {
     </div>
   );
 }
+
+
 

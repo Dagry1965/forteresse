@@ -44,7 +44,13 @@ export const userService = {
     return API.patch(`/api/users/${id}`, data);
   },
 
+  async restore(id: string) {
+    return API.patch(`/api/users/${id}/restore`);
+  },
+
   async delete(id: string) {
     return API.delete(`/api/users/${id}`);
   },
 };
+
+
