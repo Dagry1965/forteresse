@@ -34,7 +34,7 @@ export const appointmentService = {
     try {
       return await API.post('/api/appointments', data);
     } catch (error: any) {
-      console.error('[appointmentService] Erreur création:', error);
+      console.error('[appointmentService] Erreur crÃ©ation:', error);
       throw error;
     }
   },
@@ -43,7 +43,7 @@ export const appointmentService = {
     try {
       return await API.patch(`/api/appointments/${id}`, data);
     } catch (error: any) {
-      console.error('[appointmentService] Erreur mise à jour:', error);
+      console.error('[appointmentService] Erreur mise Ã  jour:', error);
       throw error;
     }
   },
@@ -83,7 +83,7 @@ export const appointmentService = {
     });
 
     return await API.get(
-      `/api/appointments/available-slots?${params.toString()}`
+      `/api/time-slots/available?${params.toString()}`
     );
   } catch (error: any) {
     console.error('[appointmentService] Erreur getAvailableSlots:', error);
