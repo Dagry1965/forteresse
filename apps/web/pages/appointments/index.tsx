@@ -296,7 +296,7 @@ export default function AppointmentsPage() {
         <div className="relative max-w-md">
           <input
             type="text"
-            placeholder="Rechercher un client ou un véhicule..."
+            placeholder="Rechercher un client ou un v?hicule..."
             className="w-full border rounded-full px-10 py-2 text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -434,7 +434,7 @@ export default function AppointmentsPage() {
                       className="bg-orange-500 hover:bg-orange-600 text-white"
                       onClick={() => handleStartWorkshop(r.id || r._id)}
                     >
-                      ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â§ Atelier
+                      D?marrer Atelier
                     </Button>
                   )}
 
