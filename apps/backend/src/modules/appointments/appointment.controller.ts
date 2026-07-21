@@ -46,11 +46,29 @@ export class AppointmentController {
 
    @Post()
   create(
-    @Headers('x-workspace-id') workspaceId: string,
+    @Headers('x-workspace-id') headerWorkspaceId: string,
     @Body() dto: any,
     @Req() req: any,
   ) {
-    const userId = req.user?.id || req.user?.sub || dto.user_id || null;
+    const workspaceId =
+      req.workspaceId ||
+      req.user?.workspaceId ||
+      req.user?.workspace_id ||
+      headerWorkspaceId ||
+      req.headers?.['x-workspace-id'] ||
+      dto.workspaceId;
+
+    if (!workspaceId) {
+      throw new Error('Workspace ID missing');
+    }
+
+    const userId =
+      req.user?.id ||
+      req.user?.userId ||
+      req.user?.sub ||
+      dto.user_id ||
+      null;
+
     return this.appointmentsService.create(workspaceId, userId, dto);
   }
 

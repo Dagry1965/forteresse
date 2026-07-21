@@ -23,16 +23,24 @@ const COUNTABLE_APPOINTMENT_STATUSES = [
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ==================== MÉTHODES PUBLIQUES ====================
+  // ==================== MÃƒâ€°THODES PUBLIQUES ====================
 
   async create(workspaceId: string, userId: string, dto: CreateAppointmentDto) {
+    workspaceId =
+      workspaceId ||
+      (dto as any).workspaceId ||
+      (dto as any).workspace_id;
+
+    if (!workspaceId) {
+      throw new BadRequestException('Workspace ID missing');
+    }
     return this.prisma.$transaction(async (tx) => {
       await this.validateAppointmentRelations(tx, workspaceId, dto, userId);
 
       let timeSlotId: string;
       let finalDate: Date;
 
-      // === Cas 1 : Créneau dynamique (startTime + endTime) ===
+      // === Cas 1 : CrÃƒÂ©neau dynamique (startTime + endTime) ===
       const isDynamicSlot =
         (!dto.timeSlotId || dto.timeSlotId.trim() === '') &&
         dto.startTime?.trim() &&
@@ -42,7 +50,7 @@ export class AppointmentsService {
         const start = new Date(dto.startTime!);
         const end = new Date(dto.endTime!);
 
-        // Création d'un nouveau TimeSlot avec occupancy = 1 (ce RDV)
+        // CrÃƒÂ©ation d'un nouveau TimeSlot avec occupancy = 1 (ce RDV)
         const newTimeSlot = await tx.timeSlot.create({
           data: {
             workspace_id: workspaceId,
@@ -58,7 +66,7 @@ export class AppointmentsService {
       }
       // === Cas 2 : TimeSlot existant ===
       else if (dto.timeSlotId && dto.timeSlotId.trim() !== '') {
-        // Vérifie que la capacité n'est pas dépassée (via occupancy)
+        // VÃƒÂ©rifie que la capacitÃƒÂ© n'est pas dÃƒÂ©passÃƒÂ©e (via occupancy)
         await this.validateTimeSlotAvailability(
           tx,
           workspaceId,
@@ -81,7 +89,7 @@ export class AppointmentsService {
           );
         }
 
-        // Incrémenter l’occupancy du TimeSlot existant
+        // IncrÃƒÂ©menter lÃ¢â‚¬â„¢occupancy du TimeSlot existant
         await tx.timeSlot.update({
           where: { id: dto.timeSlotId },
           data: { occupancy: { increment: 1 } },
@@ -174,7 +182,7 @@ export class AppointmentsService {
   }
 
   async cancel(workspaceId: string, id: string) {
-    // On gère l’occupancy dans une transaction
+    // On gÃƒÂ¨re lÃ¢â‚¬â„¢occupancy dans une transaction
     return this.prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.findFirst({
         where: { id, workspace_id: workspaceId, deleted_at: null },
@@ -189,7 +197,7 @@ export class AppointmentsService {
         throw new BadRequestException('Appointment is already cancelled');
       }
 
-      // Si ce RDV était compté dans la capacité, décrémenter occupancy
+      // Si ce RDV ÃƒÂ©tait comptÃƒÂ© dans la capacitÃƒÂ©, dÃƒÂ©crÃƒÂ©menter occupancy
       if (
         COUNTABLE_APPOINTMENT_STATUSES.includes(
           appointment.status as any,
@@ -220,7 +228,7 @@ export class AppointmentsService {
 
       const oldTimeSlotId = appointment.time_slot_id;
 
-      // Vérifie que le nouveau créneau est disponible (via occupancy + capacité)
+      // VÃƒÂ©rifie que le nouveau crÃƒÂ©neau est disponible (via occupancy + capacitÃƒÂ©)
       await this.validateTimeSlotAvailability(
         tx,
         workspaceId,
@@ -242,7 +250,7 @@ export class AppointmentsService {
         );
       }
 
-      // 1) Décrémenter l’ancien timeSlot si le RDV était compté
+      // 1) DÃƒÂ©crÃƒÂ©menter lÃ¢â‚¬â„¢ancien timeSlot si le RDV ÃƒÂ©tait comptÃƒÂ©
       if (
         oldTimeSlotId &&
         COUNTABLE_APPOINTMENT_STATUSES.includes(
@@ -255,13 +263,13 @@ export class AppointmentsService {
         });
       }
 
-      // 2) Incrémenter le nouveau timeSlot
+      // 2) IncrÃƒÂ©menter le nouveau timeSlot
       await tx.timeSlot.update({
         where: { id: dto.timeSlotId },
         data: { occupancy: { increment: 1 } },
       });
 
-      // 3) Mettre à jour le RDV
+      // 3) Mettre ÃƒÂ  jour le RDV
       return tx.appointment.update({
         where: { id },
         data: {
@@ -330,7 +338,7 @@ export class AppointmentsService {
     return days.join(',');
   }
 
-  // ==================== PHASE 2 : CRÉNEAUX DISPONIBLES ====================
+  // ==================== PHASE 2 : CRÃƒâ€°NEAUX DISPONIBLES ====================
 
   async getAvailableSlots(workspaceId: string, date: string) {
     const settings = await this.getBusinessSettings(workspaceId);
@@ -339,7 +347,7 @@ export class AppointmentsService {
     const targetDate = new Date(date);
     const dayOfWeek = targetDate.getDay();
 
-    // Jour non travaillé → aucun créneau
+    // Jour non travaillÃƒÂ© Ã¢â€ â€™ aucun crÃƒÂ©neau
     if (!workingDays.includes(dayOfWeek)) {
       return [];
     }
@@ -351,7 +359,7 @@ export class AppointmentsService {
     const dayEnd = new Date(targetDate);
     dayEnd.setHours(23, 59, 59, 999);
 
-    // On charge les RDV existants de la journée avec leurs time_slots
+    // On charge les RDV existants de la journÃƒÂ©e avec leurs time_slots
     const existingAppointments = await this.prisma.appointment.findMany({
       where: {
         workspace_id: workspaceId,
@@ -371,7 +379,7 @@ export class AppointmentsService {
     const capacity = settings.maxConcurrent; // ex: 2
 
     const result = allSlots.map((slot) => {
-      // Combien de RDV se chevauchent avec ce créneau
+      // Combien de RDV se chevauchent avec ce crÃƒÂ©neau
       const overlappingCount = existingAppointments.filter((appt) => {
         if (!appt.time_slot) return false;
 
@@ -391,7 +399,7 @@ export class AppointmentsService {
         label: `${slot.start.toLocaleTimeString('fr-FR', {
           hour: '2-digit',
           minute: '2-digit',
-        })} → ${slot.end.toLocaleTimeString('fr-FR', {
+        })} Ã¢â€ â€™ ${slot.end.toLocaleTimeString('fr-FR', {
           hour: '2-digit',
           minute: '2-digit',
         })}`,
@@ -438,7 +446,7 @@ export class AppointmentsService {
     return slots;
   }
 
-  // ==================== MÉTHODES PRIVÉES DE VALIDATION ====================
+  // ==================== MÃƒâ€°THODES PRIVÃƒâ€°ES DE VALIDATION ====================
 
   private async validateAppointmentRelations(
     tx: any,
@@ -494,13 +502,13 @@ export class AppointmentsService {
       throw new ConflictException('This time slot is not available');
     }
 
-    // Capacité via BusinessSettings
+    // CapacitÃƒÂ© via BusinessSettings
     const settings = await this.getBusinessSettings(workspaceId);
     const capacity = settings.maxConcurrent ?? 1;
 
-    // Optionnel : si tu veux aussi vérifier par count réel côté RDV,
-    // tu peux garder un contrôle supplémentaire ici. Pour l’instant
-    // on s’appuie sur occupancy géré dans create/cancel/changeTimeSlot.
+    // Optionnel : si tu veux aussi vÃƒÂ©rifier par count rÃƒÂ©el cÃƒÂ´tÃƒÂ© RDV,
+    // tu peux garder un contrÃƒÂ´le supplÃƒÂ©mentaire ici. Pour lÃ¢â‚¬â„¢instant
+    // on sÃ¢â‚¬â„¢appuie sur occupancy gÃƒÂ©rÃƒÂ© dans create/cancel/changeTimeSlot.
 
     if (timeSlot.occupancy >= capacity) {
       throw new ConflictException('This time slot capacity is already reached');
@@ -548,7 +556,7 @@ export class AppointmentsService {
  */
 async convertToIntervention(workspaceId: string, appointmentId: string) {
   return this.prisma.$transaction(async (tx) => {
-    // 1. Vérifier si le RDV existe et appartient au workspace
+    // 1. VÃƒÂ©rifier si le RDV existe et appartient au workspace
     const appointment = await tx.appointment.findFirst({
       where: { id: appointmentId, workspace_id: workspaceId },
       include: {
@@ -561,7 +569,7 @@ async convertToIntervention(workspaceId: string, appointmentId: string) {
       throw new NotFoundException('Rendez-vous introuvable');
     }
 
-    // 2. Vérifier s'il existe déjà un Case pour ce client/véhicule
+    // 2. VÃƒÂ©rifier s'il existe dÃƒÂ©jÃƒÂ  un Case pour ce client/vÃƒÂ©hicule
 const existingCase = await tx.case.findFirst({
   where: {
     workspace_id: workspaceId,
@@ -572,7 +580,7 @@ const existingCase = await tx.case.findFirst({
 });
 
 if (existingCase && existingCase.interventions.length > 0) {
-  // Idempotent : on renvoie l’existant sans erreur
+  // Idempotent : on renvoie lÃ¢â‚¬â„¢existant sans erreur
   return {
     appointment,
     case: existingCase,
@@ -580,7 +588,7 @@ if (existingCase && existingCase.interventions.length > 0) {
   };
 }
 
-    // 3. Créer (ou réutiliser) le Case
+    // 3. CrÃƒÂ©er (ou rÃƒÂ©utiliser) le Case
 const repairCase = existingCase ?? await tx.case.create({
   data: {
     workspace_id: workspaceId,
@@ -590,23 +598,23 @@ const repairCase = existingCase ?? await tx.case.create({
     vehicle_id: appointment.vehicle_id,
     // Titre ultra-clair : Date + Immatriculation
     title: `Atelier - ${appointment.vehicle.registration} (${appointment.date.toLocaleDateString('fr-FR')})`,
-    description: `Dossier créé automatiquement depuis le RDV #${appointment.id}`,
+    description: `Dossier crÃƒÂ©ÃƒÂ© automatiquement depuis le RDV #${appointment.id}`,
   },
 });
 
 
-    // 4. Mettre à jour le statut du Rendez-vous
+    // 4. Mettre ÃƒÂ  jour le statut du Rendez-vous
     await tx.appointment.update({
       where: { id: appointmentId },
       data: { status: APPOINTMENT_STATUS.COMPLETED },
     });
 
-    // 5. Créer l'intervention initiale liée au Case
+    // 5. CrÃƒÂ©er l'intervention initiale liÃƒÂ©e au Case
     const intervention = await tx.intervention.create({
       data: {
         workspace_id: workspaceId,
         case_id: repairCase.id,
-        description: `Diagnostic généré depuis le RDV du ${appointment.date.toLocaleDateString(
+        description: `Diagnostic gÃƒÂ©nÃƒÂ©rÃƒÂ© depuis le RDV du ${appointment.date.toLocaleDateString(
           'fr-FR',
         )}`,
         status: INTERVENTION_STATUS.DIAGNOSIS,
