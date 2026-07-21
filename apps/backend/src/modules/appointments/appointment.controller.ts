@@ -7,6 +7,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
    Req,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
@@ -23,6 +24,16 @@ export class AppointmentController {
   @Get('pending')
   getPending(@Headers('x-workspace-id') workspaceId: string) {
     return this.appointmentsService.getPending(workspaceId);
+  }
+
+  @Get('available-slots')
+  getAvailableSlots(
+    @Headers('x-workspace-id') headerWorkspaceId: string,
+    @Query('workspaceId') queryWorkspaceId: string,
+    @Query('date') date: string,
+  ) {
+    const workspaceId = headerWorkspaceId || queryWorkspaceId;
+    return this.appointmentsService.getAvailableSlots(workspaceId, date);
   }
 
   @Get(':id')
