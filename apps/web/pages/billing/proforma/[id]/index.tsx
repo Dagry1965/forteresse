@@ -29,13 +29,13 @@ export default function ProformaPrintPage() {
   const vehicle = data.case?.vehicle;
   const interventions = data.case?.interventions || [];
 
-  const handleConvertToInvoice = async () => {
+  const handleAcceptProforma = async () => {
     try {
-      const invoice = await proformaService.convertToInvoice(data.id);
-      toast.success(`Facture générée : ${invoice.reference}`);
-      router.push('/dashboard'); 
+      await proformaService.acceptProforma(data.id);
+      toast.success("Accord client enregistr?. Les travaux peuvent commencer.");
+      router.push(`/workshop/case/${data.case_id}`);
     } catch (e) {
-      toast.error("Erreur lors de la facturation");
+      toast.error("Erreur lors de l'enregistrement de l'accord client");
     }
   };
 
@@ -72,7 +72,7 @@ export default function ProformaPrintPage() {
 
           <div className="flex gap-2">
             <Button
-              onClick={handleConvertToInvoice}
+              onClick={handleAcceptProforma}
               className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
             >
               ✅ Valider & Facturer

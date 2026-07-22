@@ -48,6 +48,10 @@ export const proformaService = {
     );
   },
 
+  async acceptProforma(id: string) {
+    return API.post(`/api/proformas/${id}/accept`);
+  },
+
   async convertToInvoice(id: string) {
     return API.post(`/api/proformas/${id}/invoice`);
   },

@@ -49,6 +49,55 @@ export class ProformasService {
   // ---------------------------------------------------------
   // TRANSFORMER UN DEVIS EN FACTURE DÉFINITIVE
   // ---------------------------------------------------------
+  async acceptProforma(workspaceId: string, proformaId: string) {
+    return this.prisma.$transaction(async (tx) => {
+      const proforma = await tx.proforma.findFirst({
+        where: {
+          id: proformaId,
+          workspace_id: workspaceId
+        }
+      });
+
+      if (!proforma) {
+        throw new NotFoundException('Proforma introuvable');
+      }
+
+      await tx.proforma.update({
+        where: { id: proformaId },
+        data: { status: 'ACCEPTED' }
+      });
+
+      if (proforma.case_id) {
+        await tx.intervention.updateMany({
+          where: {
+            case_id: proforma.case_id,
+            workspace_id: workspaceId,
+            deleted_at: null,
+            status: {
+              in: ['PENDING', 'DIAGNOSIS']
+            }
+          },
+          data: {
+            status: 'IN_PROGRESS',
+            updated_at: new Date()
+          }
+        });
+
+        await tx.case.update({
+          where: { id: proforma.case_id },
+          data: {
+            status: 'IN_PROGRESS',
+            updated_at: new Date()
+          }
+        });
+      }
+
+      return tx.proforma.findUnique({
+        where: { id: proformaId }
+      });
+    });
+  }
+
   async convertToInvoice(workspaceId: string, proformaId: string) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Récupérer la proforma

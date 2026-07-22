@@ -32,7 +32,15 @@ export class ProformasController {
   }
 
   // Route pour transformer le devis en facture
-  @Post(':id/invoice') // 👈 C'est ici que ça plantait
+  @Post(':id/accept')
+  acceptProforma(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string
+  ) {
+    return this.proformasService.acceptProforma(workspaceId, id);
+  }
+
+  @Post(':id/invoice')
   convertToInvoice(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string
