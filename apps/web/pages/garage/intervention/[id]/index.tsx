@@ -25,7 +25,7 @@ export default function InterventionPage() {
       );
 
       setIntervention(data);
-      setParts(data.parts || []);
+      setParts(data.InterventionPart || data.parts || []);
       setLabor(data.labor || []);
     } catch (error: any) {
       console.error('Erreur chargement intervention', error);
@@ -108,6 +108,17 @@ export default function InterventionPage() {
     );
   }
 
+  const vehicle = intervention.case?.vehicle ?? intervention.vehicle;
+  const client =
+    intervention.case?.client ??
+    vehicle?.client ??
+    intervention.client;
+
+  const description =
+    intervention.description ??
+    intervention.appointment?.initialDescription ??
+    'Aucune description';
+
   return (
     <div className="p-10 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-6">Intervention</h1>
@@ -115,12 +126,13 @@ export default function InterventionPage() {
       {/* Infos intervention */}
       <div className="border p-4 rounded bg-white shadow-sm mb-6">
         <p>
-          <b>Véhicule :</b> {intervention.vehicle.make}{" "}
-          {intervention.vehicle.model} ({intervention.vehicle.plateNumber})
+          <b>Véhicule :</b> {vehicle
+            ? `${vehicle.make || vehicle.brand || ''} ${vehicle.model || ''} (${vehicle.plateNumber || vehicle.plate_number || 'Sans immatriculation'})`
+            : 'V?hicule non renseign?'}
         </p>
 
         <p>
-          <b>Client :</b> {intervention.vehicle.client?.name}
+          <b>Client :</b> {client?.name || 'Client non renseign?'}
         </p>
 
         <p>
@@ -129,7 +141,7 @@ export default function InterventionPage() {
         </p>
 
         <p>
-          <b>Description :</b> {intervention.appointment.initialDescription}
+          <b>Description :</b> {description}
         </p>
 
         <p>
