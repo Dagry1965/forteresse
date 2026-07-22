@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import { API } from "../../../../lib/api";
 import { CONFIG } from "../../../../lib/config";
 
@@ -7,10 +8,9 @@ export default function InterventionPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
+  const router = useRouter();
   const interventionId =
-    typeof window !== "undefined"
-      ? window.location.pathname.split("/")[4]
-      : null;
+    typeof router.query.id === "string" ? router.query.id : null;
 
   // Lignes réelles
   const [parts, setParts] = useState<any[]>([]);
@@ -38,8 +38,10 @@ export default function InterventionPage() {
   }
 
   useEffect(() => {
-    load();
-  }, []);
+    if (router.isReady && interventionId) {
+      load();
+    }
+  }, [router.isReady, interventionId]);
 
   function addPart() {
     setParts([...parts, { label: "", qty: 1, unitPrice: 0 }]);
