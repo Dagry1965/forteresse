@@ -145,7 +145,7 @@ export default function WorkshopPage() {
       <DataTable
         data={filteredInterventions}
         loading={loading}
-        onRowClick={(row) => router.push(`/workshop/intervention/${row.id}`)}
+        onRowClick={(row) => router.push(`/garage/intervention/${row.id}`)}
         columns={[
           {
             key: 'date',
@@ -207,7 +207,7 @@ export default function WorkshopPage() {
                 variant="secondary"
                 onClick={(e) => {
                   e.stopPropagation();
-                  router.push(`/workshop/intervention/${r.id}`);
+                  router.push(`/garage/intervention/${r.id}`);
                 }}
               >
                 Fiche Travaux
