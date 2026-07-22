@@ -300,22 +300,17 @@ export default function CaseDetailPage() {
                         </h3>
                       </div>
 
-                      <select 
-                        className="text-[11px] font-black border-2 border-slate-200 rounded-lg px-2 py-1 outline-none focus:border-blue-500"
-                        defaultValue={phase.status}
-                        onChange={(e) =>
-                          handleSavePhase(
-                            phase.id,
-                            phase.description,
-                            e.target.value
-                          )
-                        }
-                      >
-                        <option value="PENDING">EN ATTENTE</option>
-                        <option value="DIAGNOSIS">DIAGNOSTIC</option>
-                        <option value="IN_PROGRESS">EN COURS</option>
-                        <option value="COMPLETED">TERMINÉ ✅</option>
-                      </select>
+                      <span className="text-[11px] font-black border-2 border-slate-200 rounded-lg px-3 py-1 bg-white text-slate-700">
+                        {phase.status === 'PENDING'
+                          ? 'EN ATTENTE'
+                          : phase.status === 'DIAGNOSIS'
+                            ? 'DIAGNOSTIC'
+                            : phase.status === 'IN_PROGRESS'
+                              ? 'EN COURS'
+                              : phase.status === 'COMPLETED'
+                                ? 'TERMIN?'
+                                : phase.status}
+                      </span>
                     </div>
 
                     <div className="p-6 space-y-6">
