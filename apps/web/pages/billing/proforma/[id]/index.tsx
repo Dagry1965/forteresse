@@ -75,7 +75,7 @@ export default function ProformaPrintPage() {
               onClick={handleAcceptProforma}
               className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
             >
-              ✅ Valider & Facturer
+              Enregistrer l'accord client
             </Button>
 
             <Button 
