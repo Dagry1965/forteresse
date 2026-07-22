@@ -35,6 +35,13 @@ export class AppointmentController {
     const workspaceId = headerWorkspaceId || queryWorkspaceId;
     return this.appointmentsService.getAvailableSlots(workspaceId, date);
   }
+  @Post(':id/start-workshop')
+  startWorkshop(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.appointmentsService.convertToIntervention(workspaceId, id);
+  }
 
   @Get(':id')
   findOne(
