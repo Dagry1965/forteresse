@@ -24,6 +24,13 @@ export default function InterventionPage() {
         `/api/workshop/interventions/${interventionId}`
       );
 
+      const caseId = data.case_id || data.case?.id;
+
+      if (caseId) {
+        router.replace(`/workshop/case/${data.id}`);
+        return;
+      }
+
       setIntervention(data);
       setParts(data.InterventionPart || data.parts || []);
       setLabor(data.labor || []);
