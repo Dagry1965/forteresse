@@ -19,14 +19,22 @@ export default function InterventionPage() {
   async function load() {
     if (!interventionId) return;
 
-    const data = await API.get(
-      `${CONFIG.API_BASE}/api/interventions/${interventionId}`
-    );
+    try {
+      const data = await API.get(
+        `/api/workshop/interventions/${interventionId}`
+      );
 
-    setIntervention(data);
-    setParts(data.parts || []);
-    setLabor(data.labor || []);
-    setLoading(false);
+      setIntervention(data);
+      setParts(data.parts || []);
+      setLabor(data.labor || []);
+    } catch (error: any) {
+      console.error('Erreur chargement intervention', error);
+      setMessage(
+        error?.message || 'Impossible de charger l?intervention'
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -87,6 +95,16 @@ export default function InterventionPage() {
   }
 
   if (loading) return <p className="p-10">Chargement...</p>;
+
+  if (!intervention) {
+    return (
+      <div className="p-10">
+        <p className="text-red-600 font-semibold">
+          {message || 'Intervention introuvable'}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-10 max-w-4xl mx-auto">
