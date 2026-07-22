@@ -27,14 +27,60 @@ export class WorkshopService {
   }
 
   async updateCaseStatus(workspaceId: string, caseId: string, status: string) {
-  return this.prisma.case.updateMany({
-    where: {
-      id: caseId,
-      workspace_id: workspaceId, // Sécurité multi-tenant
-    },
-    data: { status },
-  });
-}
+    return this.prisma.$transaction(async (tx) => {
+      const repairCase = await tx.case.findFirst({
+        where: {
+          id: caseId,
+          workspace_id: workspaceId,
+        },
+      });
+
+      if (!repairCase) {
+        throw new Error('Dossier introuvable');
+      }
+
+      if (status === 'IN_PROGRESS') {
+        await tx.intervention.updateMany({
+          where: {
+            case_id: caseId,
+            workspace_id: workspaceId,
+            deleted_at: null,
+            status: {
+              in: ['PENDING', 'DIAGNOSIS'],
+            },
+          },
+          data: {
+            status: 'IN_PROGRESS',
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      if (status === 'COMPLETED') {
+        await tx.intervention.updateMany({
+          where: {
+            case_id: caseId,
+            workspace_id: workspaceId,
+            deleted_at: null,
+          },
+          data: {
+            status: 'COMPLETED',
+            updated_at: new Date(),
+          },
+        });
+      }
+
+      return tx.case.update({
+        where: {
+          id: caseId,
+        },
+        data: {
+          status,
+          updated_at: new Date(),
+        },
+      });
+    });
+  }
 
 
 
