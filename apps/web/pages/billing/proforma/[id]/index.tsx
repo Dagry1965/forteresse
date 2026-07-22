@@ -33,7 +33,13 @@ export default function ProformaPrintPage() {
     try {
       await proformaService.acceptProforma(data.id);
       toast.success("Accord client enregistr?. Les travaux peuvent commencer.");
-      router.push(`/workshop/case/${data.case_id}`);
+      const interventionId = data.case?.interventions?.[0]?.id;
+
+      if (interventionId) {
+        router.push(`/workshop/case/${interventionId}`);
+      } else {
+        router.push('/workshop');
+      }
     } catch (e) {
       toast.error("Erreur lors de l'enregistrement de l'accord client");
     }
