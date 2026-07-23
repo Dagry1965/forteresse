@@ -150,6 +150,33 @@ export default function ProformasListPage() {
                   >
                     <Printer size={14} />
                   </Button>
+
+                  {r.case?.status === 'COMPLETED' && (
+                    <Button
+                      size="sm"
+                      className="h-8 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+
+                        try {
+                          const invoice =
+                            await proformaService.convertToInvoice(r.id);
+
+                          toast.success(
+                            `Facture g?n?r?e : ${invoice.reference}`
+                          );
+
+                          router.push('/finance/invoices');
+                        } catch (error) {
+                          toast.error(
+                            "Erreur lors de la g?n?ration de la facture"
+                          );
+                        }
+                      }}
+                    >
+                      Facturer
+                    </Button>
+                  )}
                 </div>
               ),
             },

@@ -100,42 +100,61 @@ export class ProformasService {
 
   async convertToInvoice(workspaceId: string, proformaId: string) {
     return this.prisma.$transaction(async (tx) => {
-      // 1. Récupérer la proforma
-      const proforma = await tx.proforma.findUnique({
-        where: { id: proformaId, workspace_id: workspaceId },
-        include: { case: true }
+      const proforma = await tx.proforma.findFirst({
+        where: {
+          id: proformaId,
+          workspace_id: workspaceId
+        },
+        include: {
+          case: true
+        }
       });
 
-      if (!proforma) throw new NotFoundException("Proforma introuvable");
-      if (proforma.status === 'ACCEPTED') throw new BadRequestException("Ce devis a déjà été facturé");
+      if (!proforma) {
+        throw new NotFoundException('Proforma introuvable');
+      }
 
-      // 2. Créer la Facture
+      const existingInvoice = await tx.invoice.findFirst({
+        where: {
+          proforma_id: proforma.id,
+          workspace_id: workspaceId
+        }
+      });
+
+      if (existingInvoice) {
+        throw new BadRequestException('Ce devis a d?j? ?t? factur?');
+      }
+
+      if (!proforma.case_id || proforma.case?.status !== 'COMPLETED') {
+        throw new BadRequestException(
+          'Les travaux doivent ?tre termin?s avant la facturation'
+        );
+      }
+
       const invoice = await tx.invoice.create({
         data: {
           workspace_id: workspaceId,
           proforma_id: proforma.id,
           appointment_id: proforma.appointment_id,
-          client_id: proforma.case?.customer_id,
+          client_id: proforma.case.customer_id,
           total: proforma.total,
-          status: 'UNPAID', // Statut initial : Non payée
+          status: 'UNPAID',
           type: 'INVOICE',
-          reference: `FACT-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`,
+          reference: `FACT-${new Date().getFullYear()}-${Math.floor(
+            1000 + Math.random() * 9000
+          )}`
         }
       });
 
-      // 3. Mettre à jour le statut de la Proforma
-      await tx.proforma.update({
-        where: { id: proformaId },
-        data: { status: 'ACCEPTED' }
+      await tx.case.update({
+        where: {
+          id: proforma.case_id
+        },
+        data: {
+          status: 'INVOICED',
+          updated_at: new Date()
+        }
       });
-
-      // 4. Mettre à jour le statut du Dossier (Case)
-      if (proforma.case_id) {
-        await tx.case.update({
-          where: { id: proforma.case_id },
-          data: { status: 'COMPLETED' }
-        });
-      }
 
       return invoice;
     });
