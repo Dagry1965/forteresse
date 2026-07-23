@@ -106,7 +106,8 @@ export class ProformasService {
           workspace_id: workspaceId
         },
         include: {
-          case: true
+          case: true,
+          lines: true
         }
       });
 
@@ -142,7 +143,22 @@ export class ProformasService {
           type: 'INVOICE',
           reference: `FACT-${new Date().getFullYear()}-${Math.floor(
             1000 + Math.random() * 9000
-          )}`
+          )}`,
+          lines: {
+            create: proforma.lines.map((line) => ({
+              type: line.type,
+              label: line.label,
+              description: line.description,
+              quantity: line.quantity,
+              unit_price: line.unit_price,
+              vat_rate: line.vat_rate,
+              discount: line.discount,
+              total: line.total
+            }))
+          }
+        },
+        include: {
+          lines: true
         }
       });
 
