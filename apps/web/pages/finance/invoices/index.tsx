@@ -84,7 +84,7 @@ export default function InvoicesListPage() {
 
     if (numericAmount > remaining) {
       toast.error(
-        `Le montant dépasse le solde restant de ${remaining.toFixed(2)} €`,
+        `Le montant dépasse le solde restant de ${remaining.toFixed(2)} EUR`,
       );
       return;
     }
