@@ -91,6 +91,20 @@ export const financeService = {
     );
   },
 
+  async payInvoice(
+    invoiceId: string,
+    data: {
+      amount: number;
+      method: string;
+      user_id?: string;
+    },
+  ) {
+    return API.post(
+      `/api/finance/invoice/${invoiceId}/pay`,
+      data,
+    );
+  },
+
   async getAllInvoices(workspaceId?: string) {
     const params = workspaceId
       ? `?workspaceId=${encodeURIComponent(workspaceId)}`
