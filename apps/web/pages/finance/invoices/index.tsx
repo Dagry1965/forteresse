@@ -42,12 +42,15 @@ export default function InvoicesListPage() {
   const getPayments = (invoice: any) =>
     invoice?.payments ?? invoice?.Payment ?? [];
 
-  const getPaidAmount = (invoice: any) =>
-    getPayments(invoice).reduce(
+  const getPaidAmount = (invoice: any) => {
+    const totalPaid = getPayments(invoice).reduce(
       (sum: number, payment: any) =>
         sum + Number(payment.amount || 0),
       0,
     );
+
+    return Math.min(totalPaid, Number(invoice?.total || 0));
+  };
 
   const getRemainingAmount = (invoice: any) =>
     Math.max(
