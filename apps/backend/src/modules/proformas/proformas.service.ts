@@ -162,6 +162,19 @@ export class ProformasService {
         }
       });
 
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+
+      await tx.paymentSchedule.create({
+        data: {
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+          amount: Number(invoice.total),
+          due_date: dueDate,
+          status: 'PENDING'
+        }
+      });
+
       await tx.case.update({
         where: {
           id: proforma.case_id
