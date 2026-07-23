@@ -171,7 +171,7 @@ export default function InvoicesListPage() {
   };
 
   return (
-    <div className="p-8 max-w-6xl mx-auto space-y-8">
+    <div className="p-8 max-w-[1500px] mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-4">
           <Button
@@ -239,7 +239,7 @@ export default function InvoicesListPage() {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+            <table className="w-full min-w-[1250px] text-left border-collapse">
               <thead className="bg-slate-50/50 border-b text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
                   <th className="p-5">Référence</th>
@@ -291,21 +291,21 @@ export default function InvoicesListPage() {
                         </span>
                       </td>
 
-                      <td className="p-5 text-right font-black text-slate-900">
+                      <td className="p-5 text-right font-black text-slate-900 whitespace-nowrap">
                         {Number(invoice.total).toLocaleString('fr-FR', {
                           minimumFractionDigits: 2,
                         })}{' '}
                         EUR
                       </td>
 
-                      <td className="p-5 text-right font-bold text-green-700">
+                      <td className="p-5 text-right font-bold text-green-700 whitespace-nowrap">
                         {paidAmount.toLocaleString('fr-FR', {
                           minimumFractionDigits: 2,
                         })}{' '}
                         EUR
                       </td>
 
-                      <td className="p-5 text-right font-black text-orange-700">
+                      <td className="p-5 text-right font-black text-orange-700 whitespace-nowrap">
                         {remaining.toLocaleString('fr-FR', {
                           minimumFractionDigits: 2,
                         })}{' '}
