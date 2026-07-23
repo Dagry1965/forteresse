@@ -84,7 +84,7 @@ export default function InvoicesListPage() {
 
     if (numericAmount > remaining) {
       toast.error(
-        `Le montant d?passe le solde restant de ${remaining.toFixed(2)} ?`,
+        `Le montant dépasse le solde restant de ${remaining.toFixed(2)} €`,
       );
       return;
     }
@@ -102,8 +102,8 @@ export default function InvoicesListPage() {
 
       toast.success(
         result?.status === 'PAID'
-          ? 'Facture enti?rement pay?e'
-          : 'Paiement partiel enregistr?',
+          ? 'Facture entièrement payée'
+          : 'Paiement partiel enregistré',
       );
 
       closePaymentForm();
@@ -167,7 +167,7 @@ export default function InvoicesListPage() {
             <table className="w-full text-left border-collapse">
               <thead className="bg-slate-50/50 border-b text-[10px] font-black text-slate-400 uppercase tracking-widest">
                 <tr>
-                  <th className="p-5">R?f?rence</th>
+                  <th className="p-5">Référence</th>
                   <th className="p-5">Client</th>
                   <th className="p-5">Date</th>
                   <th className="p-5 text-center">Statut</th>
@@ -286,7 +286,7 @@ export default function InvoicesListPage() {
                   Encaisser la facture
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">
-                  {selectedInvoice.reference} ?{' '}
+                  {selectedInvoice.reference} —{' '}
                   {selectedInvoice.client?.name || 'Client'}
                 </p>
               </div>
@@ -318,7 +318,7 @@ export default function InvoicesListPage() {
 
               <div>
                 <label className="block text-xs font-black uppercase text-slate-500 mb-2">
-                  Montant encaiss?
+                  Montant encaissé
                 </label>
                 <input
                   type="number"
@@ -344,7 +344,7 @@ export default function InvoicesListPage() {
                   }
                   className="w-full h-12 rounded-xl border border-slate-200 px-4 font-bold bg-white outline-none focus:border-blue-500"
                 >
-                  <option value="especes">Esp?ces</option>
+                  <option value="especes">Espèces</option>
                   <option value="carte">Carte bancaire</option>
                   <option value="virement">Virement</option>
                 </select>
