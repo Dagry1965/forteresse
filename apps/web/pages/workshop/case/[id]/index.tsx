@@ -173,6 +173,27 @@ export default function CaseDetailPage() {
     }
   };
 
+  const handleCompleteCase = async () => {
+    try {
+      setActionLoading(true);
+
+      await interventionService.updateCaseStatus(
+        dossier.id,
+        CASE_STATUS.COMPLETED
+      );
+
+      toast.success(
+        "Toutes les interventions sont termin?es. Dossier pr?t pour la comptabilit?."
+      );
+
+      await fetchFullDossier();
+    } catch (e) {
+      toast.error("Erreur lors de la cl?ture des travaux");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading || !dossier) {
     return (
       <div className="p-10 text-center text-slate-500 font-medium">
@@ -547,13 +568,16 @@ export default function CaseDetailPage() {
                 </div>
               )}
               
-              <Button 
-                variant="outline" 
-                className="w-full h-12 rounded-xl font-bold text-slate-600 border-slate-200"
-                onClick={() => router.push('/workshop/board')}
-              >
-                Fermer le Dossier
-              </Button>
+              {dossier.status === 'IN_PROGRESS' && (
+                <Button
+                  className="w-full h-12 rounded-xl font-bold bg-amber-600 hover:bg-amber-700 text-white"
+                  onClick={handleCompleteCase}
+                  disabled={actionLoading}
+                >
+                  <CheckCircle2 size={18} />
+                  Terminer les travaux
+                </Button>
+              )}
             </div>
 
             {/* Indicateur de devis envoyé */}
