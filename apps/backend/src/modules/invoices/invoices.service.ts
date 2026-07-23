@@ -172,11 +172,26 @@ export class InvoicesService {
   // LISTING & FILTRES
   // ---------------------------------------------------------
   async findAll(workspaceId: string) {
-    return this.prisma.invoice.findMany({
+    const invoices = await this.prisma.invoice.findMany({
       where: { workspace_id: workspaceId },
-      include: { client: true, payments: true },
+      include: {
+        client: true,
+        payments: true,
+        Payment: true,
+        paymentSchedules: {
+          orderBy: { due_date: 'asc' }
+        }
+      },
       orderBy: { created_at: 'desc' }
     });
+
+    return invoices.map(({ Payment, ...invoice }) => ({
+      ...invoice,
+      payments: [
+        ...(invoice.payments ?? []),
+        ...(Payment ?? [])
+      ]
+    }));
   }
 
   async findUnpaidInvoices(workspaceId: string) {
