@@ -171,7 +171,10 @@ export default function InvoicesListPage() {
                   <th className="p-5">Client</th>
                   <th className="p-5">Date</th>
                   <th className="p-5 text-center">Statut</th>
-                  <th className="p-5 text-right">Montant TTC</th>
+                  <th className="p-5 text-right">Total</th>
+                  <th className="p-5 text-right">D?j? pay?</th>
+                  <th className="p-5 text-right">Reste ? payer</th>
+                  <th className="p-5">?ch?ance</th>
                   <th className="p-5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -179,7 +182,10 @@ export default function InvoicesListPage() {
               <tbody className="divide-y divide-slate-100">
                 {invoices.map((invoice) => {
                   const status = invoice.status?.toUpperCase();
+                  const paidAmount = getPaidAmount(invoice);
                   const remaining = getRemainingAmount(invoice);
+                  const dueDate =
+                    invoice.paymentSchedules?.[0]?.due_date ?? null;
 
                   return (
                     <tr
@@ -210,26 +216,31 @@ export default function InvoicesListPage() {
                         </span>
                       </td>
 
-                      <td className="p-5 text-right">
-                        <div className="font-black text-slate-900">
-                          {Number(invoice.total).toLocaleString(
-                            'fr-FR',
-                            {
-                              minimumFractionDigits: 2,
-                            },
-                          )}{' '}
-                          ?
-                        </div>
+                      <td className="p-5 text-right font-black text-slate-900">
+                        {Number(invoice.total).toLocaleString('fr-FR', {
+                          minimumFractionDigits: 2,
+                        })}{' '}
+                        EUR
+                      </td>
 
-                        {status === 'PARTIALLY_PAID' && (
-                          <div className="text-[10px] font-bold text-orange-600 mt-1">
-                            Reste :{' '}
-                            {remaining.toLocaleString('fr-FR', {
-                              minimumFractionDigits: 2,
-                            })}{' '}
-                            ?
-                          </div>
-                        )}
+                      <td className="p-5 text-right font-bold text-green-700">
+                        {paidAmount.toLocaleString('fr-FR', {
+                          minimumFractionDigits: 2,
+                        })}{' '}
+                        EUR
+                      </td>
+
+                      <td className="p-5 text-right font-black text-orange-700">
+                        {remaining.toLocaleString('fr-FR', {
+                          minimumFractionDigits: 2,
+                        })}{' '}
+                        EUR
+                      </td>
+
+                      <td className="p-5 text-sm font-medium text-slate-500">
+                        {dueDate
+                          ? new Date(dueDate).toLocaleDateString('fr-FR')
+                          : 'Non d?finie'}
                       </td>
 
                       <td className="p-5">
