@@ -541,16 +541,18 @@ export default function CaseDetailPage() {
 
             {/* Actions Globales */}
             <div className="space-y-3">
-              <Button 
-                className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
-                onClick={handleGenerateProforma}
-                disabled={actionLoading}
-              >
-                <FileText size={20} /> Générer Proforma Global
-              </Button>
+              {(dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS') && (
+                <Button 
+                  className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
+                  onClick={handleGenerateProforma}
+                  disabled={actionLoading}
+                >
+                  <FileText size={20} /> Générer Proforma Global
+                </Button>
+              )}
 
               {/* ✅ BOUTON ACCORD CLIENT DYNAMIQUE */}
-              {(dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS' || dossier.status === 'INVOICED') && (
+              {(dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS') && (
                 <Button 
                   className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-xl font-bold flex gap-2 shadow-lg animate-pulse"
                   onClick={handleApproveCase}
