@@ -52,9 +52,19 @@ export default function ProformasListPage() {
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">📜 DEVIS & PROFORMAS</h1>
           <p className="text-sm text-slate-500 mt-1">Historique des documents commerciaux générés</p>
         </div>
-        <Button onClick={fetchProformas} variant="outline" size="sm">
-          Actualiser la liste
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => router.push('/finance/invoices')}
+            variant="outline"
+            size="sm"
+          >
+            Voir les factures
+          </Button>
+
+          <Button onClick={fetchProformas} variant="outline" size="sm">
+            Actualiser la liste
+          </Button>
+        </div>
       </div>
 
       {/* BARRE DE RECHERCHE */}
@@ -188,7 +198,7 @@ export default function ProformasListPage() {
       {!loading && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="p-4 bg-blue-600 text-white">
-            <p className="text-xs font-bold uppercase opacity-80">Total Devis En cours</p>
+            <p className="text-xs font-bold uppercase opacity-80">Total des devis affich?s</p>
             <p className="text-2xl font-black">
               {filteredData.reduce((acc, p) => acc + p.total, 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
             </p>
