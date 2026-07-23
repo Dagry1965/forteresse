@@ -123,6 +123,40 @@ export default function InvoicesListPage() {
     }
   };
 
+  const totals = invoices.reduce(
+    (acc, invoice) => {
+      const total = Number(invoice.total || 0);
+      const paid = getPaidAmount(invoice);
+      const remaining = getRemainingAmount(invoice);
+      const dueDate = invoice.paymentSchedules?.[0]?.due_date;
+      const isOverdue =
+        dueDate &&
+        new Date(dueDate) < new Date() &&
+        remaining > 0;
+
+      acc.totalInvoiced += total;
+      acc.totalPaid += paid;
+      acc.totalRemaining += remaining;
+
+      if (isOverdue) {
+        acc.totalOverdue += remaining;
+      }
+
+      return acc;
+    },
+    {
+      totalInvoiced: 0,
+      totalPaid: 0,
+      totalRemaining: 0,
+      totalOverdue: 0,
+    },
+  );
+
+  const formatMoney = (value: number) =>
+    value.toLocaleString('fr-FR', {
+      minimumFractionDigits: 2,
+    });
+
   const getStatusStyle = (status: string) => {
     switch (status?.toUpperCase()) {
       case 'PAID':
@@ -152,6 +186,44 @@ export default function InvoicesListPage() {
             Historique Factures
           </h1>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Card className="p-5 border-slate-200 bg-white">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+            Total factur?
+          </p>
+          <p className="mt-2 text-2xl font-black text-slate-900">
+            {formatMoney(totals.totalInvoiced)} EUR
+          </p>
+        </Card>
+
+        <Card className="p-5 border-green-200 bg-green-50">
+          <p className="text-[10px] font-black uppercase tracking-widest text-green-600">
+            Total encaiss?
+          </p>
+          <p className="mt-2 text-2xl font-black text-green-700">
+            {formatMoney(totals.totalPaid)} EUR
+          </p>
+        </Card>
+
+        <Card className="p-5 border-orange-200 bg-orange-50">
+          <p className="text-[10px] font-black uppercase tracking-widest text-orange-600">
+            Reste ? encaisser
+          </p>
+          <p className="mt-2 text-2xl font-black text-orange-700">
+            {formatMoney(totals.totalRemaining)} EUR
+          </p>
+        </Card>
+
+        <Card className="p-5 border-red-200 bg-red-50">
+          <p className="text-[10px] font-black uppercase tracking-widest text-red-600">
+            Montant ?chu
+          </p>
+          <p className="mt-2 text-2xl font-black text-red-700">
+            {formatMoney(totals.totalOverdue)} EUR
+          </p>
+        </Card>
       </div>
 
       <Card className="overflow-hidden border-slate-200 shadow-sm rounded-2xl bg-white">
