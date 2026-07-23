@@ -41,18 +41,18 @@ export class FinanceController {
   @Post('invoice/:id/pay')
   payInvoice(
     @Param('id') id: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Body('amount') amount: number,
-    @Body('workspace_id') workspace_id: string,
-    @Body('client_id') client_id: string,
-    @Body('user_id') user_id: string,
+    @Body('method') method: string,
+    @Body('user_id') userId?: string,
   ) {
-    return this.financeService.registerPayment({
+    return this.financeService.registerPayment(
+      workspaceId,
+      id,
       amount,
-      invoice_id: id,
-      workspace_id,
-      client_id,
-      user_id,
-    });
+      method,
+      userId,
+    );
   }
 
    @Get('fleet/pending/:clientId')

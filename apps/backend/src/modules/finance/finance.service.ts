@@ -145,16 +145,99 @@ export class FinanceService {
   // ---------------------------------------------------------
   // REGISTER PAYMENT
   // ---------------------------------------------------------
-  async registerPayment(dto: any) {
-    return this.prisma.payment.create({
-      data: {
-        amount: dto.amount,
-        invoice_id: dto.invoice_id,
-        method: dto.method ?? 'cash',
-        workspace_id: dto.workspace_id,
-        client_id: dto.client_id,
-        user_id: dto.user_id,
-      },
+  async registerPayment(
+    workspaceId: string,
+    invoiceId: string,
+    amount: number,
+    method: string,
+    userId?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where: {
+          id: invoiceId,
+          workspace_id: workspaceId,
+        },
+        include: {
+          Payment: true,
+        },
+      });
+
+      if (!invoice) {
+        throw new BadRequestException('Facture introuvable');
+      }
+
+      if (!amount || amount <= 0) {
+        throw new BadRequestException('Le montant doit ?tre sup?rieur ? z?ro');
+      }
+
+      if (invoice.status === 'PAID') {
+        throw new BadRequestException('Cette facture est d?j? pay?e');
+      }
+
+      const alreadyPaid = invoice.Payment.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0,
+      );
+
+      const remaining = Number(invoice.total) - alreadyPaid;
+
+      if (amount > remaining) {
+        throw new BadRequestException(
+          `Le montant d?passe le solde restant de ${remaining.toFixed(2)} ?`,
+        );
+      }
+
+      let finalUserId = userId;
+
+      if (!finalUserId) {
+        const fallbackUser = await tx.user.findFirst({
+          where: {
+            workspace_id: workspaceId,
+          },
+        });
+
+        if (!fallbackUser) {
+          throw new BadRequestException(
+            "Aucun utilisateur disponible pour enregistrer l'encaissement",
+          );
+        }
+
+        finalUserId = fallbackUser.id;
+      }
+
+      const payment = await tx.payment.create({
+        data: {
+          amount,
+          invoice_id: invoice.id,
+          method: method || 'especes',
+          workspace_id: workspaceId,
+          client_id: invoice.client_id!,
+          user_id: finalUserId,
+        },
+      });
+
+      const newPaidTotal = alreadyPaid + amount;
+      const newStatus =
+        newPaidTotal >= Number(invoice.total)
+          ? 'PAID'
+          : 'PARTIALLY_PAID';
+
+      await tx.invoice.update({
+        where: {
+          id: invoice.id,
+        },
+        data: {
+          status: newStatus,
+          updated_at: new Date(),
+        },
+      });
+
+      return {
+        payment,
+        status: newStatus,
+        remaining: Math.max(Number(invoice.total) - newPaidTotal, 0),
+      };
     });
   }
 
