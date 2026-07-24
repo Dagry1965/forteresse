@@ -173,6 +173,24 @@ export default function CaseDetailPage() {
     }
   };
 
+  const handleStartRepair = async () => {
+    try {
+      setActionLoading(true);
+
+      await interventionService.updateCaseStatus(
+        dossier.id,
+        CASE_STATUS.IN_PROGRESS
+      );
+
+      toast.success("Le dossier est passé en réparation.");
+      await fetchFullDossier();
+    } catch (e) {
+      toast.error("Erreur lors du passage en réparation");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleCompleteCase = async () => {
     try {
       setActionLoading(true);
@@ -563,6 +581,17 @@ export default function CaseDetailPage() {
               )}
 
               {/* ✅ ÉTAT TRAVAUX EN COURS */}
+              {dossier.status === 'WAITING_PARTS' && (
+                <Button
+                  className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-xl font-bold flex gap-2 shadow-lg"
+                  onClick={handleStartRepair}
+                  disabled={actionLoading}
+                >
+                  <Play size={18} />
+                  {actionLoading ? 'Mise à jour...' : 'Passer en réparation'}
+                </Button>
+              )}
+
               {dossier.status === 'IN_PROGRESS' && (
                 <div className="p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl flex items-center gap-3 text-blue-700">
                   <Play size={20} className="animate-pulse" />
