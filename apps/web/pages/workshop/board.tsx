@@ -40,15 +40,18 @@ export default function WorkshopBoardPage() {
     fetchInterventions();
   }, [fetchInterventions]);
 
-  const moveIntervention = async (id: string, newStatus: string) => {
+  const moveCase = async (caseId: string, newStatus: string) => {
     try {
-      await interventionService.update(id, { status: newStatus as any });
-      toast.success(`Véhicule déplacé avec succès`);
+      await interventionService.updateCaseStatus(caseId, newStatus);
+      toast.success('Statut du dossier mis ? jour');
       fetchInterventions();
     } catch (e) {
-      toast.error("Erreur lors du déplacement");
+      toast.error('Erreur lors du d?placement');
     }
   };
+
+  const getBoardStatus = (intervention: Intervention) =>
+    intervention.case?.status || intervention.status;
 
   if (loading) {
     return (
@@ -81,13 +84,13 @@ export default function WorkshopBoardPage() {
             <div className={`p-4 border-t-4 ${col.color} rounded-t-xl bg-white flex justify-between items-center`}>
               <h2 className="font-bold text-slate-700 uppercase text-xs tracking-widest">{col.label}</h2>
               <span className="bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-full text-xs font-black">
-                {interventions.filter(i => i.status === col.id).length}
+                {interventions.filter(i => getBoardStatus(i) === col.id).length}
               </span>
             </div>
 
             <div className="p-3 space-y-4 overflow-y-auto flex-1">
               {interventions
-                .filter((int) => int.status === col.id)
+                .filter((int) => getBoardStatus(int) === col.id)
                 .map((int) => (
                   <Card 
                     key={int.id} 
@@ -127,7 +130,10 @@ export default function WorkshopBoardPage() {
                             const currentIndex = COLUMNS.findIndex(c => c.id === col.id);
                             if (currentIndex < COLUMNS.length - 1) {
                                 const nextStatus = COLUMNS[currentIndex + 1].id;
-                                moveIntervention(int.id, nextStatus);
+                                const caseId = int.case_id || int.case?.id;
+                                if (caseId) {
+                                  moveCase(caseId, nextStatus);
+                                }
                             }
                           }}
                         >
@@ -138,7 +144,7 @@ export default function WorkshopBoardPage() {
                   </Card>
                 ))}
               
-              {interventions.filter(i => i.status === col.id).length === 0 && (
+              {interventions.filter(i => getBoardStatus(i) === col.id).length === 0 && (
                 <div className="border-2 border-dashed border-slate-200 rounded-xl py-12 flex flex-col items-center justify-center text-slate-400 text-xs italic">
                   <p>Aucun véhicule</p>
                 </div>
