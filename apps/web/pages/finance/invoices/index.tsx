@@ -191,7 +191,7 @@ export default function InvoicesListPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Card className="p-5 border-slate-200 bg-white">
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-            Total factur?
+            Total facturé
           </p>
           <p className="mt-2 text-2xl font-black text-slate-900">
             {formatMoney(totals.totalInvoiced)} EUR
@@ -200,7 +200,7 @@ export default function InvoicesListPage() {
 
         <Card className="p-5 border-green-200 bg-green-50">
           <p className="text-[10px] font-black uppercase tracking-widest text-green-600">
-            Total encaiss?
+            Total encaissé
           </p>
           <p className="mt-2 text-2xl font-black text-green-700">
             {formatMoney(totals.totalPaid)} EUR
@@ -209,7 +209,7 @@ export default function InvoicesListPage() {
 
         <Card className="p-5 border-orange-200 bg-orange-50">
           <p className="text-[10px] font-black uppercase tracking-widest text-orange-600">
-            Reste ? encaisser
+            Reste à encaisser
           </p>
           <p className="mt-2 text-2xl font-black text-orange-700">
             {formatMoney(totals.totalRemaining)} EUR
@@ -218,7 +218,7 @@ export default function InvoicesListPage() {
 
         <Card className="p-5 border-red-200 bg-red-50">
           <p className="text-[10px] font-black uppercase tracking-widest text-red-600">
-            Montant ?chu
+            Montant échu
           </p>
           <p className="mt-2 text-2xl font-black text-red-700">
             {formatMoney(totals.totalOverdue)} EUR
@@ -247,9 +247,9 @@ export default function InvoicesListPage() {
                   <th className="p-5">Date</th>
                   <th className="p-5 text-center">Statut</th>
                   <th className="p-5 text-right">Total</th>
-                  <th className="p-5 text-right">D?j? pay?</th>
-                  <th className="p-5 text-right">Reste ? payer</th>
-                  <th className="p-5">?ch?ance</th>
+                  <th className="p-5 text-right">Déjà payé</th>
+                  <th className="p-5 text-right">Reste à payer</th>
+                  <th className="p-5">Échéance</th>
                   <th className="p-5 text-right">Actions</th>
                 </tr>
               </thead>
@@ -315,7 +315,7 @@ export default function InvoicesListPage() {
                       <td className="p-5 text-sm font-medium text-slate-500">
                         {dueDate
                           ? new Date(dueDate).toLocaleDateString('fr-FR')
-                          : 'Non d?finie'}
+                          : 'Non définie'}
                       </td>
 
                       <td className="p-5">
