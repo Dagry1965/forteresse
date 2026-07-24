@@ -13,6 +13,7 @@ import { Loader2, ArrowRight, User, Car, ClipboardList, LayoutList, RefreshCw } 
 const COLUMNS = [
   { id: CASE_STATUS.RECEIVED, label: 'File d\'attente', color: 'border-t-slate-400', bg: 'bg-slate-50' },
   { id: CASE_STATUS.DIAGNOSIS, label: 'Diagnostic', color: 'border-t-blue-500', bg: 'bg-blue-50/30' },
+  { id: CASE_STATUS.WAITING_PARTS, label: 'En attente de pièces', color: 'border-t-amber-500', bg: 'bg-amber-50/30' },
   { id: CASE_STATUS.IN_PROGRESS, label: 'En réparation', color: 'border-t-orange-500', bg: 'bg-orange-50/30' },
   { id: CASE_STATUS.COMPLETED, label: 'Terminé', color: 'border-t-green-500', bg: 'bg-green-50/30' },
 ];
