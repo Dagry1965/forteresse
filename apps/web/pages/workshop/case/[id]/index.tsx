@@ -234,6 +234,7 @@ export default function CaseDetailPage() {
 
   const tva = totalHT * 0.20;
   const totalTTC = totalHT + tva;
+  const currentProforma = dossier.proformas?.[0];
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8 pb-20">
@@ -559,28 +560,43 @@ export default function CaseDetailPage() {
 
             {/* Actions Globales */}
             <div className="space-y-3">
-              {(dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS') && (
-                <Button 
-                  className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
-                  onClick={handleGenerateProforma}
+              {!currentProforma &&
+                (dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS') && (
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
+                    onClick={handleGenerateProforma}
+                    disabled={actionLoading}
+                  >
+                    <FileText size={20} />
+                    {actionLoading
+                      ? 'Génération...'
+                      : 'Générer la proforma'}
+                  </Button>
+                )}
+
+              {currentProforma && (
+                <Button
+                  className="w-full bg-slate-900 hover:bg-slate-800 h-14 rounded-xl font-bold flex gap-2 shadow-lg text-white"
+                  onClick={() =>
+                    router.push(`/billing/proforma/${currentProforma.id}`)
+                  }
                   disabled={actionLoading}
                 >
-                  <FileText size={20} /> Générer Proforma Global
+                  <FileText size={18} />
+                  {currentProforma.status === 'DRAFT'
+                    ? 'Ouvrir la proforma pour validation'
+                    : 'Voir la proforma'}
+
+                  <span className="ml-auto text-[10px] uppercase opacity-70">
+                    {currentProforma.status === 'DRAFT'
+                      ? 'Brouillon'
+                      : currentProforma.status === 'ACCEPTED'
+                        ? 'Acceptée'
+                        : currentProforma.status}
+                  </span>
                 </Button>
               )}
 
-              {/* ✅ BOUTON ACCORD CLIENT DYNAMIQUE */}
-              {(dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS') && (
-                <Button 
-                  className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-xl font-bold flex gap-2 shadow-lg animate-pulse"
-                  onClick={handleApproveCase}
-                  disabled={actionLoading}
-                >
-                  <CheckCircle2 size={18} /> Valider Accord Client
-                </Button>
-              )}
-
-              {/* ✅ ÉTAT TRAVAUX EN COURS */}
               {dossier.status === 'WAITING_PARTS' && (
                 <Button
                   className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-xl font-bold flex gap-2 shadow-lg"

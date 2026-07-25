@@ -338,6 +338,11 @@ export class InterventionsService {
       include: {
         client: true,
         vehicle: true,
+        proformas: {
+          where: { deleted_at: null },
+          orderBy: { created_at: 'desc' },
+          take: 1,
+        },
         interventions: {
           where: { deleted_at: null },
           include: { InterventionPart: { include: { item: true } } },

@@ -4,7 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { proformaService } from '@/services/proformaService';
 import { Button } from '@/components/ui/button';
-import { Printer, ArrowLeft, Loader2 } from 'lucide-react';
+import {
+  Printer,
+  ArrowLeft,
+  Loader2,
+  CheckCircle2,
+  FileText,
+  Wrench,
+} from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ProformaPrintPage() {
@@ -12,6 +19,7 @@ export default function ProformaPrintPage() {
   const { id } = router.query;
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -29,19 +37,43 @@ export default function ProformaPrintPage() {
   const vehicle = data.case?.vehicle;
   const interventions = data.case?.interventions || [];
 
+  const getWorkshopUrl = () => {
+    const interventionId = data.case?.interventions?.[0]?.id;
+
+    return interventionId
+      ? `/workshop/case/${interventionId}`
+      : '/workshop';
+  };
+
   const handleAcceptProforma = async () => {
     try {
+      setActionLoading(true);
       await proformaService.acceptProforma(data.id);
-      toast.success("Accord client enregistr?. Les travaux peuvent commencer.");
-      const interventionId = data.case?.interventions?.[0]?.id;
-
-      if (interventionId) {
-        router.push(`/workshop/case/${interventionId}`);
-      } else {
-        router.push('/workshop');
-      }
+      toast.success(
+        "Accord client enregistré. Les travaux peuvent commencer.",
+      );
+      router.push(getWorkshopUrl());
     } catch (e) {
-      toast.error("Erreur lors de l'enregistrement de l'accord client");
+      toast.error(
+        "Erreur lors de l'enregistrement de l'accord client",
+      );
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConvertToInvoice = async () => {
+    try {
+      setActionLoading(true);
+      await proformaService.convertToInvoice(data.id);
+      toast.success("La facture a été créée avec succès.");
+      router.push('/finance/invoices');
+    } catch (e: any) {
+      toast.error(
+        e?.message || "Erreur lors de la création de la facture",
+      );
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -76,19 +108,68 @@ export default function ProformaPrintPage() {
             <ArrowLeft size={16} className="mr-2" /> Retour
           </Button>
 
-          <div className="flex gap-2">
-            <Button
-              onClick={handleAcceptProforma}
-              className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
-            >
-              Enregistrer l'accord client
-            </Button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {data.status === 'DRAFT' && (
+              <Button
+                onClick={handleAcceptProforma}
+                disabled={actionLoading}
+                className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
+              >
+                {actionLoading ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={16} />
+                )}
+                Enregistrer l'accord client
+              </Button>
+            )}
 
-            <Button 
-              onClick={() => window.print()} 
+            {data.status === 'ACCEPTED' &&
+              data.case?.status !== 'COMPLETED' &&
+              data.case?.status !== 'INVOICED' && (
+                <Button
+                  onClick={() => router.push(getWorkshopUrl())}
+                  disabled={actionLoading}
+                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
+                >
+                  <Wrench size={16} />
+                  Retour aux travaux
+                </Button>
+              )}
+
+            {data.status === 'ACCEPTED' &&
+              data.case?.status === 'COMPLETED' && (
+                <Button
+                  onClick={handleConvertToInvoice}
+                  disabled={actionLoading}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
+                >
+                  {actionLoading ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <FileText size={16} />
+                  )}
+                  Créer la facture
+                </Button>
+              )}
+
+            {data.case?.status === 'INVOICED' && (
+              <Button
+                onClick={() => router.push('/finance/invoices')}
+                disabled={actionLoading}
+                className="bg-slate-900 hover:bg-slate-800 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
+              >
+                <FileText size={16} />
+                Voir les factures
+              </Button>
+            )}
+
+            <Button
+              onClick={() => window.print()}
               className="bg-blue-600 hover:bg-blue-700 text-white font-bold h-10 px-4 rounded-xl flex gap-2"
             >
-              <Printer size={16} /> Imprimer / PDF
+              <Printer size={16} />
+              Imprimer / PDF
             </Button>
           </div>
         </div>
