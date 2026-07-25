@@ -182,7 +182,17 @@ export class InterventionsService {
       where: { workspace_id: workspaceId, deleted_at: null },
       include: {
         InterventionPart: { include: { item: true } },
-        case: { include: { client: true, vehicle: true } },
+        case: {
+          include: {
+            client: true,
+            vehicle: true,
+            proformas: {
+              where: { deleted_at: null },
+              orderBy: { created_at: 'desc' },
+              take: 1,
+            },
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });

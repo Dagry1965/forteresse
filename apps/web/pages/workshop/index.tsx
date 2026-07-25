@@ -182,6 +182,48 @@ export default function WorkshopPage() {
                 : '—',
           },
           {
+            key: 'proforma',
+            header: 'Proforma',
+            render: (r) => {
+              const proforma = r.case?.proformas?.[0];
+
+              if (!proforma) {
+                return (
+                  <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500">
+                    Aucune
+                  </span>
+                );
+              }
+
+              const labels: Record<string, string> = {
+                DRAFT: 'Brouillon',
+                ACCEPTED: 'Acceptée',
+                REJECTED: 'Refusée',
+              };
+
+              const colors: Record<string, string> = {
+                DRAFT: 'bg-amber-100 text-amber-700',
+                ACCEPTED: 'bg-green-100 text-green-700',
+                REJECTED: 'bg-red-100 text-red-700',
+              };
+
+              return (
+                <div className="flex flex-col gap-1">
+                  <span
+                    className={`w-fit px-3 py-1 rounded-full text-[11px] font-bold ${
+                      colors[proforma.status] || 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {labels[proforma.status] || proforma.status}
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    {proforma.reference}
+                  </span>
+                </div>
+              );
+            },
+          },
+          {
             key: 'status',
             header: 'Statut',
             render: (r) => {

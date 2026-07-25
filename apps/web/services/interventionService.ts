@@ -18,6 +18,12 @@ export interface Case {
     registration: string;
   };
   interventions?: Intervention[];
+  proformas?: {
+    id: string;
+    reference: string;
+    status: string;
+    created_at: string;
+  }[];
 }
 
 export interface Intervention {
