@@ -1,5 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import {
+  INVOICE_STATUS,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class ReportsService {
@@ -12,7 +15,7 @@ export class ReportsService {
       const invoices = await this.prisma.invoice.findMany({
         where: {
           workspace_id: workspaceId,
-          status: { in: ['PAID', 'PARTIALLY_PAID', 'PENDING', 'pending', 'paid'] },
+          status: INVOICE_STATUS.PAID,
           deleted_at: null
         },
         select: {
