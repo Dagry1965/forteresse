@@ -133,7 +133,7 @@ export class ProformasService {
         throw new BadRequestException('Ce devis a d?j? ?t? factur?');
       }
 
-      if (!proforma.case_id || proforma.case?.status !== 'COMPLETED') {
+      if (!proforma.case_id || proforma.case?.status !== CASE_STATUS.COMPLETED) {
         throw new BadRequestException(
           'Les travaux doivent ?tre termin?s avant la facturation'
         );
