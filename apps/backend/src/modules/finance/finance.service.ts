@@ -181,7 +181,7 @@ export class FinanceService {
         throw new BadRequestException('Le montant doit ?tre sup?rieur ? z?ro');
       }
 
-      if (invoice.status === 'PAID') {
+      if (invoice.status === INVOICE_STATUS.PAID) {
         throw new BadRequestException('Cette facture est d?j? pay?e');
       }
 
@@ -230,8 +230,8 @@ export class FinanceService {
       const newPaidTotal = alreadyPaid + amount;
       const newStatus =
         newPaidTotal >= Number(invoice.total)
-          ? 'PAID'
-          : 'PARTIALLY_PAID';
+          ? INVOICE_STATUS.PAID
+          : INVOICE_STATUS.PARTIALLY_PAID;
 
       await tx.invoice.update({
         where: {
