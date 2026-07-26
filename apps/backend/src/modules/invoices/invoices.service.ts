@@ -5,6 +5,7 @@ import {
   CASE_STATUS,
   INVOICE_STATUS,
   INVOICE_TYPE,
+  PAYMENT_SCHEDULE_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
@@ -214,7 +215,7 @@ export class InvoicesService {
           invoice_id: invoice.id,
           amount: totalAmount,
           due_date: dueDate,
-          status: this.normalizeStatus('PENDING'),
+          status: PAYMENT_SCHEDULE_STATUS.PENDING,
           workspace_id: workspaceId
         }
       });
