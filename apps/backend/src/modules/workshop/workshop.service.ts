@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
-import { INTERVENTION_STATUS } from '../../../../../shared/constants/status.constants';
+import {
+  CASE_STATUS,
+  INTERVENTION_STATUS,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class WorkshopService {
@@ -39,24 +42,24 @@ export class WorkshopService {
         throw new Error('Dossier introuvable');
       }
 
-      if (status === 'IN_PROGRESS') {
+      if (status === CASE_STATUS.IN_PROGRESS) {
         await tx.intervention.updateMany({
           where: {
             case_id: caseId,
             workspace_id: workspaceId,
             deleted_at: null,
             status: {
-              in: ['PENDING', 'DIAGNOSIS'],
+              in: [INTERVENTION_STATUS.PENDING, INTERVENTION_STATUS.DIAGNOSIS],
             },
           },
           data: {
-            status: 'IN_PROGRESS',
+            status: INTERVENTION_STATUS.IN_PROGRESS,
             updated_at: new Date(),
           },
         });
       }
 
-      if (status === 'COMPLETED') {
+      if (status === CASE_STATUS.COMPLETED) {
         await tx.intervention.updateMany({
           where: {
             case_id: caseId,
@@ -64,7 +67,7 @@ export class WorkshopService {
             deleted_at: null,
           },
           data: {
-            status: 'COMPLETED',
+            status: INTERVENTION_STATUS.COMPLETED,
             updated_at: new Date(),
           },
         });
