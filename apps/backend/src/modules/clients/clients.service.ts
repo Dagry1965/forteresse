@@ -4,6 +4,7 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { CreateClientContactDto } from './dto/create-client-contact.dto';
 import { UpdateClientContactDto } from './dto/update-client-contact.dto';
+import { INVOICE_STATUS } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class ClientsService {
@@ -154,7 +155,7 @@ export class ClientsService {
     const unpaidInvoicesCount = await this.prisma.invoice.count({
       where: {
         client_id: id,
-        status: { not: 'PAID' },
+        status: { not: INVOICE_STATUS.PAID },
       },
     });
 
@@ -198,7 +199,7 @@ export class ClientsService {
     const unpaidInvoicesCount = await this.prisma.invoice.count({
       where: {
         client_id: id,
-        status: { not: 'PAID' },
+        status: { not: INVOICE_STATUS.PAID },
       },
     });
 
