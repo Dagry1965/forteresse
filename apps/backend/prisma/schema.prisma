@@ -66,7 +66,6 @@ model User {
   Payments         Payment[]
   workspaceMembers WorkspaceMember[]
   AuditLogs        AuditLog[]
-  InvoicePayments  InvoicePayment[]
 
   @@index([workspace_id])
   @@index([email])
@@ -289,8 +288,7 @@ model Invoice {
   createdBy User? @relation("InvoiceCreatedBy", fields: [created_by], references: [id])
   updatedBy User? @relation("InvoiceUpdatedBy", fields: [updated_by], references: [id])
 
-  payments         InvoicePayment[]
-  Payment          Payment[]
+  payments         Payment[]
   lines            InvoiceLine[]
   paymentSchedules PaymentSchedule[] // <-- AJOUTER CETTE LIGNE
 
@@ -298,22 +296,6 @@ model Invoice {
   @@index([workspace_id, status])
   @@index([client_id])
   @@index([created_at])
-}
-
-model InvoicePayment {
-  id         String   @id @default(cuid())
-  amount     Float
-  method     String
-  paid_at    DateTime @default(now())
-  created_at DateTime @default(now())
-
-  invoice_id String
-  invoice    Invoice @relation(fields: [invoice_id], references: [id])
-
-  user_id String?
-  user    User?   @relation(fields: [user_id], references: [id])
-
-  @@index([invoice_id])
 }
 
 model Payment {

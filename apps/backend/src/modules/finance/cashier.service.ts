@@ -20,7 +20,7 @@ export class CashierService {
     endOfDay.setHours(23, 59, 59, 999);
 
     // 2. Récupérer tous les paiements de la journée
-    const payments = await this.prisma.invoicePayment.findMany({
+    const payments = await this.prisma.payment.findMany({
       where: {
         invoice: { workspace_id: workspaceId },
         created_at: {

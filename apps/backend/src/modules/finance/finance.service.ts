@@ -159,7 +159,7 @@ export class FinanceService {
           workspace_id: workspaceId,
         },
         include: {
-          Payment: true,
+          payments: true,
         },
       });
 
@@ -175,7 +175,7 @@ export class FinanceService {
         throw new BadRequestException('Cette facture est d?j? pay?e');
       }
 
-      const alreadyPaid = invoice.Payment.reduce(
+      const alreadyPaid = invoice.payments.reduce(
         (sum, payment) => sum + Number(payment.amount),
         0,
       );

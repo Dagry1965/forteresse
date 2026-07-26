@@ -93,15 +93,28 @@ async getOverdueSchedules(workspaceId: string) {
         finalUserId = fallbackUser.id;
       }
 
-      // 3. CRÃ‰ER LE PAIEMENT (InvoicePayment)
-      const payment = await tx.invoicePayment.create({
+      // 3. CREER LE PAIEMENT DANS LA SOURCE UNIQUE Payment
+      if (!schedule.invoice.client_id) {
+        throw new BadRequestException(
+          'La facture ne possede aucun client.',
+        );
+      }
+
+      if (!finalUserId) {
+        throw new BadRequestException(
+          'Aucun utilisateur valide pour l\u2019encaissement.',
+        );
+      }
+
+      const payment = await tx.payment.create({
         data: {
+          workspace_id: workspaceId,
           invoice_id: schedule.invoice_id,
+          client_id: schedule.invoice.client_id,
+          user_id: finalUserId,
           amount: schedule.amount,
           method: dto.method || 'CASH',
-          user_id: finalUserId,
-          paid_at: new Date()
-        }
+        },
       });
 
       // 4. MARQUER L'Ã‰CHÃ‰ANCE COMME PAYÃ‰E

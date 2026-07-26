@@ -177,7 +177,6 @@ export class InvoicesService {
       include: {
         client: true,
         payments: true,
-        Payment: true,
         paymentSchedules: {
           orderBy: { due_date: 'asc' }
         }
@@ -185,13 +184,7 @@ export class InvoicesService {
       orderBy: { created_at: 'desc' }
     });
 
-    return invoices.map(({ Payment, ...invoice }) => ({
-      ...invoice,
-      payments: [
-        ...(invoice.payments ?? []),
-        ...(Payment ?? [])
-      ]
-    }));
+    return invoices;
   }
 
   async findUnpaidInvoices(workspaceId: string) {
