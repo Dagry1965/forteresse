@@ -79,9 +79,40 @@ export default function PrintInvoicePage() {
           <div className="flex justify-between mb-10">
             <div className="w-1/2">
               <p className="text-[8px] font-black text-blue-600 uppercase mb-2">Facturé à</p>
-              <p className="font-bold text-base">{invoice.client?.name}</p>
-              <p className="text-xs text-slate-500">{invoice.client?.email}</p>
-              <p className="text-xs text-slate-500">{invoice.client?.phone}</p>
+              <p className="font-bold text-base">
+                {invoice.customer_name_snapshot || invoice.client?.company_name || invoice.client?.name}
+              </p>
+              {(invoice.customer_billing_address_snapshot ||
+                invoice.customer_address_snapshot ||
+                invoice.client?.billing_address ||
+                invoice.client?.address) && (
+                <p className="text-xs text-slate-500">
+                  {invoice.customer_billing_address_snapshot ||
+                    invoice.customer_address_snapshot ||
+                    invoice.client?.billing_address ||
+                    invoice.client?.address}
+                </p>
+              )}
+              <p className="text-xs text-slate-500">
+                {invoice.customer_email_snapshot || invoice.client?.email}
+              </p>
+              <p className="text-xs text-slate-500">
+                {invoice.customer_phone_snapshot || invoice.client?.phone}
+              </p>
+              {(invoice.customer_registration_number_snapshot ||
+                invoice.client?.registration_number) && (
+                <p className="text-xs text-slate-500">
+                  SIRET : {invoice.customer_registration_number_snapshot ||
+                    invoice.client?.registration_number}
+                </p>
+              )}
+              {(invoice.customer_vat_number_snapshot ||
+                invoice.client?.vat_number) && (
+                <p className="text-xs text-slate-500">
+                  TVA : {invoice.customer_vat_number_snapshot ||
+                    invoice.client?.vat_number}
+                </p>
+              )}
             </div>
             <div className="text-right text-xs">
               <p className="text-slate-400 uppercase text-[8px] font-bold">Règlement</p>

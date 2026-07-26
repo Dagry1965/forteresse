@@ -379,6 +379,7 @@ export class InterventionsService {
       const repairCase = await tx.case.findFirst({
         where: { id: caseId, workspace_id: workspaceId },
         include: {
+          client: true,
           interventions: {
             where: { deleted_at: null },
             include: { InterventionPart: true },
@@ -426,6 +427,8 @@ export class InterventionsService {
         throw new BadRequestException('Aucun rendez-vous trouvé.');
       }
 
+      const client = repairCase.client;
+
       return tx.proforma.create({
         data: {
           workspace_id: workspaceId,
@@ -434,6 +437,20 @@ export class InterventionsService {
           total: totalTTC,
           status: 'DRAFT',
           reference: `PRO-${Date.now()}`,
+          customer_name_snapshot:
+            client?.company_name || client?.name || null,
+          customer_address_snapshot:
+            client?.address || null,
+          customer_billing_address_snapshot:
+            client?.billing_address || client?.address || null,
+          customer_registration_number_snapshot:
+            client?.registration_number || null,
+          customer_vat_number_snapshot:
+            client?.vat_number || null,
+          customer_email_snapshot:
+            client?.email || null,
+          customer_phone_snapshot:
+            client?.phone || null,
         },
       });
     });

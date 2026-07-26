@@ -241,6 +241,14 @@ model Proforma {
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
 
+  customer_name_snapshot                String?
+  customer_address_snapshot             String?
+  customer_billing_address_snapshot     String?
+  customer_registration_number_snapshot String?
+  customer_vat_number_snapshot          String?
+  customer_email_snapshot               String?
+  customer_phone_snapshot               String?
+
   workspace_id String
   workspace    Workspace @relation(fields: [workspace_id], references: [id])
 
@@ -266,6 +274,14 @@ model Invoice {
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
+
+  customer_name_snapshot                String?
+  customer_address_snapshot             String?
+  customer_billing_address_snapshot     String?
+  customer_registration_number_snapshot String?
+  customer_vat_number_snapshot          String?
+  customer_email_snapshot               String?
+  customer_phone_snapshot               String?
 
   created_by String?
   updated_by String?

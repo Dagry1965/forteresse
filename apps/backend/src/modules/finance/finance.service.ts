@@ -119,6 +119,20 @@ export class FinanceService {
         appointment_id: proforma.appointment_id,
         client_id: appointment.client_id,
         user_id: userId,
+        customer_name_snapshot:
+          proforma.customer_name_snapshot,
+        customer_address_snapshot:
+          proforma.customer_address_snapshot,
+        customer_billing_address_snapshot:
+          proforma.customer_billing_address_snapshot,
+        customer_registration_number_snapshot:
+          proforma.customer_registration_number_snapshot,
+        customer_vat_number_snapshot:
+          proforma.customer_vat_number_snapshot,
+        customer_email_snapshot:
+          proforma.customer_email_snapshot,
+        customer_phone_snapshot:
+          proforma.customer_phone_snapshot,
       },
     });
   }

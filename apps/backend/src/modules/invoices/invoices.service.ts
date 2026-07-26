@@ -25,6 +25,18 @@ export class InvoicesService {
     const status = this.normalizeStatus(dto.status);
     const type = this.normalizeType(dto.type);
 
+    const client = await this.prisma.client.findFirst({
+      where: {
+        id: dto.client_id,
+        workspace_id: dto.workspace_id,
+        deleted_at: null,
+      },
+    });
+
+    if (!client) {
+      throw new NotFoundException('Client introuvable.');
+    }
+
     return this.prisma.invoice.create({
       data: {
         reference: dto.reference,
@@ -34,6 +46,20 @@ export class InvoicesService {
         workspace: { connect: { id: dto.workspace_id } },
         client: { connect: { id: dto.client_id } },
         user: { connect: { id: dto.user_id } },
+        customer_name_snapshot:
+          client.company_name || client.name || null,
+        customer_address_snapshot:
+          client.address || null,
+        customer_billing_address_snapshot:
+          client.billing_address || client.address || null,
+        customer_registration_number_snapshot:
+          client.registration_number || null,
+        customer_vat_number_snapshot:
+          client.vat_number || null,
+        customer_email_snapshot:
+          client.email || null,
+        customer_phone_snapshot:
+          client.phone || null,
         ...(dto.proforma_id && { proforma: { connect: { id: dto.proforma_id } } }),
         ...(dto.appointment_id && { appointment: { connect: { id: dto.appointment_id } } }),
       },
@@ -75,6 +101,18 @@ export class InvoicesService {
       }, 0);
 
       // 3. Utilisateur par défaut
+      const client = await tx.client.findFirst({
+        where: {
+          id: dto.client_id,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!client) {
+        throw new NotFoundException('Client introuvable.');
+      }
+
       const defaultUser = await tx.user.findFirst({ where: { workspace_id: workspaceId } });
       if (!defaultUser) throw new NotFoundException("Utilisateur introuvable.");
 
@@ -87,7 +125,21 @@ export class InvoicesService {
           type: this.normalizeType('FLEET'),
           workspace_id: workspaceId,
           client_id: dto.client_id,
-          user_id: defaultUser.id
+          user_id: defaultUser.id,
+          customer_name_snapshot:
+            client.company_name || client.name || null,
+          customer_address_snapshot:
+            client.address || null,
+          customer_billing_address_snapshot:
+            client.billing_address || client.address || null,
+          customer_registration_number_snapshot:
+            client.registration_number || null,
+          customer_vat_number_snapshot:
+            client.vat_number || null,
+          customer_email_snapshot:
+            client.email || null,
+          customer_phone_snapshot:
+            client.phone || null
         }
       });
 
@@ -206,6 +258,18 @@ export class InvoicesService {
   async createFleetInvoice(workspaceId: string, clientId: string) {
     // Version simplifiée pour un seul client
     return this.prisma.$transaction(async (tx) => {
+      const client = await tx.client.findFirst({
+        where: {
+          id: clientId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!client) {
+        throw new NotFoundException('Client introuvable.');
+      }
+
       const pendingCases = await tx.case.findMany({
         where: { workspace_id: workspaceId, customer_id: clientId, status: 'COMPLETED' },
         include: { proformas: true },
@@ -220,6 +284,20 @@ export class InvoicesService {
           type: 'FLEET',
           workspace_id: workspaceId,
           client_id: clientId,
+          customer_name_snapshot:
+            client.company_name || client.name || null,
+          customer_address_snapshot:
+            client.address || null,
+          customer_billing_address_snapshot:
+            client.billing_address || client.address || null,
+          customer_registration_number_snapshot:
+            client.registration_number || null,
+          customer_vat_number_snapshot:
+            client.vat_number || null,
+          customer_email_snapshot:
+            client.email || null,
+          customer_phone_snapshot:
+            client.phone || null,
         },
       });
     });

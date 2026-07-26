@@ -141,6 +141,20 @@ export class ProformasService {
           total: proforma.total,
           status: 'UNPAID',
           type: 'INVOICE',
+          customer_name_snapshot:
+            proforma.customer_name_snapshot,
+          customer_address_snapshot:
+            proforma.customer_address_snapshot,
+          customer_billing_address_snapshot:
+            proforma.customer_billing_address_snapshot,
+          customer_registration_number_snapshot:
+            proforma.customer_registration_number_snapshot,
+          customer_vat_number_snapshot:
+            proforma.customer_vat_number_snapshot,
+          customer_email_snapshot:
+            proforma.customer_email_snapshot,
+          customer_phone_snapshot:
+            proforma.customer_phone_snapshot,
           reference: `FACT-${new Date().getFullYear()}-${Math.floor(
             1000 + Math.random() * 9000
           )}`,
