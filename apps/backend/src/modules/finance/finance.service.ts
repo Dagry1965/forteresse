@@ -1,5 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import {
+  INVOICE_STATUS,
+  INVOICE_TYPE,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class FinanceService {
@@ -8,15 +12,7 @@ export class FinanceService {
   // ---------------------------------------------------------
   // Helpers de normalisation (majuscules)
   // ---------------------------------------------------------
-  private normalizeStatus(status: string | undefined | null): string {
-    if (!status) return 'PENDING';
-    return status.trim().toUpperCase();
-  }
 
-  private normalizeType(type: string | undefined | null): string {
-    if (!type) return 'INVOICE';
-    return type.trim().toUpperCase();
-  }
 
   // ---------------------------------------------------------
   // LIST ALL INVOICES
@@ -46,7 +42,7 @@ export class FinanceService {
     return this.prisma.invoice.findMany({
       where: {
         workspace_id: workspaceId,
-        status: 'PENDING',                    // corrigé
+        status: INVOICE_STATUS.UNPAID,
       },
       include: {
         client: true,
@@ -112,8 +108,8 @@ export class FinanceService {
       data: {
         reference: `INV-${Date.now()}`,
         total: proforma.total,
-        status: this.normalizeStatus('pending'),     // → PENDING
-        type: this.normalizeType('INVOICE'),        // → INVOICE
+        status: INVOICE_STATUS.UNPAID,
+        type: INVOICE_TYPE.INVOICE,
         workspace_id: workspaceId,
         proforma_id: id,
         appointment_id: proforma.appointment_id,
