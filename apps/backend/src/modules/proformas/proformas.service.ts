@@ -9,6 +9,7 @@ import {
   INVOICE_STATUS,
   INVOICE_TYPE,
   CASE_STATUS,
+  INTERVENTION_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
@@ -80,11 +81,11 @@ export class ProformasService {
             workspace_id: workspaceId,
             deleted_at: null,
             status: {
-              in: ['PENDING', 'DIAGNOSIS']
+              in: [INTERVENTION_STATUS.PENDING, INTERVENTION_STATUS.DIAGNOSIS]
             }
           },
           data: {
-            status: 'IN_PROGRESS',
+            status: INTERVENTION_STATUS.IN_PROGRESS,
             updated_at: new Date()
           }
         });
@@ -92,7 +93,7 @@ export class ProformasService {
         await tx.case.update({
           where: { id: proforma.case_id },
           data: {
-            status: 'IN_PROGRESS',
+            status: CASE_STATUS.IN_PROGRESS,
             updated_at: new Date()
           }
         });
