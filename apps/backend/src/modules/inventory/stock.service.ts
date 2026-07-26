@@ -1,5 +1,6 @@
 import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { PURCHASE_ORDER_STATUS } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class StockService {
@@ -160,7 +161,7 @@ async generateAutoOrder(workspaceId: string, itemId: string) {
     where: {
       workspace_id: workspaceId,
       supplier_id: item.supplier_id,
-      status: 'DRAFT'
+      status: PURCHASE_ORDER_STATUS.DRAFT
     }
   });
 
@@ -170,7 +171,7 @@ async generateAutoOrder(workspaceId: string, itemId: string) {
         reference: `CMD-${Date.now()}`,
         workspace_id: workspaceId,
         supplier_id: item.supplier_id,
-        status: 'DRAFT'
+        status: PURCHASE_ORDER_STATUS.DRAFT
       }
     });
   }
