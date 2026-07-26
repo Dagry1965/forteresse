@@ -4,6 +4,12 @@ import {
   BadRequestException 
 } from '@nestjs/common'; // 👈 Imports corrigés ici
 import { PrismaService } from '../../core/prisma/prisma.service';
+import {
+  PROFORMA_STATUS,
+  INVOICE_STATUS,
+  INVOICE_TYPE,
+  CASE_STATUS,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class ProformasService {
@@ -64,7 +70,7 @@ export class ProformasService {
 
       await tx.proforma.update({
         where: { id: proformaId },
-        data: { status: 'ACCEPTED' }
+        data: { status: PROFORMA_STATUS.ACCEPTED }
       });
 
       if (proforma.case_id) {
@@ -139,8 +145,8 @@ export class ProformasService {
           appointment_id: proforma.appointment_id,
           client_id: proforma.case.customer_id,
           total: proforma.total,
-          status: 'UNPAID',
-          type: 'INVOICE',
+          status: INVOICE_STATUS.UNPAID,
+          type: INVOICE_TYPE.INVOICE,
           customer_name_snapshot:
             proforma.customer_name_snapshot,
           customer_address_snapshot:
@@ -185,7 +191,7 @@ export class ProformasService {
           workspace_id: workspaceId,
           amount: Number(invoice.total),
           due_date: dueDate,
-          status: 'PENDING'
+          status: INVOICE_STATUS.UNPAID
         }
       });
 
@@ -194,7 +200,7 @@ export class ProformasService {
           id: proforma.case_id
         },
         data: {
-          status: 'INVOICED',
+          status: CASE_STATUS.INVOICED,
           updated_at: new Date()
         }
       });
