@@ -51,6 +51,7 @@ export const INVOICE_STATUS = {
 export const INVOICE_TYPE = {
   PROFORMA: 'PROFORMA',
   INVOICE: 'INVOICE',
+  FLEET: 'FLEET',
 } as const;
 
 // ====================== TIME SLOT ======================

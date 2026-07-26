@@ -1,5 +1,11 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import {
+  APPOINTMENT_STATUS,
+  CASE_STATUS,
+  INVOICE_STATUS,
+  INVOICE_TYPE,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class InvoicesService {
@@ -9,13 +15,31 @@ export class InvoicesService {
   // HELPERS DE NORMALISATION
   // ---------------------------------------------------------
   private normalizeStatus(status: string | undefined | null): string {
-    if (!status) return 'PENDING';
-    return status.trim().toUpperCase();
+    const normalized =
+      status?.trim().toUpperCase() || INVOICE_STATUS.UNPAID;
+    const allowedStatuses = Object.values(INVOICE_STATUS) as string[];
+
+    if (!allowedStatuses.includes(normalized)) {
+      throw new BadRequestException(
+        `Statut de facture invalide : ${normalized}.`,
+      );
+    }
+
+    return normalized;
   }
 
   private normalizeType(type: string | undefined | null): string {
-    if (!type) return 'INVOICE'; 
-    return type.trim().toUpperCase();
+    const normalized =
+      type?.trim().toUpperCase() || INVOICE_TYPE.INVOICE;
+    const allowedTypes = Object.values(INVOICE_TYPE) as string[];
+
+    if (!allowedTypes.includes(normalized)) {
+      throw new BadRequestException(
+        `Type de facture invalide : ${normalized}.`,
+      );
+    }
+
+    return normalized;
   }
 
   // ---------------------------------------------------------
@@ -121,8 +145,8 @@ export class InvoicesService {
         data: {
           reference: `FLOTTE-${Date.now()}`,
           total: totalAmount,
-          status: this.normalizeStatus('PENDING'),
-          type: this.normalizeType('FLEET'),
+          status: INVOICE_STATUS.UNPAID,
+          type: INVOICE_TYPE.FLEET,
           workspace_id: workspaceId,
           client_id: dto.client_id,
           user_id: defaultUser.id,
@@ -178,7 +202,7 @@ export class InvoicesService {
         // C. Marquer le RDV comme facturé
         await tx.appointment.update({
           where: { id: appt.id },
-          data: { status: this.normalizeStatus('INVOICED') }
+          data: { status: APPOINTMENT_STATUS.COMPLETED }
         });
       }
 
@@ -243,7 +267,7 @@ export class InvoicesService {
     return this.prisma.invoice.findMany({
       where: {
         workspace_id: workspaceId,
-        status: this.normalizeStatus('PENDING'),
+        status: INVOICE_STATUS.UNPAID,
       },
       include: {
         client: true,
@@ -271,7 +295,7 @@ export class InvoicesService {
       }
 
       const pendingCases = await tx.case.findMany({
-        where: { workspace_id: workspaceId, customer_id: clientId, status: 'COMPLETED' },
+        where: { workspace_id: workspaceId, customer_id: clientId, status: CASE_STATUS.COMPLETED },
         include: { proformas: true },
       });
       if (pendingCases.length === 0) throw new Error("Aucun dossier trouvé.");
@@ -280,8 +304,8 @@ export class InvoicesService {
         data: {
           reference: `FLOTTE-${Date.now()}`,
           total: totalAmount,
-          status: 'PENDING',
-          type: 'FLEET',
+          status: INVOICE_STATUS.UNPAID,
+          type: INVOICE_TYPE.FLEET,
           workspace_id: workspaceId,
           client_id: clientId,
           customer_name_snapshot:
