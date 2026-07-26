@@ -192,7 +192,7 @@ export class PurchaseOrderService {
     let draftOrder = await tx.purchaseOrder.findFirst({
       where: {
         supplier_id: item.supplier_id,
-        status: 'DRAFT',
+        status: PURCHASE_ORDER_STATUS.DRAFT,
         workspace_id: workspaceId
       }
     });
@@ -204,7 +204,7 @@ export class PurchaseOrderService {
           reference: `CMD-${Date.now()}`,
           supplier_id: item.supplier_id,
           workspace_id: workspaceId,
-          status: 'DRAFT'
+          status: PURCHASE_ORDER_STATUS.DRAFT
         }
       });
     }
