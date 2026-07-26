@@ -19,6 +19,7 @@ model Workspace {
   members          WorkspaceMember[]
   users            User[]
   clients          Client[]
+  clientContacts   ClientContact[]
   vehicles         Vehicle[]
   appointments     Appointment[]
   suppliers        Supplier[]
@@ -88,11 +89,21 @@ model WorkspaceMember {
 }
 
 model Client {
-  id         String    @id @default(cuid())
-  name       String
-  phone      String
-  email      String
-  type       String    @default("INDIVIDUAL")
+  id    String @id @default(cuid())
+  name  String
+  phone String
+  email String
+  type  String @default("INDIVIDUAL")
+
+  company_name        String?
+  trade_name          String?
+  registration_number String?
+  vat_number          String?
+  address             String?
+  billing_address     String?
+  payment_terms_days  Int     @default(0)
+  credit_limit        Float?
+
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
@@ -100,7 +111,8 @@ model Client {
   workspace_id String
   workspace    Workspace @relation(fields: [workspace_id], references: [id])
 
-  cases        Case[]        @relation("ClientToCase")
+  contacts     ClientContact[]
+  cases        Case[]          @relation("ClientToCase")
   vehicles     Vehicle[]
   appointments Appointment[]
   invoices     Invoice[]
@@ -109,6 +121,36 @@ model Client {
   @@index([workspace_id])
   @@index([workspace_id, type])
   @@index([email])
+  @@index([registration_number])
+  @@index([vat_number])
+}
+
+model ClientContact {
+  id String @id @default(cuid())
+
+  first_name String
+  last_name  String
+  role       String?
+  email      String?
+  phone      String?
+
+  is_primary        Boolean @default(false)
+  receives_proforma Boolean @default(false)
+  receives_invoice  Boolean @default(false)
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+
+  workspace_id String
+  workspace    Workspace @relation(fields: [workspace_id], references: [id])
+
+  client_id String
+  client    Client @relation(fields: [client_id], references: [id])
+
+  @@index([workspace_id])
+  @@index([client_id])
+  @@index([client_id, is_primary])
 }
 
 model Vehicle {

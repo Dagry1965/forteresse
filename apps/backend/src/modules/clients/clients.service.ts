@@ -22,9 +22,49 @@ export class ClientsService {
     const client = await this.prisma.client.findUnique({
       where: { id },
       include: {
-        vehicles: true,
-        appointments: true,
-        invoices: true,
+        contacts: {
+          where: { deleted_at: null },
+          orderBy: [
+            { is_primary: 'desc' },
+            { created_at: 'asc' },
+          ],
+        },
+        vehicles: {
+          where: { deleted_at: null },
+          orderBy: { created_at: 'desc' },
+        },
+        appointments: {
+          where: { deleted_at: null },
+          include: {
+            vehicle: true,
+          },
+          orderBy: { date: 'desc' },
+        },
+        cases: {
+          include: {
+            vehicle: true,
+            interventions: {
+              where: { deleted_at: null },
+            },
+            proformas: {
+              where: { deleted_at: null },
+              orderBy: { created_at: 'desc' },
+            },
+          },
+          orderBy: { created_at: 'desc' },
+        },
+        invoices: {
+          where: { deleted_at: null },
+          include: {
+            payments: true,
+            paymentSchedules: true,
+          },
+          orderBy: { created_at: 'desc' },
+        },
+        payments: {
+          where: { deleted_at: null },
+          orderBy: { created_at: 'desc' },
+        },
       },
     });
 
@@ -39,10 +79,18 @@ export class ClientsService {
     return this.prisma.client.create({
       data: {
         workspace_id: dto.workspaceId,
-        name: dto.name,
-       phone: dto.phone ?? '',
-       email: dto.email ?? '',
+        name: dto.name.trim(),
+        phone: dto.phone?.trim() ?? '',
+        email: dto.email?.trim() ?? '',
         type: dto.type ?? 'INDIVIDUAL',
+        company_name: dto.company_name?.trim() || null,
+        trade_name: dto.trade_name?.trim() || null,
+        registration_number: dto.registration_number?.trim() || null,
+        vat_number: dto.vat_number?.trim() || null,
+        address: dto.address?.trim() || null,
+        billing_address: dto.billing_address?.trim() || null,
+        payment_terms_days: dto.payment_terms_days ?? 0,
+        credit_limit: dto.credit_limit ?? null,
       },
     });
   }
@@ -52,7 +100,36 @@ export class ClientsService {
 
     return this.prisma.client.update({
       where: { id },
-      data: dto,
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name.trim() } : {}),
+        ...(dto.phone !== undefined ? { phone: dto.phone.trim() } : {}),
+        ...(dto.email !== undefined ? { email: dto.email.trim() } : {}),
+        ...(dto.type !== undefined ? { type: dto.type } : {}),
+        ...(dto.company_name !== undefined
+          ? { company_name: dto.company_name.trim() || null }
+          : {}),
+        ...(dto.trade_name !== undefined
+          ? { trade_name: dto.trade_name.trim() || null }
+          : {}),
+        ...(dto.registration_number !== undefined
+          ? { registration_number: dto.registration_number.trim() || null }
+          : {}),
+        ...(dto.vat_number !== undefined
+          ? { vat_number: dto.vat_number.trim() || null }
+          : {}),
+        ...(dto.address !== undefined
+          ? { address: dto.address.trim() || null }
+          : {}),
+        ...(dto.billing_address !== undefined
+          ? { billing_address: dto.billing_address.trim() || null }
+          : {}),
+        ...(dto.payment_terms_days !== undefined
+          ? { payment_terms_days: dto.payment_terms_days }
+          : {}),
+        ...(dto.credit_limit !== undefined
+          ? { credit_limit: dto.credit_limit }
+          : {}),
+      },
     });
   }
 
