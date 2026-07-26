@@ -7,6 +7,7 @@ import {
 import { PrismaService } from '../../core/prisma/prisma.service';
 import {
   APPOINTMENT_STATUS,
+  CASE_STATUS,
   INTERVENTION_STATUS,
 } from '../../../../../shared/constants/status.constants';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
@@ -635,7 +636,7 @@ if (existingCase && existingCase.interventions.length > 0) {
 const repairCase = existingCase ?? await tx.case.create({
   data: {
     workspace_id: workspaceId,
-    status: 'RECEIVED',
+    status: CASE_STATUS.RECEIVED,
     // On mappe le client_id du RDV vers le customer_id du Dossier
     customer_id: appointment.client_id, 
     vehicle_id: appointment.vehicle_id,
