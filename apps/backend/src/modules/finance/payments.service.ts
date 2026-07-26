@@ -1,5 +1,9 @@
 ﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import {
+  INVOICE_STATUS,
+  PAYMENT_SCHEDULE_STATUS,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class PaymentsService {
@@ -7,7 +11,7 @@ export class PaymentsService {
 
   /**
    * GÃ©nÃ¨re un Ã©chÃ©ancier pour une facture.
-   * Fonctionne pour un particulier (3 fois sans frais) 
+   * Fonctionne pour un particulier (3 fois sans frais)
    * ou une flotte (1 Ã©chÃ©ance Ã  30 jours).
    */
   async createPaymentSchedule(workspaceId: string, dto: any) {
@@ -30,7 +34,7 @@ export class PaymentsService {
         workspace_id: workspaceId,
         amount: Number(amountPerInstallment.toFixed(2)),
         due_date: dueDate,
-        status: 'PENDING'
+        status: PAYMENT_SCHEDULE_STATUS.PENDING
       });
     }
 
@@ -52,7 +56,7 @@ async getOverdueSchedules(workspaceId: string) {
     where: {
       workspace_id: workspaceId,
       // â¬‡ï¸ CETTE LIGNE EST CRUCIALE : On ne veut QUE ce qui n'est pas payÃ©
-      status: { in: ['pending', 'PENDING'] }, 
+      status: PAYMENT_SCHEDULE_STATUS.PENDING,
       due_date: { lt: today }
     },
     include: {
@@ -71,7 +75,7 @@ async getOverdueSchedules(workspaceId: string) {
 // DANS LE BACKEND
   async recordPayment(workspaceId: string, dto: { schedule_id: string, method: string, user_id?: string }) {
     // Liste des statuts considÃ©rÃ©s comme "En attente" pour la flexibilitÃ©
-    const pendingStatuses = ['pending', 'PENDING'];
+    const pendingStatus = PAYMENT_SCHEDULE_STATUS.PENDING;
 
     return this.prisma.$transaction(async (tx) => {
       // 1. RÃ©cupÃ©rer l'Ã©chÃ©ance (PaymentSchedule)
@@ -121,15 +125,15 @@ async getOverdueSchedules(workspaceId: string) {
       // On utilise le format majuscule par convention, mais le code est prÃªt pour tout
       await tx.paymentSchedule.update({
         where: { id: dto.schedule_id },
-        data: { status: 'PAID' }
+        data: { status: PAYMENT_SCHEDULE_STATUS.PAID }
       });
 
       // 5. VÃ‰RIFICATION DU SOLDE DE LA FACTURE
       // On compte combien il reste d'Ã©chÃ©ances en attente (Maj ou Min)
       const remainingSchedules = await tx.paymentSchedule.count({
-        where: { 
-          invoice_id: schedule.invoice_id, 
-          status: { in: pendingStatuses } // GÃ¨re 'pending' ET 'PENDING'
+        where: {
+          invoice_id: schedule.invoice_id,
+          status: pendingStatus // GÃ¨re 'pending' ET 'PENDING'
         }
       });
 
@@ -137,7 +141,7 @@ async getOverdueSchedules(workspaceId: string) {
       if (remainingSchedules === 0) {
         await tx.invoice.update({
           where: { id: schedule.invoice_id },
-          data: { status: 'PAID' }
+          data: { status: INVOICE_STATUS.PAID }
         });
       }
 

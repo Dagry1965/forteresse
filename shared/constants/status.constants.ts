@@ -54,6 +54,13 @@ export const INVOICE_TYPE = {
   FLEET: 'FLEET',
 } as const;
 
+// ====================== PAYMENT SCHEDULE ======================
+export const PAYMENT_SCHEDULE_STATUS = {
+  PENDING: 'PENDING',
+  PAID: 'PAID',
+  CANCELLED: 'CANCELLED',
+} as const;
+
 // ====================== TIME SLOT ======================
 export const TIME_SLOT_STATUS = {
   OPEN: 'OPEN',
