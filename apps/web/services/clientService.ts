@@ -15,6 +15,22 @@ export interface ClientContact {
   deleted_at?: string | null;
 }
 
+export interface CreateClientContactPayload {
+  workspaceId: string;
+  first_name: string;
+  last_name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  is_primary?: boolean;
+  receives_proforma?: boolean;
+  receives_invoice?: boolean;
+}
+
+export type UpdateClientContactPayload = Partial<
+  Omit<CreateClientContactPayload, 'workspaceId'>
+>;
+
 export interface Client {
   id: string;
   _id?: string;
@@ -112,5 +128,48 @@ export const clientService = {
 
   async hardDelete(id: string) {
     return API.delete(`/api/clients/${id}/hard`);
+  },
+
+  async createContact(
+    clientId: string,
+    data: CreateClientContactPayload,
+  ): Promise<ClientContact> {
+    const workspaceId =
+      data.workspaceId ??
+      localStorage.getItem('current_workspace_id');
+
+    if (!workspaceId) {
+      throw new Error(
+        'Aucun workspace s\u00e9lectionn\u00e9',
+      );
+    }
+
+    return API.post<ClientContact>(
+      `/api/clients/${clientId}/contacts`,
+      {
+        ...data,
+        workspaceId,
+      },
+    );
+  },
+
+  async updateContact(
+    clientId: string,
+    contactId: string,
+    data: UpdateClientContactPayload,
+  ): Promise<ClientContact> {
+    return API.patch<ClientContact>(
+      `/api/clients/${clientId}/contacts/${contactId}`,
+      data,
+    );
+  },
+
+  async deleteContact(
+    clientId: string,
+    contactId: string,
+  ): Promise<ClientContact> {
+    return API.delete<ClientContact>(
+      `/api/clients/${clientId}/contacts/${contactId}`,
+    );
   },
 };

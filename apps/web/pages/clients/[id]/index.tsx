@@ -19,6 +19,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientContactsManager } from '@/components/clients/ClientContactsManager';
 
 type ClientTab =
   | 'summary'
@@ -599,46 +600,20 @@ export default function ClientDetailPage() {
       )}
 
       {activeTab === 'contacts' && (
-        <DataSection
-          title="Contacts"
-          emptyText="Aucun contact enregistré."
-        >
-          {contacts.map((contact: any) => (
-            <div
-              key={contact.id}
-              className="p-4 rounded-xl border"
-            >
-              <div className="flex justify-between gap-4">
-                <div>
-                  <p className="font-bold">
-                    {contact.first_name} {contact.last_name}
-                  </p>
-                  <p className="text-sm text-slate-500">
-                    {contact.role || 'Contact'}
-                  </p>
-                </div>
+        <Card className="p-6 rounded-2xl">
+          <div className="mb-5">
+            <h2 className="text-xl font-black">Contacts</h2>
+            <p className="text-sm text-slate-500 mt-1">
+              G\u00e9rez les interlocuteurs, le contact principal et les destinataires des documents.
+            </p>
+          </div>
 
-                {contact.is_primary && (
-                  <span className="h-fit px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
-                    Principal
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600">
-                {contact.email && (
-                  <span>{contact.email}</span>
-                )}
-                {contact.phone && (
-                  <span className="flex items-center gap-1">
-                    <Phone size={14} />
-                    {contact.phone}
-                  </span>
-                )}
-              </div>
-            </div>
-          ))}
-        </DataSection>
+          <ClientContactsManager
+            clientId={client.id}
+            contacts={contacts}
+            onChanged={loadClient}
+          />
+        </Card>
       )}
     </div>
   );

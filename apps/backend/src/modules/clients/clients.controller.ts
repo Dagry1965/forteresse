@@ -12,6 +12,8 @@ import {
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { CreateClientContactDto } from './dto/create-client-contact.dto';
+import { UpdateClientContactDto } from './dto/update-client-contact.dto';
 
 @Controller('clients')
 export class ClientsController {
@@ -35,6 +37,32 @@ export class ClientsController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
     return this.clientsService.update(id, dto);
+  }
+
+
+  @Post(':clientId/contacts')
+  createContact(
+    @Param('clientId') clientId: string,
+    @Body() dto: CreateClientContactDto,
+  ) {
+    return this.clientsService.createContact(clientId, dto);
+  }
+
+  @Patch(':clientId/contacts/:contactId')
+  updateContact(
+    @Param('clientId') clientId: string,
+    @Param('contactId') contactId: string,
+    @Body() dto: UpdateClientContactDto,
+  ) {
+    return this.clientsService.updateContact(clientId, contactId, dto);
+  }
+
+  @Delete(':clientId/contacts/:contactId')
+  softDeleteContact(
+    @Param('clientId') clientId: string,
+    @Param('contactId') contactId: string,
+  ) {
+    return this.clientsService.softDeleteContact(clientId, contactId);
   }
 
   // === SOFT DELETE (accessible à tous) ===

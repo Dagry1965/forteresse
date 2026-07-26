@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { CreateClientContactDto } from './dto/create-client-contact.dto';
+import { UpdateClientContactDto } from './dto/update-client-contact.dto';
 
 @Injectable()
 export class ClientsService {
@@ -208,4 +210,149 @@ export class ClientsService {
 
     return this.prisma.client.delete({ where: { id } });
   }
+
+  async createContact(
+    clientId: string,
+    dto: CreateClientContactDto,
+  ) {
+    const client = await this.prisma.client.findFirst({
+      where: {
+        id: clientId,
+        workspace_id: dto.workspaceId,
+        deleted_at: null,
+      },
+    });
+
+    if (!client) {
+      throw new NotFoundException(
+        'Client introuvable dans ce workspace.',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.is_primary) {
+        await tx.clientContact.updateMany({
+          where: {
+            client_id: clientId,
+            workspace_id: dto.workspaceId,
+            deleted_at: null,
+            is_primary: true,
+          },
+          data: {
+            is_primary: false,
+          },
+        });
+      }
+
+      return tx.clientContact.create({
+        data: {
+          workspace_id: dto.workspaceId,
+          client_id: clientId,
+          first_name: dto.first_name.trim(),
+          last_name: dto.last_name.trim(),
+          role: dto.role?.trim() || null,
+          email: dto.email?.trim() || null,
+          phone: dto.phone?.trim() || null,
+          is_primary: dto.is_primary ?? false,
+          receives_proforma: dto.receives_proforma ?? false,
+          receives_invoice: dto.receives_invoice ?? false,
+        },
+      });
+    });
+  }
+
+  async updateContact(
+    clientId: string,
+    contactId: string,
+    dto: UpdateClientContactDto,
+  ) {
+    const contact = await this.prisma.clientContact.findFirst({
+      where: {
+        id: contactId,
+        client_id: clientId,
+        deleted_at: null,
+      },
+    });
+
+    if (!contact) {
+      throw new NotFoundException(
+        'Contact client introuvable.',
+      );
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.is_primary === true) {
+        await tx.clientContact.updateMany({
+          where: {
+            client_id: clientId,
+            workspace_id: contact.workspace_id,
+            deleted_at: null,
+            is_primary: true,
+            id: { not: contactId },
+          },
+          data: {
+            is_primary: false,
+          },
+        });
+      }
+
+      return tx.clientContact.update({
+        where: { id: contactId },
+        data: {
+          ...(dto.first_name !== undefined
+            ? { first_name: dto.first_name.trim() }
+            : {}),
+          ...(dto.last_name !== undefined
+            ? { last_name: dto.last_name.trim() }
+            : {}),
+          ...(dto.role !== undefined
+            ? { role: dto.role.trim() || null }
+            : {}),
+          ...(dto.email !== undefined
+            ? { email: dto.email.trim() || null }
+            : {}),
+          ...(dto.phone !== undefined
+            ? { phone: dto.phone.trim() || null }
+            : {}),
+          ...(dto.is_primary !== undefined
+            ? { is_primary: dto.is_primary }
+            : {}),
+          ...(dto.receives_proforma !== undefined
+            ? { receives_proforma: dto.receives_proforma }
+            : {}),
+          ...(dto.receives_invoice !== undefined
+            ? { receives_invoice: dto.receives_invoice }
+            : {}),
+        },
+      });
+    });
+  }
+
+  async softDeleteContact(
+    clientId: string,
+    contactId: string,
+  ) {
+    const contact = await this.prisma.clientContact.findFirst({
+      where: {
+        id: contactId,
+        client_id: clientId,
+        deleted_at: null,
+      },
+    });
+
+    if (!contact) {
+      throw new NotFoundException(
+        'Contact client introuvable.',
+      );
+    }
+
+    return this.prisma.clientContact.update({
+      where: { id: contactId },
+      data: {
+        deleted_at: new Date(),
+        is_primary: false,
+      },
+    });
+  }
+
 }
