@@ -14,6 +14,7 @@ import {
 
 import SidebarItem from "./sidebaritem";
 import { useAuth } from "@/context/AuthContext";
+import { USER_ROLE } from '../../../shared/constants/status.constants';
 
 export default function Sidebar() {
   const { logout, user } = useAuth();
@@ -36,7 +37,7 @@ export default function Sidebar() {
       <nav className="flex-1 px-3 py-4 flex flex-col gap-1">
         <SidebarItem icon={<LayoutDashboard />} label="dashboard" href="/dashboard" />
         <SidebarItem icon={<Users />} label="clients" href="/clients" />
-        {user?.memberships?.some((membership) => membership.role === "ADMIN") && (
+        {user?.memberships?.some((membership) => membership.role === USER_ROLE.ADMIN) && (
           <SidebarItem icon={<Users />} label="utilisateurs" href="/utilisateurs" />
         )}
         <SidebarItem icon={<Car />} label="véhicules" href="/vehicules" />
