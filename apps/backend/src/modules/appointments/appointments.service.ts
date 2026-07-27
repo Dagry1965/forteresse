@@ -9,6 +9,7 @@ import {
   APPOINTMENT_STATUS,
   CASE_STATUS,
   INTERVENTION_STATUS,
+  TIME_SLOT_STATUS,
 } from '../../../../../shared/constants/status.constants';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -78,7 +79,7 @@ workspaceId =
             workspace_id: workspaceId,
             start,
             end,
-            status: 'OPEN',
+            status: TIME_SLOT_STATUS.OPEN,
             occupancy: 1,
           },
         });
@@ -542,7 +543,7 @@ workspaceId =
       where: { id: timeSlotId, workspace_id: workspaceId },
     });
     if (!timeSlot) throw new NotFoundException('TimeSlot not found');
-    if (timeSlot.status !== 'OPEN') {
+    if (timeSlot.status !== TIME_SLOT_STATUS.OPEN) {
       throw new ConflictException('This time slot is not available');
     }
 
