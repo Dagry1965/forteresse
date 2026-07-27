@@ -1,4 +1,5 @@
 import { API } from '../lib/api';
+import { INTERVENTION_STATUS } from '../../../shared/constants/status.constants';
 
 // ====================== INTERFACES (Typage) ======================
 
@@ -29,7 +30,7 @@ export interface Case {
 export interface Intervention {
   id: string;
   description: string;
-  status: 'PENDING' | 'DIAGNOSIS' | 'IN_PROGRESS' | 'COMPLETED';
+  status: (typeof INTERVENTION_STATUS)[keyof typeof INTERVENTION_STATUS];
   created_at: string;
   case_id?: string;
   case?: Case;
