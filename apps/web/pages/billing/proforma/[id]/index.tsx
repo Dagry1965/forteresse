@@ -13,6 +13,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CASE_STATUS, PROFORMA_STATUS } from '../../../../../../shared/constants/status.constants';
 
 export default function ProformaPrintPage() {
   const router = useRouter();
@@ -109,7 +110,7 @@ export default function ProformaPrintPage() {
           </Button>
 
           <div className="flex flex-wrap justify-end gap-2">
-            {data.status === 'DRAFT' && (
+            {data.status === PROFORMA_STATUS.DRAFT && (
               <Button
                 onClick={handleAcceptProforma}
                 disabled={actionLoading}
@@ -124,9 +125,9 @@ export default function ProformaPrintPage() {
               </Button>
             )}
 
-            {data.status === 'ACCEPTED' &&
-              data.case?.status !== 'COMPLETED' &&
-              data.case?.status !== 'INVOICED' && (
+            {data.status === PROFORMA_STATUS.ACCEPTED &&
+              data.case?.status !== CASE_STATUS.COMPLETED &&
+              data.case?.status !== CASE_STATUS.INVOICED && (
                 <Button
                   onClick={() => router.push(getWorkshopUrl())}
                   disabled={actionLoading}
@@ -137,8 +138,8 @@ export default function ProformaPrintPage() {
                 </Button>
               )}
 
-            {data.status === 'ACCEPTED' &&
-              data.case?.status === 'COMPLETED' && (
+            {data.status === PROFORMA_STATUS.ACCEPTED &&
+              data.case?.status === CASE_STATUS.COMPLETED && (
                 <Button
                   onClick={handleConvertToInvoice}
                   disabled={actionLoading}
@@ -153,7 +154,7 @@ export default function ProformaPrintPage() {
                 </Button>
               )}
 
-            {data.case?.status === 'INVOICED' && (
+            {data.case?.status === CASE_STATUS.INVOICED && (
               <Button
                 onClick={() => router.push('/finance/invoices')}
                 disabled={actionLoading}
