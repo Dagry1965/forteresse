@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { EntityFormModal } from '@/components/common/EntityFormModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AppointmentUiMapper } from '@/shared/mappers/appointmentUiMapper';
+import { APPOINTMENT_STATUS } from '../../../../shared/constants/status.constants';
 
 export default function AppointmentsPage() {
   /* ================= ÉTATS ================= */
@@ -120,7 +121,7 @@ export default function AppointmentsPage() {
     return appointments.filter((appt) => {
       const matchStatus = filterStatus
         ? appt.status === filterStatus
-        : appt.status !== 'COMPLETED' && appt.status !== 'CANCELLED';
+        : appt.status !== APPOINTMENT_STATUS.COMPLETED && appt.status !== APPOINTMENT_STATUS.CANCELLED;
 
       const matchDate =
         !filterDate ||
@@ -403,13 +404,13 @@ export default function AppointmentsPage() {
               render: (r) => {
                 const status = r.status;
                 let colorClass = 'bg-gray-100 text-gray-700';
-                if (status === 'CONFIRMED')
+                if (status === APPOINTMENT_STATUS.CONFIRMED)
                   colorClass = 'bg-green-100 text-green-700 font-bold';
-                else if (status === 'PENDING')
+                else if (status === APPOINTMENT_STATUS.PENDING)
                   colorClass = 'bg-yellow-100 text-yellow-700';
-                else if (status === 'CANCELLED')
+                else if (status === APPOINTMENT_STATUS.CANCELLED)
                   colorClass = 'bg-red-100 text-red-700';
-                else if (status === 'COMPLETED')
+                else if (status === APPOINTMENT_STATUS.COMPLETED)
                   colorClass = 'bg-blue-100 text-blue-700';
                 return (
                   <span
@@ -428,7 +429,7 @@ export default function AppointmentsPage() {
                   className="flex gap-2"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {(r.status === 'PENDING' || r.status === 'CONFIRMED') && (
+                  {(r.status === APPOINTMENT_STATUS.PENDING || r.status === APPOINTMENT_STATUS.CONFIRMED) && (
                     <Button
                       size="sm"
                       className="bg-orange-500 hover:bg-orange-600 text-white"
@@ -446,7 +447,7 @@ export default function AppointmentsPage() {
                     Modifier
                   </Button>
 
-                  {r.status !== 'CANCELLED' && r.status !== 'COMPLETED' && (
+                  {r.status !== APPOINTMENT_STATUS.CANCELLED && r.status !== APPOINTMENT_STATUS.COMPLETED && (
                     <Button
                       size="sm"
                       variant="destructive"
