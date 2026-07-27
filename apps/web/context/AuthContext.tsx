@@ -1,12 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { USER_ROLE } from '../../../shared/constants/status.constants';
+
+type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 
 interface User {
   id: string;
   email: string;
   name?: string;
-  role?: "ADMIN" | "MEMBER" | "MECHANIC";
+  role?: UserRole;
   memberships?: any[];
 }
 
