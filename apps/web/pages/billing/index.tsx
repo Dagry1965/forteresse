@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'; // 👈 L'IMPORT MANQUANT
 import { toast } from 'sonner';
 import { useRouter } from 'next/router';
 import { FileText, Printer, Search, Filter, Eye } from 'lucide-react';
+import { CASE_STATUS } from '../../../../shared/constants/status.constants';
 
 
 export default function ProformasListPage() {
@@ -161,7 +162,7 @@ export default function ProformasListPage() {
                     <Printer size={14} />
                   </Button>
 
-                  {r.case?.status === 'COMPLETED' && (
+                  {r.case?.status === CASE_STATUS.COMPLETED && (
                     <Button
                       size="sm"
                       className="h-8 bg-green-600 hover:bg-green-700 text-white"
