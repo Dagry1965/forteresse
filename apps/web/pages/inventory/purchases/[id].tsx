@@ -6,6 +6,7 @@ import { API } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ArrowLeft, Printer, Download, Send, Truck, XCircle, Loader2 } from 'lucide-react';
+import { PURCHASE_ORDER_STATUS } from '../../../../../shared/constants/status.constants';
 
 export default function PurchaseOrderDetail() {
   const router = useRouter();
@@ -80,13 +81,13 @@ export default function PurchaseOrderDetail() {
 
         <div className="flex gap-3">
           {/* ✅ BOUTON : Envoyer au fournisseur (si DRAFT) */}
-          {order.status === 'DRAFT' && (
-            <Button onClick={() => handleUpdateStatus('SENT')} disabled={actionLoading} className="bg-blue-600 text-white font-bold">
+          {order.status === PURCHASE_ORDER_STATUS.DRAFT && (
+            <Button onClick={() => handleUpdateStatus(PURCHASE_ORDER_STATUS.SENT)} disabled={actionLoading} className="bg-blue-600 text-white font-bold">
               <Send size={18} className="mr-2" /> Confirmer & Envoyer
             </Button>
           )}
 
-          {(order.status === 'SENT' || order.status === 'PARTIALLY_RECEIVED') && (
+          {(order.status === PURCHASE_ORDER_STATUS.SENT || order.status === PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED) && (
             <Button
               onClick={() => router.push(`/inventory/purchases/receive/${order.id}`)}
               className="bg-green-600 hover:bg-green-700 text-white font-bold"
@@ -100,8 +101,8 @@ export default function PurchaseOrderDetail() {
             <Printer size={18} className="mr-2" /> Imprimer
           </Button>
 
-          {order.status !== 'RECEIVED' && order.status !== 'CANCELLED' && (
-            <Button variant="ghost" onClick={() => handleUpdateStatus('CANCELLED')} className="text-red-600">
+          {order.status !== PURCHASE_ORDER_STATUS.RECEIVED && order.status !== PURCHASE_ORDER_STATUS.CANCELLED && (
+            <Button variant="ghost" onClick={() => handleUpdateStatus(PURCHASE_ORDER_STATUS.CANCELLED)} className="text-red-600">
               <XCircle size={18} />
             </Button>
           )}
@@ -117,8 +118,8 @@ export default function PurchaseOrderDetail() {
           </div>
           <div className="text-right">
             <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest ${
-              order.status === 'SENT' ? 'bg-blue-100 text-blue-700' : 
-              order.status === 'RECEIVED' ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
+              order.status === PURCHASE_ORDER_STATUS.SENT ? 'bg-blue-100 text-blue-700' :
+              order.status === PURCHASE_ORDER_STATUS.RECEIVED ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'
             }`}>
               {order.status}
             </span>
