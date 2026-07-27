@@ -14,6 +14,7 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { CreateClientContactDto } from './dto/create-client-contact.dto';
 import { UpdateClientContactDto } from './dto/update-client-contact.dto';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('clients')
 export class ClientsController {
@@ -82,9 +83,9 @@ export class ClientsController {
     // Vérification du rôle
     const user = req.user;
 
-    const isAdmin = 
-      user?.role === 'ADMIN' || 
-      user?.roles?.includes('ADMIN');
+    const isAdmin =
+      user?.role === USER_ROLE.ADMIN ||
+      user?.roles?.includes(USER_ROLE.ADMIN);
 
     if (!user || !isAdmin) {
       throw new ForbiddenException('Accès réservé aux administrateurs');
