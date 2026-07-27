@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DataTable, Column } from "@/components/ui/data-table";
+import { USER_ROLE } from '../../../../shared/constants/status.constants';
 import {
   userService,
   UserAccount,
@@ -19,7 +20,7 @@ export default function UtilisateursPage() {
     name: "",
     email: "",
     password: "",
-    role: "MEMBER",
+    role: USER_ROLE.MEMBER,
     workspace_id: "",
   });
 
@@ -64,7 +65,7 @@ export default function UtilisateursPage() {
         name: "",
         email: "",
         password: "",
-        role: "MEMBER",
+        role: USER_ROLE.MEMBER,
         workspace_id: current.workspace_id,
       }));
 
@@ -112,7 +113,7 @@ export default function UtilisateursPage() {
       key: "role",
       header: "Rôle",
       render: (user) =>
-        user.workspaceMembers?.[0]?.role ?? "MEMBER",
+        user.workspaceMembers?.[0]?.role ?? USER_ROLE.MEMBER,
     },
     {
       key: "status",
