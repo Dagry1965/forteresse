@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
+import { USER_ROLE } from '../../../shared/constants/status.constants';
 
 // IcÃ´nes pro (Lucide)
 import {
@@ -55,7 +56,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {/* NAVIGATION */}
         <nav className="flex-1 py-5 overflow-auto flex flex-col gap-1">
           {menu_items
-            .filter((item) => !item.adminOnly || user?.role === "ADMIN")
+            .filter((item) => !item.adminOnly || user?.role === USER_ROLE.ADMIN)
             .map((item) => {
             const isActive = router.pathname === item.href;
 
