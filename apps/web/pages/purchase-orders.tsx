@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { PURCHASE_ORDER_STATUS } from '../../../shared/constants/status.constants';
 import { 
   Plus, 
   Package, 
@@ -55,7 +56,7 @@ export default function PurchaseOrdersPage() {
   const handleSendOrder = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
-      await purchaseService.updateStatus(id, 'SENT');
+      await purchaseService.updateStatus(id, PURCHASE_ORDER_STATUS.SENT);
       toast.success("Commande envoyée au fournisseur !");
       loadPurchaseOrders();
     } catch (error) {
@@ -66,10 +67,10 @@ export default function PurchaseOrdersPage() {
   // --- BADGES DE STATUT ---
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'DRAFT': return <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-slate-200">Brouillon</span>;
-      case 'SENT': return <span className="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-blue-200">Envoyé</span>;
-      case 'RECEIVED': return <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-green-200">Reçu</span>;
-      case 'PARTIALLY_RECEIVED': return <span className="bg-orange-100 text-orange-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-orange-200">Partiel</span>;
+      case PURCHASE_ORDER_STATUS.DRAFT: return <span className="bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-slate-200">Brouillon</span>;
+      case PURCHASE_ORDER_STATUS.SENT: return <span className="bg-blue-100 text-blue-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-blue-200">Envoyé</span>;
+      case PURCHASE_ORDER_STATUS.RECEIVED: return <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-green-200">Reçu</span>;
+      case PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED: return <span className="bg-orange-100 text-orange-600 px-2.5 py-1 rounded-full text-[10px] font-black uppercase border border-orange-200">Partiel</span>;
       default: return <span className="bg-slate-100 px-2.5 py-1 rounded-full text-[10px] font-black uppercase">{status}</span>;
     }
   };
@@ -152,7 +153,7 @@ export default function PurchaseOrdersPage() {
                   <td className="p-5 text-right">
                     <div className="flex justify-end gap-3 items-center">
                       
-                      {order.status === 'DRAFT' ? (
+                      {order.status === PURCHASE_ORDER_STATUS.DRAFT ? (
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -161,7 +162,7 @@ export default function PurchaseOrdersPage() {
                         >
                           <Send size={14} className="mr-2" /> Envoyer
                         </Button>
-                      ) : (order.status === 'SENT' || order.status === 'PARTIALLY_RECEIVED') ? (
+                      ) : (order.status === PURCHASE_ORDER_STATUS.SENT || order.status === PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED) ? (
                         <Button 
                           size="sm" 
                           variant="outline"
