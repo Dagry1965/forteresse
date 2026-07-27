@@ -1,4 +1,7 @@
 ﻿import { API } from "@/lib/api";
+import { USER_ROLE } from '../../../shared/constants/status.constants';
+
+type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 
 export interface UserMembership {
   id: string;
@@ -21,7 +24,7 @@ export interface CreateUserPayload {
   email: string;
   password: string;
   name: string;
-  role: "ADMIN" | "MEMBER" | "MECHANIC";
+  role: UserRole;
   workspace_id: string;
 }
 
