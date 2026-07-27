@@ -10,6 +10,7 @@ import { UpdateInterventionDto } from './dto/update-intervention.dto';
 
 import {
   INTERVENTION_STATUS,
+  PROFORMA_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 type UpdateInterventionPayload = UpdateInterventionDto & {
@@ -393,7 +394,7 @@ export class InterventionsService {
         where: { case_id: caseId, workspace_id: workspaceId, deleted_at: null },
       });
 
-      if (proforma && proforma.status !== 'DRAFT') {
+      if (proforma && proforma.status !== PROFORMA_STATUS.DRAFT) {
         throw new BadRequestException(`Impossible de modifier cette proforma.`);
       }
 
@@ -435,7 +436,7 @@ export class InterventionsService {
           case_id: repairCase.id,
           appointment_id: relatedAppointment.id,
           total: totalTTC,
-          status: 'DRAFT',
+          status: PROFORMA_STATUS.DRAFT,
           reference: `PRO-${Date.now()}`,
           customer_name_snapshot:
             client?.company_name || client?.name || null,
