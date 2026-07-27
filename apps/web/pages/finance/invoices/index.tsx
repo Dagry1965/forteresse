@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { INVOICE_STATUS } from '../../../../../shared/constants/status.constants';
 
 export default function InvoicesListPage() {
   const router = useRouter();
@@ -104,7 +105,7 @@ export default function InvoicesListPage() {
       );
 
       toast.success(
-        result?.status === 'PAID'
+        result?.status === INVOICE_STATUS.PAID
           ? 'Facture entièrement payée'
           : 'Paiement partiel enregistré',
       );
@@ -159,9 +160,9 @@ export default function InvoicesListPage() {
 
   const getStatusStyle = (status: string) => {
     switch (status?.toUpperCase()) {
-      case 'PAID':
+      case INVOICE_STATUS.PAID:
         return 'bg-green-100 text-green-700 border-green-200';
-      case 'PARTIALLY_PAID':
+      case INVOICE_STATUS.PARTIALLY_PAID:
         return 'bg-orange-100 text-orange-700 border-orange-200';
       case 'OVERDUE':
         return 'bg-red-100 text-red-700 border-red-200';
@@ -320,7 +321,7 @@ export default function InvoicesListPage() {
 
                       <td className="p-5">
                         <div className="flex justify-end gap-2">
-                          {status !== 'PAID' && remaining > 0 && (
+                          {status !== INVOICE_STATUS.PAID && remaining > 0 && (
                             <Button
                               size="sm"
                               className="bg-green-600 hover:bg-green-700 text-white font-black text-[10px] uppercase h-9 px-4"
