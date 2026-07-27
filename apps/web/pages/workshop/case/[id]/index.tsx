@@ -5,18 +5,22 @@ import { useParams, useRouter } from 'next/navigation';
 import { interventionService, Intervention } from '@/services/interventionService';
 import { stockService } from '@/services/stockService';
 // ✅ AJOUT DE L'IMPORT DES CONSTANTES
-import { CASE_STATUS } from '../../../../../../shared/constants/status.constants';
+import {
+  CASE_STATUS,
+  INTERVENTION_STATUS,
+  PROFORMA_STATUS,
+} from '../../../../../../shared/constants/status.constants';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { 
-  Trash2, 
-  PlusCircle, 
-  Search, 
-  Package, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle2, 
+import {
+  Trash2,
+  PlusCircle,
+  Search,
+  Package,
+  Clock,
+  AlertCircle,
+  CheckCircle2,
   ChevronRight,
   Save,
   Undo2,
@@ -34,14 +38,14 @@ export default function CaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false); // ✅ État pour sécuriser les clics
   const [stockItems, setStockItems] = useState<any[]>([]);
-  
+
   // États pour la recherche de pièces
   const [searchPart, setSearchTermPart] = useState('');
   const [activeSearchPhase, setActiveSearchPhase] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
 
   /* ================= CHARGEMENT DES DONNÉES ================= */
-  
+
   const fetchFullDossier = useCallback(async () => {
     if (!id) return;
 
@@ -50,7 +54,7 @@ export default function CaseDetailPage() {
 
       // 1. On récupère l'intervention pour avoir le case_id
       const currentInt = await interventionService.getOne(id);
-      
+
       // 2. On récupère le dossier complet
       if (!currentInt.case_id) {
         throw new Error("Cette intervention n'est associ�e � aucun dossier.");
@@ -86,7 +90,7 @@ export default function CaseDetailPage() {
   const handleAddNewPhase = async () => {
     try {
       await interventionService.createNewPhase(
-        dossier.id, 
+        dossier.id,
         "Nouveau problème détecté (ex: fuite, pièce usée au démontage...)"
       );
 
@@ -142,7 +146,7 @@ export default function CaseDetailPage() {
   };
 
   /* ================= GÉNÉRATION PROFORMA ================= */
-  
+
   const handleGenerateProforma = async () => {
     try {
       setActionLoading(true);
@@ -238,7 +242,7 @@ export default function CaseDetailPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8 pb-20">
-      
+
       {/* HEADER DU DOSSIER */}
       <div className="flex justify-between items-center bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
         <div className="flex items-center gap-6">
@@ -256,7 +260,7 @@ export default function CaseDetailPage() {
                 className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${
                   dossier.status === 'INVOICED'
                     ? 'bg-green-100 text-green-700'
-                    : dossier.status === 'IN_PROGRESS' 
+                    : dossier.status === CASE_STATUS.IN_PROGRESS
                     ? 'bg-blue-100 text-blue-700'
                     : 'bg-orange-100 text-orange-700'
                 }`}
@@ -296,10 +300,10 @@ export default function CaseDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
+
         {/* COLONNE GAUCHE : TIMELINE DES TRAVAUX */}
         <div className="lg:col-span-3 space-y-12">
-          
+
           {dossier.interventions.map((phase: any, index: number) => (
             <div key={phase.id} className="relative">
               {/* Ligne de timeline verticale */}
@@ -311,7 +315,7 @@ export default function CaseDetailPage() {
                 {/* Pastille Numéro */}
                 <div
                   className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-black text-white shadow-lg z-10 ${
-                    phase.status === 'COMPLETED'
+                    phase.status === INTERVENTION_STATUS.COMPLETED
                       ? 'bg-green-500'
                       : 'bg-blue-600'
                   }`}
@@ -322,12 +326,12 @@ export default function CaseDetailPage() {
                 <div className="flex-1">
                   <Card
                     className={`overflow-hidden border-2 transition-all ${
-                      phase.status === 'COMPLETED'
+                      phase.status === INTERVENTION_STATUS.COMPLETED
                         ? 'border-green-100 shadow-none'
                         : 'border-white shadow-md'
                     }`}
                   >
-                    
+
                     {/* Header de la Phase */}
                     <div className="p-4 border-b bg-slate-50/50 flex justify-between items-center">
                       <div className="flex items-center gap-2">
@@ -341,13 +345,13 @@ export default function CaseDetailPage() {
                       </div>
 
                       <span className="text-[11px] font-black border-2 border-slate-200 rounded-lg px-3 py-1 bg-white text-slate-700">
-                        {phase.status === 'PENDING'
+                        {phase.status === INTERVENTION_STATUS.PENDING
                           ? 'EN ATTENTE'
-                          : phase.status === 'DIAGNOSIS'
+                          : phase.status === INTERVENTION_STATUS.DIAGNOSIS
                             ? 'DIAGNOSTIC'
-                            : phase.status === 'IN_PROGRESS'
+                            : phase.status === INTERVENTION_STATUS.IN_PROGRESS
                               ? 'EN COURS'
-                              : phase.status === 'COMPLETED'
+                              : phase.status === INTERVENTION_STATUS.COMPLETED
                                 ? 'TERMIN?'
                                 : phase.status}
                       </span>
@@ -360,7 +364,7 @@ export default function CaseDetailPage() {
                           Notes du mécanicien
                         </label>
 
-                        <textarea 
+                        <textarea
                           className="w-full bg-slate-50 border-none rounded-xl p-4 text-sm text-slate-700 focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                           defaultValue={phase.description}
                           onBlur={(e) =>
@@ -381,9 +385,9 @@ export default function CaseDetailPage() {
                             Pièces & Fournitures Phase {index + 1}
                           </h4>
 
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
+                          <Button
+                            variant="ghost"
+                            size="sm"
                             className="text-blue-600 font-bold text-xs"
                             onClick={() => {
                               setActiveSearchPhase(
@@ -404,7 +408,7 @@ export default function CaseDetailPage() {
                               size={18}
                             />
 
-                            <input 
+                            <input
                               autoFocus
                               className="w-full pl-10 pr-4 py-3 bg-blue-50/50 border-2 border-blue-200 rounded-xl text-sm outline-none"
                               placeholder="Taper le nom d'une pièce..."
@@ -421,8 +425,8 @@ export default function CaseDetailPage() {
                                       .includes(searchPart.toLowerCase())
                                   )
                                   .map((item) => (
-                                    <div 
-                                      key={item.id} 
+                                    <div
+                                      key={item.id}
                                       className="p-3 hover:bg-blue-50 cursor-pointer flex justify-between items-center border-b last:border-0"
                                       onClick={() =>
                                         handleAddPartToPhase(phase.id, item.id)
@@ -493,7 +497,7 @@ export default function CaseDetailPage() {
           ))}
 
           {/* BOUTON D'AJOUT DE PHASE */}
-          <button 
+          <button
             onClick={handleAddNewPhase}
             className="w-full ml-16 max-w-[calc(100%-64px)] py-10 border-4 border-dashed border-slate-200 rounded-3xl text-slate-400 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50/50 transition-all flex flex-col items-center gap-3 group"
           >
@@ -516,7 +520,7 @@ export default function CaseDetailPage() {
         {/* COLONNE DROITE : RÉSUMÉ FINANCIER GLOBAL */}
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-6">
-            
+
             {/* Carte Totale Noire */}
             <Card className="p-6 bg-slate-900 text-white border-none shadow-2xl rounded-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -526,7 +530,7 @@ export default function CaseDetailPage() {
               <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-8">
                 Résumé Financier Dossier
               </h3>
-              
+
               <div className="space-y-4 relative z-10">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-400">
@@ -545,7 +549,7 @@ export default function CaseDetailPage() {
                     {tva.toLocaleString('fr-FR')} €
                   </span>
                 </div>
-                
+
                 <div className="pt-6 border-t border-slate-800">
                   <p className="text-[10px] font-black text-blue-400 uppercase mb-1">
                     Montant Total TTC
@@ -561,7 +565,7 @@ export default function CaseDetailPage() {
             {/* Actions Globales */}
             <div className="space-y-3">
               {!currentProforma &&
-                (dossier.status === 'RECEIVED' || dossier.status === 'DIAGNOSIS') && (
+                (dossier.status === CASE_STATUS.RECEIVED || dossier.status === CASE_STATUS.DIAGNOSIS) && (
                   <Button
                     className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
                     onClick={handleGenerateProforma}
@@ -583,14 +587,14 @@ export default function CaseDetailPage() {
                   disabled={actionLoading}
                 >
                   <FileText size={18} />
-                  {currentProforma.status === 'DRAFT'
+                  {currentProforma.status === PROFORMA_STATUS.DRAFT
                     ? 'Ouvrir la proforma pour validation'
                     : 'Voir la proforma'}
 
                   <span className="ml-auto text-[10px] uppercase opacity-70">
-                    {currentProforma.status === 'DRAFT'
+                    {currentProforma.status === PROFORMA_STATUS.DRAFT
                       ? 'Brouillon'
-                      : currentProforma.status === 'ACCEPTED'
+                      : currentProforma.status === PROFORMA_STATUS.ACCEPTED
                         ? 'Acceptée'
                         : currentProforma.status}
                   </span>
@@ -608,14 +612,14 @@ export default function CaseDetailPage() {
                 </Button>
               )}
 
-              {dossier.status === 'IN_PROGRESS' && (
+              {dossier.status === CASE_STATUS.IN_PROGRESS && (
                 <div className="p-4 bg-blue-50 border-2 border-blue-100 rounded-2xl flex items-center gap-3 text-blue-700">
                   <Play size={20} className="animate-pulse" />
                   <span className="font-black text-[10px] uppercase tracking-widest">Réparation en cours</span>
                 </div>
               )}
-              
-              {dossier.status === 'IN_PROGRESS' && (
+
+              {dossier.status === CASE_STATUS.IN_PROGRESS && (
                 <Button
                   className="w-full h-12 rounded-xl font-bold bg-amber-600 hover:bg-amber-700 text-white"
                   onClick={handleCompleteCase}
