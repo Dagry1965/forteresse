@@ -6,6 +6,7 @@ import { appointmentService } from '@/services/appointmentService';
 import { Button } from '../../components/ui/button';
 import Section from '../../components/section';
 import { normalizeList } from '@/utils/normalize';
+import { INTERVENTION_STATUS } from '../../../../shared/constants/status.constants';
 
 export default function WorkshopPage() {
   const [interventions, setInterventions] = useState<any[]>([]);
@@ -85,13 +86,13 @@ export default function WorkshopPage() {
                   </div>
 
                   <div className="flex gap-2 mt-4">
-                    <Button size="sm" onClick={() => updateStatus(inter.id, 'diagnosing')}>
+                    <Button size="sm" onClick={() => updateStatus(inter.id, INTERVENTION_STATUS.DIAGNOSIS)}>
                       Diagnostic
                     </Button>
-                    <Button size="sm" onClick={() => updateStatus(inter.id, 'in_progress')}>
+                    <Button size="sm" onClick={() => updateStatus(inter.id, INTERVENTION_STATUS.IN_PROGRESS)}>
                       En cours
                     </Button>
-                    <Button size="sm" variant="outline" onClick={() => updateStatus(inter.id, 'completed')}>
+                    <Button size="sm" variant="outline" onClick={() => updateStatus(inter.id, INTERVENTION_STATUS.COMPLETED)}>
                       Terminer
                     </Button>
                   </div>
