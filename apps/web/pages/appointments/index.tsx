@@ -266,10 +266,10 @@ export default function AppointmentsPage() {
             onChange={(e) => setFilterStatus(e.target.value)}
           >
             <option value="">Rendez-vous actifs</option>
-            <option value="PENDING">En attente</option>
-            <option value="CONFIRMED">Confirmé</option>
-            <option value="COMPLETED">Consommés / Atelier</option>
-            <option value="CANCELLED">Annulés</option>
+            <option value={APPOINTMENT_STATUS.PENDING}>En attente</option>
+            <option value={APPOINTMENT_STATUS.CONFIRMED}>Confirmé</option>
+            <option value={APPOINTMENT_STATUS.COMPLETED}>Consommés / Atelier</option>
+            <option value={APPOINTMENT_STATUS.CANCELLED}>Annulés</option>
           </select>
 
           <input
