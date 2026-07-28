@@ -23,8 +23,6 @@
   },
 
   "include": [
-    "src/**/*",
-    "prisma/seed-full-cycle.ts",
-    "prisma/seed-full-cycle.js"
+    "src/**/*"
   ]
 }
