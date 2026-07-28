@@ -57,7 +57,7 @@ export default function CaseDetailPage() {
 
       // 2. On récupère le dossier complet
       if (!currentInt.case_id) {
-        throw new Error("Cette intervention n'est associ�e � aucun dossier.");
+        throw new Error("Cette intervention n'est associée à aucun dossier.");
       }
 
       const data = await interventionService.getCaseDetails(currentInt.case_id);
