@@ -50,7 +50,7 @@ workspaceId =
 
       if (!fallbackUser) {
         throw new BadRequestException(
-          'Aucun utilisateur actif trouvÃƒÆ’Ã‚Â© dans ce workspace',
+          'Aucun utilisateur actif trouvé dans ce workspace',
         );
       }
 
