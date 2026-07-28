@@ -35,7 +35,7 @@ export const appointmentService = {
     try {
       return await API.post('/api/appointments', data);
     } catch (error: any) {
-      console.error('[appointmentService] Erreur crÃƒÂ©ation:', error);
+      console.error('[appointmentService] Erreur création:', error);
       throw error;
     }
   },
@@ -44,7 +44,7 @@ export const appointmentService = {
     try {
       return await API.patch(`/api/appointments/${id}`, data);
     } catch (error: any) {
-      console.error('[appointmentService] Erreur mise ÃƒÂ  jour:', error);
+      console.error('[appointmentService] Erreur mise à jour:', error);
       throw error;
     }
   },
