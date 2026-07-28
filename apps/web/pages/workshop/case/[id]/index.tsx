@@ -258,7 +258,7 @@ export default function CaseDetailPage() {
 
               <span
                 className={`text-[10px] font-black px-2 py-0.5 rounded uppercase ${
-                  dossier.status === 'INVOICED'
+                  dossier.status === CASE_STATUS.INVOICED
                     ? 'bg-green-100 text-green-700'
                     : dossier.status === CASE_STATUS.IN_PROGRESS
                     ? 'bg-blue-100 text-blue-700'
@@ -601,7 +601,7 @@ export default function CaseDetailPage() {
                 </Button>
               )}
 
-              {dossier.status === 'WAITING_PARTS' && (
+              {dossier.status === CASE_STATUS.WAITING_PARTS && (
                 <Button
                   className="w-full bg-blue-600 hover:bg-blue-700 h-14 rounded-xl font-bold flex gap-2 shadow-lg"
                   onClick={handleStartRepair}
@@ -632,7 +632,7 @@ export default function CaseDetailPage() {
             </div>
 
             {/* Indicateur de devis envoyé */}
-            {dossier.status === 'INVOICED' && (
+            {dossier.status === CASE_STATUS.INVOICED && (
               <div className="p-4 bg-green-50 border-2 border-green-100 rounded-2xl flex items-center gap-4 animate-pulse">
                 <CheckCircle2 className="text-green-600" size={24} />
 
