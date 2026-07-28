@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { API } from "../../../../lib/api";
 import { CONFIG } from "../../../../lib/config";
+import { INTERVENTION_STATUS } from "../../../../../../shared/constants/status.constants";
 
 export default function InterventionPage() {
   const [intervention, setIntervention] = useState<any>(null);
@@ -77,7 +78,7 @@ export default function InterventionPage() {
         {
           parts,
           labor,
-          status: "in_progress",
+          status: INTERVENTION_STATUS.IN_PROGRESS,
         }
       );
 
