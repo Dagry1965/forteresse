@@ -42,7 +42,7 @@ export default function VehicleDetailPage() {
 
     try {
       await vehicleService.delete(vehicle.id);
-      toast.success("VÃ©hicule supprimé avec succès");
+      toast.success("Véhicule supprimé avec succès");
       router.push("/vehicles");
     } catch (error: any) {
       toast.error(error?.message || "Erreur lors de la suppression");
@@ -56,7 +56,7 @@ export default function VehicleDetailPage() {
   if (!vehicle) {
     return (
       <div className="p-10">
-        <h1 className="text-2xl font-bold text-red-600">VÃ©hicule introuvable</h1>
+        <h1 className="text-2xl font-bold text-red-600">Véhicule introuvable</h1>
         <Button className="mt-4" onClick={() => router.push("/vehicles")}>
           Retour à la liste
         </Button>
