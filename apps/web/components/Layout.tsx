@@ -1,10 +1,10 @@
-﻿import React from "react";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useAuth } from "../context/AuthContext";
 import { USER_ROLE } from '../../../shared/constants/status.constants';
 
-// IcÃ´nes pro (Lucide)
+// Icônes pro (Lucide)
 import {
   LayoutDashboard,
   Users,
@@ -32,7 +32,7 @@ const menu_items = [
   { icon: <Package size={18} />, name: "stock & catalogue", href: "/inventory" },
   { icon: <ShoppingCart size={18} />, name: "achats (po)", href: "/purchase-orders" },
   { icon: <CreditCard size={18} />, name: "caisse", href: "/cashier" },
-  { icon: <Receipt size={18} />, name: "facturation", href: "/billing" },   // â† Nouvel Ã©lÃ©ment
+  { icon: <Receipt size={18} />, name: "facturation", href: "/billing" },   // ← Nouvel élément
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -90,7 +90,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             onClick={logout}
             className="w-full py-2 bg-destructive text-destructive-foreground rounded-md font-bold hover:opacity-90"
           >
-            DÃ©connexion
+            Déconnexion
           </button>
         </div>
       </aside>
