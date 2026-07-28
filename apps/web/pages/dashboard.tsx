@@ -12,6 +12,7 @@ import { inventoryService } from '@/services/inventoryService';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { INTERVENTION_STATUS } from '../../../shared/constants/status.constants';
 
 import { StockAlerts } from '@/modules/inventory/components/StockAlerts';
 import { PaymentReminders } from '@/modules/finance/components/PaymentReminders';
@@ -76,7 +77,7 @@ export default function DashboardPage() {
         pendingAppointments: Array.isArray(pendingRes) ? pendingRes.length : 0,
         ongoingInterventions: Array.isArray(interventionsRes)
           ? interventionsRes.filter((i: any) => 
-              i.status !== 'COMPLETED' && i.status !== 'completed'
+              i.status !== INTERVENTION_STATUS.COMPLETED
             ).length
           : 0,
         unpaidInvoices: Array.isArray(invoicesRes) ? invoicesRes.length : 0,
