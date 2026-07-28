@@ -67,7 +67,7 @@ export default function AppointmentsPage() {
         localStorage.getItem("current_workspace_id") || undefined;
 
       if (!workspaceId) {
-        toast.error("Aucun espace de travail s�lectionn�.");
+        toast.error("Aucun espace de travail sélectionné.");
         setLoading(false);
         return;
       }
@@ -303,7 +303,7 @@ export default function AppointmentsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <span className="absolute left-4 top-2.5 text-gray-400 text-xs">
-            ÃƒÆ’Ã‚Â°Ãƒâ€¦Ã‚Â¸ÃƒÂ¢Ã¢â€šÂ¬Ã‚ÂÃƒâ€šÃ‚Â
+            🔍
           </span>
           {searchTerm && (
             <button
@@ -365,12 +365,12 @@ export default function AppointmentsPage() {
                       day: '2-digit',
                       month: 'short',
                     })
-                  : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â',
+                  : '—',
             },
             {
               key: 'client',
               header: 'Client',
-              render: (r) => r.client?.name || 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â',
+              render: (r) => r.client?.name || '—',
             },
             {
               key: 'vehicle',
@@ -378,7 +378,7 @@ export default function AppointmentsPage() {
               render: (r) =>
                 r.vehicle
                   ? `${r.vehicle.brand || ''} ${r.vehicle.model || ''}`.trim()
-                  : 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â',
+                  : '—',
             },
             {
               key: 'time',
@@ -386,7 +386,7 @@ export default function AppointmentsPage() {
               render: (r) => {
                 const startStr = r.time_slot?.start || r.startTime;
                 const endStr = r.time_slot?.end || r.endTime;
-                if (!startStr) return 'ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â';
+                if (!startStr) return '—';
                 const start = new Date(startStr).toLocaleTimeString('fr-FR', {
                   hour: '2-digit',
                   minute: '2-digit',
