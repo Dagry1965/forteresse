@@ -1,4 +1,5 @@
 import { API } from '../lib/api';
+import { APPOINTMENT_STATUS } from '../../../shared/constants/status.constants';
 
 export interface Appointment {
   id: string;
@@ -94,7 +95,7 @@ export const appointmentService = {
 
   async validate(id: string, action: "confirm" | "cancel") {
     try {
-      const status = action === "confirm" ? "CONFIRMED" : "CANCELLED";
+      const status = action === "confirm" ? APPOINTMENT_STATUS.CONFIRMED : APPOINTMENT_STATUS.CANCELLED;
 
       return await API.patch(`/api/appointments/${id}`, {
         status,
