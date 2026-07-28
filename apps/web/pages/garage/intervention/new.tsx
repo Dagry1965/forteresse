@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { API } from "../../../lib/api";
 import { CONFIG } from "../../../lib/config";
+import { INTERVENTION_STATUS } from "../../../../../shared/constants/status.constants";
 
 export default function NewInterventionPage() {
   const [appointment, setAppointment] = useState<any>(null);
@@ -33,7 +34,7 @@ export default function NewInterventionPage() {
           vehicleId: appointment.vehicleId,
           clientId: appointment.vehicle.clientId,
           workspaceId: CONFIG.WORKSPACE_ID,
-          status: "draft",
+          status: INTERVENTION_STATUS.PENDING,
         }
       );
 
