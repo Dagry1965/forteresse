@@ -1,5 +1,17 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import * as argon2 from 'argon2';
+import {
+  APPOINTMENT_STATUS,
+  CASE_STATUS,
+  INTERVENTION_STATUS,
+  INVOICE_STATUS,
+  INVOICE_TYPE,
+  PAYMENT_SCHEDULE_STATUS,
+  PROFORMA_STATUS,
+  PURCHASE_ORDER_STATUS,
+  TIME_SLOT_STATUS,
+  VEHICLE_STATUS,
+} from '../../../../shared/constants/status.constants';
 
 const prisma = new PrismaClient();
 const WORKSPACE_ID = 'seed-workspace-1';
@@ -78,31 +90,31 @@ async function main(): Promise<void> {
     prisma.vehicle.create({ data: { registration: 'AA-123-AA', brand: 'Renault', model: 'Clio V', status: 'DISPONIBLE', workspace_id: workspace.id, client_id: clients[0].id } }),
     prisma.vehicle.create({ data: { registration: 'BB-456-BB', brand: 'Peugeot', model: '3008', status: 'EN_REPARATION', workspace_id: workspace.id, client_id: clients[1].id } }),
     prisma.vehicle.create({ data: { registration: 'CC-789-CC', brand: 'Ford', model: 'Transit', status: 'EN_ATTENTE_PIECES', workspace_id: workspace.id, client_id: clients[2].id } }),
-    prisma.vehicle.create({ data: { registration: 'DD-111-DD', brand: 'Mercedes', model: 'Sprinter', status: 'HORS_SERVICE', workspace_id: workspace.id, client_id: clients[2].id } }),
-    prisma.vehicle.create({ data: { registration: 'EE-222-EE', brand: 'Toyota', model: 'Yaris', status: 'VENDU', workspace_id: workspace.id, client_id: clients[3].id } }),
+    prisma.vehicle.create({ data: { registration: 'DD-111-DD', brand: 'Mercedes', model: 'Sprinter', status: VEHICLE_STATUS.HORS_SERVICE, workspace_id: workspace.id, client_id: clients[2].id } }),
+    prisma.vehicle.create({ data: { registration: 'EE-222-EE', brand: 'Toyota', model: 'Yaris', status: VEHICLE_STATUS.VENDU, workspace_id: workspace.id, client_id: clients[3].id } }),
   ]);
 
   const slots = await Promise.all([
-    prisma.timeSlot.create({ data: { start: dateIn(-2, 9), end: dateIn(-2, 10), status: 'CLOSED', occupancy: 1, workspace_id: workspace.id } }),
-    prisma.timeSlot.create({ data: { start: dateIn(0, 9), end: dateIn(0, 10), status: 'OPEN', occupancy: 1, workspace_id: workspace.id } }),
-    prisma.timeSlot.create({ data: { start: dateIn(1, 10), end: dateIn(1, 11), status: 'OPEN', occupancy: 1, workspace_id: workspace.id } }),
-    prisma.timeSlot.create({ data: { start: dateIn(2, 14), end: dateIn(2, 15), status: 'OPEN', occupancy: 1, workspace_id: workspace.id } }),
-    prisma.timeSlot.create({ data: { start: dateIn(3, 11), end: dateIn(3, 12), status: 'CANCELLED', occupancy: 0, workspace_id: workspace.id } }),
+    prisma.timeSlot.create({ data: { start: dateIn(-2, 9), end: dateIn(-2, 10), status: TIME_SLOT_STATUS.CLOSED, occupancy: 1, workspace_id: workspace.id } }),
+    prisma.timeSlot.create({ data: { start: dateIn(0, 9), end: dateIn(0, 10), status: TIME_SLOT_STATUS.OPEN, occupancy: 1, workspace_id: workspace.id } }),
+    prisma.timeSlot.create({ data: { start: dateIn(1, 10), end: dateIn(1, 11), status: TIME_SLOT_STATUS.OPEN, occupancy: 1, workspace_id: workspace.id } }),
+    prisma.timeSlot.create({ data: { start: dateIn(2, 14), end: dateIn(2, 15), status: TIME_SLOT_STATUS.OPEN, occupancy: 1, workspace_id: workspace.id } }),
+    prisma.timeSlot.create({ data: { start: dateIn(3, 11), end: dateIn(3, 12), status: TIME_SLOT_STATUS.CANCELLED, occupancy: 0, workspace_id: workspace.id } }),
   ]);
 
   const appointments = await Promise.all([
-    prisma.appointment.create({ data: { date: dateIn(-2, 9), status: 'COMPLETED', workspace_id: workspace.id, client_id: clients[0].id, vehicle_id: vehicles[0].id, time_slot_id: slots[0].id, user_id: mechanic.id, created_by: member.id } }),
-    prisma.appointment.create({ data: { date: dateIn(0, 9), status: 'IN_PROGRESS', workspace_id: workspace.id, client_id: clients[1].id, vehicle_id: vehicles[1].id, time_slot_id: slots[1].id, user_id: mechanic.id, created_by: member.id } }),
-    prisma.appointment.create({ data: { date: dateIn(1, 10), status: 'CONFIRMED', workspace_id: workspace.id, client_id: clients[2].id, vehicle_id: vehicles[2].id, time_slot_id: slots[2].id, user_id: mechanic.id, created_by: member.id } }),
-    prisma.appointment.create({ data: { date: dateIn(2, 14), status: 'PENDING', workspace_id: workspace.id, client_id: clients[2].id, vehicle_id: vehicles[3].id, time_slot_id: slots[3].id, user_id: mechanic.id, created_by: member.id } }),
-    prisma.appointment.create({ data: { date: dateIn(3, 11), status: 'CANCELLED', workspace_id: workspace.id, client_id: clients[3].id, vehicle_id: vehicles[4].id, time_slot_id: slots[4].id, user_id: mechanic.id, created_by: member.id } }),
+    prisma.appointment.create({ data: { date: dateIn(-2, 9), status: APPOINTMENT_STATUS.COMPLETED, workspace_id: workspace.id, client_id: clients[0].id, vehicle_id: vehicles[0].id, time_slot_id: slots[0].id, user_id: mechanic.id, created_by: member.id } }),
+    prisma.appointment.create({ data: { date: dateIn(0, 9), status: APPOINTMENT_STATUS.IN_PROGRESS, workspace_id: workspace.id, client_id: clients[1].id, vehicle_id: vehicles[1].id, time_slot_id: slots[1].id, user_id: mechanic.id, created_by: member.id } }),
+    prisma.appointment.create({ data: { date: dateIn(1, 10), status: APPOINTMENT_STATUS.CONFIRMED, workspace_id: workspace.id, client_id: clients[2].id, vehicle_id: vehicles[2].id, time_slot_id: slots[2].id, user_id: mechanic.id, created_by: member.id } }),
+    prisma.appointment.create({ data: { date: dateIn(2, 14), status: APPOINTMENT_STATUS.PENDING, workspace_id: workspace.id, client_id: clients[2].id, vehicle_id: vehicles[3].id, time_slot_id: slots[3].id, user_id: mechanic.id, created_by: member.id } }),
+    prisma.appointment.create({ data: { date: dateIn(3, 11), status: APPOINTMENT_STATUS.CANCELLED, workspace_id: workspace.id, client_id: clients[3].id, vehicle_id: vehicles[4].id, time_slot_id: slots[4].id, user_id: mechanic.id, created_by: member.id } }),
   ]);
 
   const cases = await Promise.all([
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[0].id, vehicle_id: vehicles[0].id, status: 'COMPLETED', title: 'Révision annuelle', description: 'Vidange, filtres et contrôles.' } }),
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[1].id, vehicle_id: vehicles[1].id, status: 'IN_PROGRESS', title: 'Freinage avant', description: 'Bruits et vibrations.' } }),
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[2].id, status: 'WAITING_PARTS', title: 'Embrayage utilitaire', description: 'Kit embrayage en attente.' } }),
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[3].id, status: 'DIAGNOSIS', title: 'Voyant moteur', description: 'Diagnostic électronique.' } }),
+    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[0].id, vehicle_id: vehicles[0].id, status: CASE_STATUS.COMPLETED, title: 'Révision annuelle', description: 'Vidange, filtres et contrôles.' } }),
+    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[1].id, vehicle_id: vehicles[1].id, status: CASE_STATUS.IN_PROGRESS, title: 'Freinage avant', description: 'Bruits et vibrations.' } }),
+    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[2].id, status: CASE_STATUS.WAITING_PARTS, title: 'Embrayage utilitaire', description: 'Kit embrayage en attente.' } }),
+    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[3].id, status: CASE_STATUS.DIAGNOSIS, title: 'Voyant moteur', description: 'Diagnostic électronique.' } }),
   ]);
 
   const suppliers = await Promise.all([
@@ -130,10 +142,10 @@ async function main(): Promise<void> {
   ] });
 
   const interventions = await Promise.all([
-    prisma.intervention.create({ data: { description: 'Vidange et filtre à huile', status: 'COMPLETED', workspace_id: workspace.id, case_id: cases[0].id } }),
-    prisma.intervention.create({ data: { description: 'Remplacement des plaquettes', status: 'IN_PROGRESS', workspace_id: workspace.id, case_id: cases[1].id } }),
-    prisma.intervention.create({ data: { description: 'Remplacement du kit embrayage', status: 'PENDING', workspace_id: workspace.id, case_id: cases[2].id } }),
-    prisma.intervention.create({ data: { description: 'Lecture des défauts moteur', status: 'DIAGNOSIS', workspace_id: workspace.id, case_id: cases[3].id } }),
+    prisma.intervention.create({ data: { description: 'Vidange et filtre à huile', status: INTERVENTION_STATUS.COMPLETED, workspace_id: workspace.id, case_id: cases[0].id } }),
+    prisma.intervention.create({ data: { description: 'Remplacement des plaquettes', status: INTERVENTION_STATUS.IN_PROGRESS, workspace_id: workspace.id, case_id: cases[1].id } }),
+    prisma.intervention.create({ data: { description: 'Remplacement du kit embrayage', status: INTERVENTION_STATUS.PENDING, workspace_id: workspace.id, case_id: cases[2].id } }),
+    prisma.intervention.create({ data: { description: 'Lecture des défauts moteur', status: INTERVENTION_STATUS.DIAGNOSIS, workspace_id: workspace.id, case_id: cases[3].id } }),
   ]);
   await prisma.interventionPart.createMany({ data: [
     { intervention_id: interventions[0].id, item_id: items[0].id, quantity: 1, price_snapshot: items[0].price_sell },
@@ -142,7 +154,7 @@ async function main(): Promise<void> {
   ] });
 
   const order = await prisma.purchaseOrder.create({ data: {
-    reference: 'CMD-DEMO-001', status: 'PARTIALLY_RECEIVED', supplier_id: suppliers[0].id, workspace_id: workspace.id, created_by: admin.id,
+    reference: 'CMD-DEMO-001', status: PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED, supplier_id: suppliers[0].id, workspace_id: workspace.id, created_by: admin.id,
     items: { create: [
       { item_id: items[1].id, quantity: 10, received_quantity: 4, price_buy: items[1].price_buy },
       { item_id: items[3].id, quantity: 4, received_quantity: 0, price_buy: items[3].price_buy },
@@ -159,7 +171,7 @@ async function main(): Promise<void> {
   ] });
 
   const proforma = await prisma.proforma.create({ data: {
-    reference: 'DEV-DEMO-001', total: 241.8, status: 'ACCEPTED', workspace_id: workspace.id, appointment_id: appointments[0].id, case_id: cases[0].id,
+    reference: 'DEV-DEMO-001', total: 241.8, status: PROFORMA_STATUS.ACCEPTED, workspace_id: workspace.id, appointment_id: appointments[0].id, case_id: cases[0].id,
     lines: { create: [
       { type: 'PART', label: 'Filtre à huile', quantity: new Prisma.Decimal(1), unit_price: new Prisma.Decimal(14.9), vat_rate: new Prisma.Decimal(20), discount: new Prisma.Decimal(0), total: new Prisma.Decimal(14.9) },
       { type: 'LABOR', label: 'Main-d’œuvre', quantity: new Prisma.Decimal(3.5), unit_price: new Prisma.Decimal(64.83), vat_rate: new Prisma.Decimal(20), discount: new Prisma.Decimal(0), total: new Prisma.Decimal(226.9) },
@@ -167,15 +179,15 @@ async function main(): Promise<void> {
   } });
 
   const paidInvoice = await prisma.invoice.create({ data: {
-    reference: 'FAC-DEMO-001', total: 241.8, status: 'PAID', type: 'INVOICE', workspace_id: workspace.id, proforma_id: proforma.id,
+    reference: 'FAC-DEMO-001', total: 241.8, status: INVOICE_STATUS.PAID, type: INVOICE_TYPE.INVOICE, workspace_id: workspace.id, proforma_id: proforma.id,
     appointment_id: appointments[0].id, user_id: admin.id, client_id: clients[0].id, created_by: admin.id,
     lines: { create: [
       { type: 'PART', label: 'Filtre à huile', quantity: new Prisma.Decimal(1), unit_price: new Prisma.Decimal(14.9), vat_rate: new Prisma.Decimal(20), discount: new Prisma.Decimal(0), total: new Prisma.Decimal(14.9) },
       { type: 'LABOR', label: 'Révision complète', quantity: new Prisma.Decimal(3.5), unit_price: new Prisma.Decimal(64.83), vat_rate: new Prisma.Decimal(20), discount: new Prisma.Decimal(0), total: new Prisma.Decimal(226.9) },
     ] },
   } });
-  const unpaidInvoice = await prisma.invoice.create({ data: { reference: 'FAC-DEMO-002', total: 328, status: 'UNPAID', type: 'INVOICE', workspace_id: workspace.id, appointment_id: appointments[1].id, user_id: admin.id, client_id: clients[1].id, created_by: admin.id } });
-  const overdueInvoice = await prisma.invoice.create({ data: { reference: 'FAC-DEMO-003', total: 980, status: 'OVERDUE', type: 'INVOICE', workspace_id: workspace.id, appointment_id: appointments[2].id, user_id: admin.id, client_id: clients[2].id, created_by: admin.id } });
+  const unpaidInvoice = await prisma.invoice.create({ data: { reference: 'FAC-DEMO-002', total: 328, status: INVOICE_STATUS.UNPAID, type: INVOICE_TYPE.INVOICE, workspace_id: workspace.id, appointment_id: appointments[1].id, user_id: admin.id, client_id: clients[1].id, created_by: admin.id } });
+  const overdueInvoice = await prisma.invoice.create({ data: { reference: 'FAC-DEMO-003', total: 980, status: INVOICE_STATUS.OVERDUE, type: INVOICE_TYPE.INVOICE, workspace_id: workspace.id, appointment_id: appointments[2].id, user_id: admin.id, client_id: clients[2].id, created_by: admin.id } });
 
   await prisma.invoicePayment.createMany({ data: [
     { invoice_id: paidInvoice.id, amount: 141.8, method: 'CARD', user_id: member.id },
@@ -184,8 +196,8 @@ async function main(): Promise<void> {
   await prisma.payment.create({ data: { amount: 241.8, method: 'MIXED', workspace_id: workspace.id, invoice_id: paidInvoice.id, client_id: clients[0].id, user_id: member.id } });
   await prisma.paymentSchedule.createMany({ data: [
     { invoice_id: overdueInvoice.id, workspace_id: workspace.id, amount: 490, due_date: dateIn(-15), status: 'OVERDUE' },
-    { invoice_id: overdueInvoice.id, workspace_id: workspace.id, amount: 490, due_date: dateIn(15), status: 'PENDING' },
-    { invoice_id: unpaidInvoice.id, workspace_id: workspace.id, amount: 328, due_date: dateIn(7), status: 'PENDING' },
+    { invoice_id: overdueInvoice.id, workspace_id: workspace.id, amount: 490, due_date: dateIn(15), status: PAYMENT_SCHEDULE_STATUS.PENDING },
+    { invoice_id: unpaidInvoice.id, workspace_id: workspace.id, amount: 328, due_date: dateIn(7), status: PAYMENT_SCHEDULE_STATUS.PENDING },
   ] });
 
   await prisma.numberSequence.createMany({ data: [
