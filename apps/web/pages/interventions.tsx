@@ -5,6 +5,7 @@ import { workshopService } from '@/services/workshopService';
 import { Button } from '../components/ui/button';
 import Section from '../components/section';
 import { Card } from '../components/ui/card';
+import { INTERVENTION_STATUS } from '../../../shared/constants/status.constants';
 
 export default function InterventionsPage() {
   const [interventions, setInterventions] = useState<any[]>([]);
@@ -80,9 +81,9 @@ export default function InterventionsPage() {
                   </td>
                   <td className="px-6 py-5 text-center">
                     <span className={`px-4 py-1 rounded-full text-xs font-bold ${
-                      intervention.status === 'completed' 
-                        ? 'bg-emerald-100 text-emerald-700' 
-                        : intervention.status === 'in_progress'
+                      intervention.status === INTERVENTION_STATUS.COMPLETED
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : intervention.status === INTERVENTION_STATUS.IN_PROGRESS
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}>
@@ -94,18 +95,18 @@ export default function InterventionsPage() {
                   </td>
                   <td className="px-6 py-5 text-center">
                     <div className="flex justify-center gap-2">
-                      {intervention.status !== 'completed' && (
+                      {intervention.status !== INTERVENTION_STATUS.COMPLETED && (
                         <>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
-                            onClick={() => updateStatus(intervention.id, 'in_progress')}
+                            onClick={() => updateStatus(intervention.id, INTERVENTION_STATUS.IN_PROGRESS)}
                           >
                             En cours
                           </Button>
-                          <Button 
+                          <Button
                             size="sm"
-                            onClick={() => updateStatus(intervention.id, 'completed')}
+                            onClick={() => updateStatus(intervention.id, INTERVENTION_STATUS.COMPLETED)}
                           >
                             Terminer
                           </Button>
