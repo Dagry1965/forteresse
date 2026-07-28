@@ -161,11 +161,11 @@ export async function reserveAppointment({
   date,
 }: ReserveAppointmentParams) {
   if (!vehicleId) {
-    throw new Error("Veuillez s�lectionner un v�hicule.");
+    throw new Error("Veuillez sélectionner un véhicule.");
   }
 
   if (!timeSlotId) {
-    throw new Error("Veuillez s�lectionner un cr�neau.");
+    throw new Error("Veuillez sélectionner un créneau.");
   }
 
   const vehicle = await API.get<{
@@ -184,7 +184,7 @@ export async function reserveAppointment({
 
   if (!clientId) {
     throw new Error(
-      "Aucun client n'est associ� � ce v�hicule.",
+      "Aucun client n'est associé à ce véhicule.",
     );
   }
 
