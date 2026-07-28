@@ -1,6 +1,13 @@
 import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import * as argon2 from "argon2";
+import {
+  APPOINTMENT_STATUS,
+  INTERVENTION_STATUS,
+  INVOICE_STATUS,
+  PROFORMA_STATUS,
+  PURCHASE_ORDER_STATUS,
+} from '../../../../shared/constants/status.constants';
 
 const prisma = new PrismaClient();
 
@@ -153,14 +160,14 @@ await prisma.workspaceMember.create({
   }
 
   // ==================== RENDEZ-VOUS ====================
-  const appointmentStatuses = ['PENDING', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
+  const appointmentStatuses = Object.values(APPOINTMENT_STATUS);
   const appointments = [];
 
   for (let i = 0; i < 70; i++) {
     const vehicle = allVehicles[i % allVehicles.length];
     let status = appointmentStatuses[i % appointmentStatuses.length];
-    if (i % 8 === 0) status = 'CANCELLED';
-    if (i > 50) status = 'COMPLETED';
+    if (i % 8 === 0) status = APPOINTMENT_STATUS.CANCELLED;
+    if (i > 50) status = APPOINTMENT_STATUS.COMPLETED;
 
     const appt = await prisma.appointment.create({
       data: {
@@ -184,12 +191,12 @@ await prisma.workspaceMember.create({
   ];
 
   for (const appt of appointments) {
-    const nb = appt.status === 'COMPLETED' ? 2 : appt.status === 'IN_PROGRESS' ? 2 : 1;
+    const nb = appt.status === APPOINTMENT_STATUS.COMPLETED ? 2 : appt.status === APPOINTMENT_STATUS.IN_PROGRESS ? 2 : 1;
 
     for (let j = 0; j < nb; j++) {
-      let intStatus = 'PENDING';
-      if (appt.status === 'COMPLETED') intStatus = 'COMPLETED';
-      else if (appt.status === 'IN_PROGRESS') intStatus = j === 0 ? 'COMPLETED' : 'IN_PROGRESS';
+      let intStatus = INTERVENTION_STATUS.PENDING;
+      if (appt.status === APPOINTMENT_STATUS.COMPLETED) intStatus = INTERVENTION_STATUS.COMPLETED;
+      else if (appt.status === APPOINTMENT_STATUS.IN_PROGRESS) intStatus = j === 0 ? INTERVENTION_STATUS.COMPLETED : INTERVENTION_STATUS.IN_PROGRESS;
 
       await prisma.intervention.create({
         data: {
@@ -208,7 +215,7 @@ await prisma.workspaceMember.create({
   for (let i = 0; i < completedAppts.length; i++) {
     const appt = completedAppts[i];
 
-    const proformaStatus = faker.helpers.arrayElement(['DRAFT', 'SENT', 'ACCEPTED', 'REJECTED']);
+    const proformaStatus = faker.helpers.arrayElement(Object.values(PROFORMA_STATUS));
 
     const proforma = await prisma.proforma.create({
       data: {
@@ -220,8 +227,8 @@ await prisma.workspaceMember.create({
       },
     });
 
-    if (proformaStatus === 'ACCEPTED' || proformaStatus === 'SENT') {
-      const invoiceStatus = faker.helpers.arrayElement(['DRAFT', 'SENT', 'PAID', 'OVERDUE']);
+    if (proformaStatus === PROFORMA_STATUS.ACCEPTED || proformaStatus === PROFORMA_STATUS.SENT) {
+      const invoiceStatus = faker.helpers.arrayElement([INVOICE_STATUS.DRAFT, INVOICE_STATUS.UNPAID, INVOICE_STATUS.PAID, INVOICE_STATUS.OVERDUE]);
 
       const invoice = await prisma.invoice.create({
         data: {
@@ -236,7 +243,7 @@ await prisma.workspaceMember.create({
         },
       });
 
-      if (invoiceStatus === 'PAID') {
+      if (invoiceStatus === INVOICE_STATUS.PAID) {
         await prisma.payment.create({
           data: {
             amount: invoice.total,
@@ -281,7 +288,7 @@ await prisma.workspaceMember.create({
   }
 
   // ==================== PURCHASE ORDERS ====================
-  const poStatuses = ['draft', 'ordered', 'received'];
+  const poStatuses = [PURCHASE_ORDER_STATUS.DRAFT, PURCHASE_ORDER_STATUS.SENT, PURCHASE_ORDER_STATUS.RECEIVED];
   for (let i = 0; i < 20; i++) {
     const status = poStatuses[i % 3];
     const po = await prisma.purchaseOrder.create({
@@ -302,7 +309,7 @@ await prisma.workspaceMember.create({
       },
     });
 
-    if (status === 'received') {
+    if (status === PURCHASE_ORDER_STATUS.RECEIVED) {
       await prisma.stockReception.create({
         data: { purchase_order_id: po.id, workspace_id: workspace.id },
       });
