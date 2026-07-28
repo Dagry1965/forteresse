@@ -210,7 +210,7 @@ await prisma.workspaceMember.create({
   }
 
   // ==================== PROFORMAS + INVOICES + PAYMENTS ====================
-  const completedAppts = appointments.filter(a => a.status === 'COMPLETED');
+  const completedAppts = appointments.filter(a => a.status === APPOINTMENT_STATUS.COMPLETED);
 
   for (let i = 0; i < completedAppts.length; i++) {
     const appt = completedAppts[i];
