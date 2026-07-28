@@ -1,3 +1,5 @@
+import { APPOINTMENT_STATUS } from '../../../../shared/constants/status.constants';
+
 export class AppointmentUiMapper {
   static toCalendar(appt: any) {
     if (!appt) return null;
@@ -47,17 +49,17 @@ export class AppointmentUiMapper {
 
   static color(status?: string) {
     switch (status) {
-      case 'PENDING':
+      case APPOINTMENT_STATUS.PENDING:
         return '#eab308';
-      case 'CONFIRMED':
+      case APPOINTMENT_STATUS.CONFIRMED:
         return '#3b82f6';
-      case 'IN_PROGRESS':
+      case APPOINTMENT_STATUS.IN_PROGRESS:
         return '#8b5cf6';
-      case 'COMPLETED':
+      case APPOINTMENT_STATUS.COMPLETED:
         return '#22c55e';
-      case 'CANCELLED':
+      case APPOINTMENT_STATUS.CANCELLED:
         return '#ef4444';
-      case 'NO_SHOW':
+      case APPOINTMENT_STATUS.NO_SHOW:
         return '#6b7280';
       default:
         return '#64748b';
