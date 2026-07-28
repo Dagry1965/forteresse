@@ -5,6 +5,7 @@ import { interventionService, Intervention } from '@/services/interventionServic
 import { DataTable } from '@/components/ui/data-table';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import { INTERVENTION_STATUS } from '../../../../shared/constants/status.constants';
 import { useRouter } from 'next/navigation';
 import { LayoutGrid, RefreshCcw, History } from 'lucide-react'; // ← History ajouté
 
@@ -102,10 +103,10 @@ export default function WorkshopPage() {
           onChange={(e) => setFilterStatus(e.target.value)}
         >
           <option value="">Tous les statuts</option>
-          <option value="PENDING">En attente</option>
-          <option value="DIAGNOSIS">Diagnostic</option>
-          <option value="IN_PROGRESS">En cours</option>
-          <option value="COMPLETED">Terminé</option>
+          <option value={INTERVENTION_STATUS.PENDING}>En attente</option>
+          <option value={INTERVENTION_STATUS.DIAGNOSIS}>Diagnostic</option>
+          <option value={INTERVENTION_STATUS.IN_PROGRESS}>En cours</option>
+          <option value={INTERVENTION_STATUS.COMPLETED}>Terminé</option>
         </select>
 
         {/* Champ de recherche */}
