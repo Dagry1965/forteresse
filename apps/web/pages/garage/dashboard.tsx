@@ -5,6 +5,7 @@ import { appointmentService } from '@/services/appointmentService';
 import { workshopService } from '@/services/workshopService';
 import { financeService } from '@/services/financeService';
 import { Button } from '@/components/ui/button';
+import { INTERVENTION_STATUS } from '../../../../shared/constants/status.constants';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState({
@@ -29,7 +30,7 @@ export default function DashboardPage() {
 
       // 🔥 IMPORTANT : plus aucun filter → reduce est 100% safe
       const ongoing = interList.reduce((count, item) => {
-        return item?.status !== 'completed' ? count + 1 : count;
+        return item?.status !== INTERVENTION_STATUS.COMPLETED ? count + 1 : count;
       }, 0);
 
       setStats({
