@@ -91,8 +91,11 @@ export class AppointmentsService {
           dto.timeSlotId,
         );
 
-        const timeSlot = await tx.timeSlot.findUnique({
-          where: { id: dto.timeSlotId },
+        const timeSlot = await tx.timeSlot.findFirst({
+          where: {
+            id: dto.timeSlotId,
+            workspace_id: workspaceId,
+          },
         });
         if (!timeSlot) {
           throw new NotFoundException('TimeSlot not found');
