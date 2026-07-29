@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   UseGuards,
   Get,
@@ -7,7 +7,7 @@
   Delete,
   Param,
   Body,
-  Query,
+  Headers,
 } from '@nestjs/common';
 import { UsersService } from '../../core/auth/users.service';
 import { CreateUserDto } from '../../core/auth/dto/create-user.dto';
@@ -15,43 +15,57 @@ import { UpdateUserDto } from '../../core/auth/dto/update-user.dto';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { RolesGuard } from '../../core/auth/roles.guard';
 import { Roles } from '../../core/auth/roles.decorator';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
 @Roles('ADMIN')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  create(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: CreateUserDto,
+  ) {
+    return this.usersService.create(workspaceId, dto);
   }
 
   @Get()
-  findAll(@Query('workspaceId') workspaceId?: string) {
+  findAll(@Headers('x-workspace-id') workspaceId: string) {
     return this.usersService.findAll(workspaceId);
   }
 
   @Get(':id')
   findOne(
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
-    @Query('workspaceId') workspaceId: string,
   ) {
     return this.usersService.findOne(id, workspaceId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.usersService.update(id, dto);
+  update(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+  ) {
+    return this.usersService.update(workspaceId, id, dto);
   }
 
   @Patch(':id/restore')
-  restore(@Param('id') id: string) {
-    return this.usersService.restore(id);
+  restore(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.usersService.restore(workspaceId, id);
   }
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(id);
+  remove(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.usersService.remove(workspaceId, id);
   }
 }
 

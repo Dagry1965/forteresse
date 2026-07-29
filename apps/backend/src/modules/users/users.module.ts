@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from '../../core/auth/users.service';
 import { PrismaModule } from '../../core/prisma/prisma.module';

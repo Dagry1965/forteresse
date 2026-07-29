@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -12,7 +12,7 @@ import * as argon2 from 'argon2';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateUserDto) {
+  async create(workspaceId: string, dto: CreateUserDto) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -22,7 +22,7 @@ export class UsersService {
     }
 
     const workspace = await this.prisma.workspace.findUnique({
-      where: { id: dto.workspace_id },
+      where: { id: workspaceId },
     });
 
     if (!workspace) {
@@ -37,14 +37,14 @@ export class UsersService {
           email: dto.email,
           password: passwordHash,
           name: dto.name,
-          workspace_id: dto.workspace_id,
+          workspace_id: workspaceId,
         },
       });
 
       await tx.workspaceMember.create({
         data: {
           user_id: user.id,
-          workspace_id: dto.workspace_id,
+          workspace_id: workspaceId,
           role: dto.role,
         },
       });
@@ -60,17 +60,11 @@ export class UsersService {
     });
   }
 
-  async findAll(workspaceId?: string) {
+  async findAll(workspaceId: string) {
     return this.prisma.user.findMany({
-      where: workspaceId
-        ? {
-            workspaceMembers: {
-              some: {
-                workspace_id: workspaceId,
-              },
-            },
-          }
-        : undefined,
+      where: {
+        workspace_id: workspaceId,
+      },
       select: {
         id: true,
         email: true,
@@ -121,7 +115,11 @@ export class UsersService {
     return user;
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(
+    workspaceId: string,
+    id: string,
+    dto: UpdateUserDto,
+  ) {
     const data: Record<string, unknown> = { ...dto };
 
     if (dto.password) {
@@ -129,11 +127,34 @@ export class UsersService {
     }
 
     delete data.role;
+    delete data.workspace_id;
 
-    const user = await this.prisma.user.update({
-      where: { id },
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
       data,
     });
+
+    if (result.count === 0) {
+      throw new NotFoundException(
+        'Utilisateur introuvable dans ce workspace.',
+      );
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        'Utilisateur introuvable dans ce workspace.',
+      );
+    }
 
     return {
       id: user.id,
@@ -144,51 +165,43 @@ export class UsersService {
     };
   }
 
-  async restore(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-    });
-
-    if (!user) {
-      throw new NotFoundException('Utilisateur introuvable.');
-    }
-
-    return this.prisma.user.update({
-      where: { id },
+  async restore(workspaceId: string, id: string) {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
       data: {
         deleted_at: null,
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        deleted_at: true,
-      },
-    });
-  }
-  async remove(id: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
     });
 
-    if (!user) {
-      throw new NotFoundException('Utilisateur introuvable.');
+    if (result.count === 0) {
+      throw new NotFoundException(
+        'Utilisateur introuvable dans ce workspace.',
+      );
     }
 
-    return this.prisma.user.update({
-      where: { id },
+    return this.findOne(id, workspaceId);
+  }
+
+  async remove(workspaceId: string, id: string) {
+    const result = await this.prisma.user.updateMany({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
       data: {
         deleted_at: new Date(),
       },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        deleted_at: true,
-      },
     });
+
+    if (result.count === 0) {
+      throw new NotFoundException(
+        'Utilisateur introuvable dans ce workspace.',
+      );
+    }
+
+    return this.findOne(id, workspaceId);
   }
 }
-
-
-
