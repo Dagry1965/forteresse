@@ -340,14 +340,57 @@ export class InvoicesService {
   // ---------------------------------------------------------
   // UPDATE & REMOVE
   // ---------------------------------------------------------
-  async update(id: string, dto: any) {
+  async update(workspaceId: string, id: string, dto: any) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException(
+        'Facture introuvable dans ce workspace',
+      );
+    }
+
     const data: any = { ...dto };
-    if ('status' in dto) data.status = this.normalizeStatus(dto.status);
-    if ('type' in dto) data.type = this.normalizeType(dto.type);
-    return this.prisma.invoice.update({ where: { id }, data });
+
+    delete data.workspace_id;
+    delete data.workspaceId;
+    delete data.client_id;
+    delete data.user_id;
+
+    if ('status' in dto) {
+      data.status = this.normalizeStatus(dto.status);
+    }
+
+    if ('type' in dto) {
+      data.type = this.normalizeType(dto.type);
+    }
+
+    return this.prisma.invoice.update({
+      where: { id: invoice.id },
+      data,
+    });
   }
 
-  async remove(id: string) {
-    return this.prisma.invoice.delete({ where: { id } });
+  async remove(workspaceId: string, id: string) {
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException(
+        'Facture introuvable dans ce workspace',
+      );
+    }
+
+    return this.prisma.invoice.delete({
+      where: { id: invoice.id },
+    });
   }
 }
