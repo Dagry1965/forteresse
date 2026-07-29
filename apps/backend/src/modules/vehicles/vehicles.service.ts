@@ -260,7 +260,13 @@ export class VehiclesService {
       where: {
         vehicle_id: vehicleId,
         deleted_at: null,
-        status: { in: Object.values(APPOINTMENT_STATUS) }, // ← Correction ici
+        status: {
+          in: [
+            APPOINTMENT_STATUS.PENDING,
+            APPOINTMENT_STATUS.CONFIRMED,
+            APPOINTMENT_STATUS.IN_PROGRESS,
+          ],
+        },
       },
     });
     return count > 0;
