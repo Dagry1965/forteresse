@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
+import { useRouter } from 'next/router';
 
 const FullCalendar = dynamic(() => import('@fullcalendar/react'), { ssr: false });
 
@@ -24,6 +25,7 @@ import { AppointmentUiMapper } from '@/shared/mappers/appointmentUiMapper';
 import { APPOINTMENT_STATUS } from '../../../../shared/constants/status.constants';
 
 export default function AppointmentsPage() {
+  const router = useRouter();
   /* ================= ÉTATS ================= */
   const [appointments, setAppointments] = useState<any[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -40,6 +42,7 @@ export default function AppointmentsPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [queryPrefillHandled, setQueryPrefillHandled] = useState(false);
 
   // Filtres et recherche
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -103,6 +106,79 @@ export default function AppointmentsPage() {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  useEffect(() => {
+    if (!router.isReady || queryPrefillHandled || loading) return;
+
+    const clientId =
+      typeof router.query.clientId === 'string'
+        ? router.query.clientId
+        : '';
+    const vehicleId =
+      typeof router.query.vehicleId === 'string'
+        ? router.query.vehicleId
+        : '';
+
+    if (!clientId && !vehicleId) {
+      setQueryPrefillHandled(true);
+      return;
+    }
+
+    if (!clientId || !vehicleId) {
+      toast.error(
+        'Les informations du client et du v\u00e9hicule sont incompl\u00e8tes.',
+      );
+      setQueryPrefillHandled(true);
+      return;
+    }
+
+    if (vehicles.length === 0) return;
+
+    const selectedVehicle = vehicles.find(
+      (vehicle) => (vehicle.id || vehicle._id) === vehicleId,
+    );
+
+    if (!selectedVehicle) {
+      toast.error('Le v\u00e9hicule demand\u00e9 est introuvable.');
+      setQueryPrefillHandled(true);
+      return;
+    }
+
+    const vehicleClientId =
+      selectedVehicle.clientId ||
+      (selectedVehicle as Vehicle & { client_id?: string }).client_id ||
+      '';
+
+    if (vehicleClientId !== clientId) {
+      toast.error(
+        'Ce v\u00e9hicule n\u2019appartient pas au client s\u00e9lectionn\u00e9.',
+      );
+      setQueryPrefillHandled(true);
+      return;
+    }
+
+    const date = new Date().toISOString().split('T')[0];
+    setSelectedDate(date);
+    void loadSlots(date);
+    setIsEditing(false);
+    setForm({
+      id: '',
+      clientId,
+      vehicleId,
+      timeSlotId: '',
+      startTime: '',
+      endTime: '',
+    });
+    setModalOpen(true);
+    setQueryPrefillHandled(true);
+  }, [
+    router.isReady,
+    router.query.clientId,
+    router.query.vehicleId,
+    queryPrefillHandled,
+    loading,
+    vehicles,
+  ]);
 
   const calendarEvents = useMemo(() => {
   return appointments

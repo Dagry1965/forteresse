@@ -19,6 +19,7 @@ import {
   vehicleService,
 } from '@/services/vehicleService';
 import { Button } from '@/components/ui/button';
+import { appointmentService } from '@/services/appointmentService';
 import { Card } from '@/components/ui/card';
 
 type VehicleDetails = Vehicle & {
@@ -79,6 +80,7 @@ export default function VehicleDetailPage() {
     useState<VehicleDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [startingWorkshop, setStartingWorkshop] = useState(false);
 
   const loadVehicle = async () => {
     if (!vehicleId) {
@@ -150,6 +152,49 @@ export default function VehicleDetailPage() {
           new Date(second.date).getTime(),
       )[0];
   }, [appointments]);
+
+  const handleStartWorkshop = async () => {
+    if (!vehicle) {
+      toast.error('Le v\u00e9hicule est introuvable.');
+      return;
+    }
+
+    if (!nextAppointment?.id) {
+      router.push(
+        `/appointments?clientId=${clientId || ''}&vehicleId=${vehicle.id}`,
+      );
+      return;
+    }
+
+    try {
+      setStartingWorkshop(true);
+
+      const result = await appointmentService.startIntervention(
+        nextAppointment.id,
+      );
+
+      toast.success(
+        'Le v\u00e9hicule a \u00e9t\u00e9 envoy\u00e9 \u00e0 l\u2019atelier.',
+      );
+
+      const interventionId = result?.intervention?.id;
+
+      if (interventionId) {
+        router.push(`/garage/intervention/${interventionId}`);
+        return;
+      }
+
+      await loadVehicle();
+    } catch (error: any) {
+      toast.error(
+        error?.response?.data?.message ||
+          error?.message ||
+          'Impossible de d\u00e9marrer l\u2019intervention.',
+      );
+    } finally {
+      setStartingWorkshop(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!vehicle) {
@@ -425,13 +470,14 @@ export default function VehicleDetailPage() {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() =>
-                  router.push(
-                    `/garage/intervention/new?clientId=${clientId || ''}&vehicleId=${vehicle.id}`,
-                  )
-                }
+                disabled={startingWorkshop}
+                onClick={handleStartWorkshop}
               >
-                Ajouter une intervention
+                {startingWorkshop
+                  ? 'D\u00e9marrage de l\u2019atelier...'
+                  : nextAppointment
+                    ? 'D\u00e9marrer l\u2019intervention'
+                    : 'Planifier une intervention'}
               </Button>
             </div>
           </Card>
