@@ -8,10 +8,15 @@ import {
   Patch,
   Post,
   Query,
-   Req,
+  Req,
+  UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { AppointmentsService } from './appointments.service';
 
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('appointments')
 export class AppointmentController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
@@ -62,18 +67,16 @@ export class AppointmentController {
       req.user?.workspaceId ||
       req.user?.workspace_id ||
       headerWorkspaceId ||
-      req.headers?.['x-workspace-id'] ||
-      dto.workspaceId;
+      req.headers?.['x-workspace-id'];
 
     if (!workspaceId) {
-      throw new Error('Workspace ID missing');
+      throw new BadRequestException('Workspace ID missing');
     }
 
     const userId =
       req.user?.id ||
       req.user?.userId ||
       req.user?.sub ||
-      dto.user_id ||
       null;
 
     return this.appointmentsService.create(workspaceId, userId, dto);

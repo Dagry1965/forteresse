@@ -28,11 +28,6 @@ export class AppointmentsService {
   // ==================== MÉTHODES PUBLIQUES ====================
 
   async create(workspaceId: string, userId: string, dto: CreateAppointmentDto) {
-workspaceId =
-      workspaceId ||
-      (dto as any).workspaceId ||
-      (dto as any).workspace_id;
-
     if (!workspaceId) {
       throw new BadRequestException('Workspace ID missing');
     }
