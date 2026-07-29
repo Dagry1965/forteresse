@@ -29,13 +29,13 @@ type VehicleDetails = Vehicle & {
 
 function formatDate(value?: string | Date | null) {
   if (!value) {
-    return '?';
+    return '—';
   }
 
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return '?';
+    return '—';
   }
 
   return date.toLocaleDateString('fr-FR', {
@@ -47,7 +47,7 @@ function formatDate(value?: string | Date | null) {
 
 function formatMileage(value?: number | null) {
   if (value === null || value === undefined) {
-    return '?';
+    return '—';
   }
 
   return `${value.toLocaleString('fr-FR')} km`;
@@ -56,20 +56,20 @@ function formatMileage(value?: number | null) {
 function statusLabel(status?: string) {
   const labels: Record<string, string> = {
     DISPONIBLE: 'Disponible',
-    EN_REPARATION: 'En r?paration',
-    EN_ATTENTE_PIECES: 'En attente de pi?ces',
+    EN_REPARATION: 'En réparation',
+    EN_ATTENTE_PIECES: 'En attente de pièces',
     VENDU: 'Vendu',
     HORS_SERVICE: 'Hors service',
     PENDING: 'En attente',
-    CONFIRMED: 'Confirm?',
-    COMPLETED: 'Termin?',
-    CANCELLED: 'Annul?',
-    RECEIVED: 'Re?u',
+    CONFIRMED: 'Confirmé',
+    COMPLETED: 'Terminé',
+    CANCELLED: 'Annulé',
+    RECEIVED: 'Reçu',
     DIAGNOSIS: 'Diagnostic',
     IN_PROGRESS: 'En cours',
   };
 
-  return status ? labels[status] || status : '?';
+  return status ? labels[status] || status : '—';
 }
 
 export default function VehicleDetailPage() {
@@ -96,13 +96,13 @@ export default function VehicleDetailPage() {
       setVehicle(data as VehicleDetails);
     } catch (error: any) {
       console.error(
-        'Erreur chargement v?hicule',
+        'Erreur chargement véhicule',
         error,
       );
 
       toast.error(
         error?.message ||
-          'Impossible de charger le v?hicule',
+          'Impossible de charger le véhicule',
       );
     } finally {
       setLoading(false);
@@ -202,7 +202,7 @@ export default function VehicleDetailPage() {
     }
 
     const confirmed = window.confirm(
-      `Supprimer le v?hicule "${vehicle.registration}" ?`,
+      `Supprimer le véhicule "${vehicle.registration}" ?`,
     );
 
     if (!confirmed) {
@@ -215,7 +215,7 @@ export default function VehicleDetailPage() {
       await vehicleService.delete(vehicle.id);
 
       toast.success(
-        'V?hicule supprim? avec succ?s',
+        'Véhicule supprimé avec succès',
       );
 
       router.push('/vehicles');
@@ -232,7 +232,7 @@ export default function VehicleDetailPage() {
   if (loading) {
     return (
       <div className="p-10 text-slate-500">
-        Chargement du v?hicule...
+        Chargement du véhicule...
       </div>
     );
   }
@@ -241,14 +241,14 @@ export default function VehicleDetailPage() {
     return (
       <div className="p-10 text-center">
         <h1 className="text-2xl font-bold text-red-600">
-          V?hicule introuvable
+          Véhicule introuvable
         </h1>
 
         <Button
           className="mt-4"
           onClick={() => router.push('/vehicles')}
         >
-          Retour ? la liste
+          Retour à la liste
         </Button>
       </div>
     );
@@ -262,7 +262,7 @@ export default function VehicleDetailPage() {
   const clientName =
     vehicle.client?.company_name ||
     vehicle.client?.name ||
-    'Client non renseign?';
+    'Client non renseigné';
 
   return (
     <div className="p-6 md:p-10 max-w-7xl mx-auto space-y-8">
@@ -286,7 +286,7 @@ export default function VehicleDetailPage() {
             <p className="text-slate-500 mt-1">
               {vehicle.brand} {vehicle.model}
               {vehicle.year
-                ? ` ? ${vehicle.year}`
+                ? ` • ${vehicle.year}`
                 : ''}
             </p>
           </div>
@@ -344,7 +344,7 @@ export default function VehicleDetailPage() {
         />
 
         <SummaryCard
-          title="Kilom?trage"
+          title="Kilométrage"
           value={formatMileage(vehicle.mileage)}
           icon={<Hash size={22} />}
         />
@@ -353,7 +353,7 @@ export default function VehicleDetailPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="p-6 rounded-2xl xl:col-span-2">
           <h2 className="text-xl font-black mb-6">
-            Informations du v?hicule
+            Informations du véhicule
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-5">
@@ -368,21 +368,21 @@ export default function VehicleDetailPage() {
             />
 
             <InfoRow
-              label="Mod?le"
+              label="Modèle"
               value={vehicle.model}
             />
 
             <InfoRow
-              label="Ann?e"
+              label="Année"
               value={
                 vehicle.year
                   ? String(vehicle.year)
-                  : '?'
+                  : '—'
               }
             />
 
             <InfoRow
-              label="Kilom?trage"
+              label="Kilométrage"
               value={formatMileage(vehicle.mileage)}
             />
 
@@ -392,28 +392,28 @@ export default function VehicleDetailPage() {
             />
 
             <InfoRow
-              label="Num?ro de flotte"
-              value={vehicle.fleet_number || '?'}
+              label="Numéro de flotte"
+              value={vehicle.fleet_number || '—'}
             />
 
             <InfoRow
               label="VIN"
-              value={vehicle.vin || '?'}
+              value={vehicle.vin || '—'}
             />
 
             <InfoRow
               label="Conducteur habituel"
-              value={vehicle.usual_driver || '?'}
+              value={vehicle.usual_driver || '—'}
             />
 
             <InfoRow
-              label="Centre de co?t"
-              value={vehicle.cost_center || '?'}
+              label="Centre de coût"
+              value={vehicle.cost_center || '—'}
             />
 
             <InfoRow
-              label="Service / d?partement"
-              value={vehicle.service_name || '?'}
+              label="Service / département"
+              value={vehicle.service_name || '—'}
             />
           </div>
         </Card>
@@ -421,7 +421,7 @@ export default function VehicleDetailPage() {
         <div className="space-y-6">
           <Card className="p-6 rounded-2xl">
             <h2 className="text-lg font-black mb-5">
-              Client propri?taire
+              Client propriétaire
             </h2>
 
             <button
@@ -501,7 +501,7 @@ export default function VehicleDetailPage() {
                         hour: '2-digit',
                         minute: '2-digit',
                       })
-                    : 'Horaire non renseign?'}
+                    : 'Horaire non renseigné'}
                 </p>
 
                 <p className="text-xs font-bold text-blue-600 mt-2">
@@ -509,7 +509,7 @@ export default function VehicleDetailPage() {
                 </p>
               </div>
             ) : (
-              <EmptyState text="Aucun rendez-vous ? venir." />
+              <EmptyState text="Aucun rendez-vous à venir." />
             )}
           </Card>
         </div>
@@ -545,7 +545,7 @@ export default function VehicleDetailPage() {
                                 minute: '2-digit',
                               },
                             )
-                          : 'Horaire non renseign?'}
+                          : 'Horaire non renseigné'}
                       </p>
                     </div>
 
@@ -560,7 +560,7 @@ export default function VehicleDetailPage() {
             )}
 
             {appointments.length === 0 && (
-              <EmptyState text="Aucun rendez-vous enregistr?." />
+              <EmptyState text="Aucun rendez-vous enregistré." />
             )}
           </div>
         </Card>
@@ -600,7 +600,7 @@ export default function VehicleDetailPage() {
                           {formatDate(
                             repairCase.created_at,
                           )}
-                          {' ? '}
+                          {' • '}
                           {repairCase.interventions?.length ||
                             0}{' '}
                           intervention(s)
