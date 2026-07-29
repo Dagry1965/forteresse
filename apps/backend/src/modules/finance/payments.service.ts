@@ -1,154 +1,399 @@
-﻿import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import {
   INVOICE_STATUS,
   PAYMENT_SCHEDULE_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
+type RecordInvoicePaymentInput = {
+  invoice_id: string;
+  amount: number;
+  method: string;
+  user_id?: string;
+  reference?: string;
+  notes?: string;
+  paid_at?: Date;
+};
+
+type RecordSchedulePaymentInput = {
+  schedule_id: string;
+  method: string;
+  user_id?: string;
+  reference?: string;
+  notes?: string;
+  paid_at?: Date;
+};
+
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Génère un échéancier pour une facture.
-   * Fonctionne pour un particulier (3 fois sans frais)
-   * ou une flotte (1 échéance à 30 jours).
-   */
-  async createPaymentSchedule(workspaceId: string, dto: any) {
-    const invoice = await this.prisma.invoice.findFirst({
-      where: { id: dto.invoice_id, workspace_id: workspaceId }
+  private async resolveUserId(
+    tx: Prisma.TransactionClient,
+    workspaceId: string,
+    requestedUserId?: string,
+  ): Promise<string> {
+    if (requestedUserId) {
+      const requestedUser = await tx.user.findFirst({
+        where: {
+          id: requestedUserId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        select: { id: true },
+      });
+
+      if (requestedUser) {
+        return requestedUser.id;
+      }
+    }
+
+    const fallbackUser = await tx.user.findFirst({
+      where: {
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      orderBy: { created_at: 'asc' },
+      select: { id: true },
     });
 
-    if (!invoice) throw new NotFoundException("Facture non trouvée");
+    if (!fallbackUser) {
+      throw new BadRequestException(
+        'Aucun utilisateur valide pour enregistrer l’encaissement.',
+      );
+    }
 
-    const amountPerInstallment = invoice.total / dto.installments;
-    const schedules = [];
+    return fallbackUser.id;
+  }
 
-    for (let i = 0; i < dto.installments; i++) {
-      const dueDate = new Date();
-      // On décale la date : i=0 (aujourd'hui), i=1 (+30 jours), etc.
-      dueDate.setDate(dueDate.getDate() + (i * dto.interval_days));
-
-      schedules.push({
-        invoice_id: dto.invoice_id,
+  private async createPaymentInTransaction(
+    tx: Prisma.TransactionClient,
+    workspaceId: string,
+    input: RecordInvoicePaymentInput,
+  ) {
+    const invoice = await tx.invoice.findFirst({
+      where: {
+        id: input.invoice_id,
         workspace_id: workspaceId,
-        amount: Number(amountPerInstallment.toFixed(2)),
-        due_date: dueDate,
-        status: PAYMENT_SCHEDULE_STATUS.PENDING
+        deleted_at: null,
+      },
+      include: {
+        payments: {
+          where: { deleted_at: null },
+        },
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Facture introuvable.');
+    }
+
+    if (!invoice.client_id) {
+      throw new BadRequestException(
+        'La facture ne possède aucun client.',
+      );
+    }
+
+    const amount = Number(input.amount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException(
+        'Le montant doit être strictement supérieur à zéro.',
+      );
+    }
+
+    const invoiceTotal = Number(invoice.total);
+    const alreadyPaid = invoice.payments.reduce(
+      (sum, payment) => sum + Number(payment.amount),
+      0,
+    );
+    const remainingBeforePayment = Math.max(
+      invoiceTotal - alreadyPaid,
+      0,
+    );
+
+    if (remainingBeforePayment <= 0) {
+      throw new BadRequestException(
+        'Cette facture est déjà entièrement payée.',
+      );
+    }
+
+    if (amount > remainingBeforePayment + 0.000001) {
+      throw new BadRequestException(
+        `Le montant dépasse le solde restant de ${remainingBeforePayment.toFixed(2)}.`,
+      );
+    }
+
+    const finalUserId = await this.resolveUserId(
+      tx,
+      workspaceId,
+      input.user_id,
+    );
+
+    const payment = await tx.payment.create({
+      data: {
+        workspace_id: workspaceId,
+        invoice_id: invoice.id,
+        client_id: invoice.client_id,
+        user_id: finalUserId,
+        amount,
+        method: input.method?.trim() || 'especes',
+        paid_at: input.paid_at ?? new Date(),
+        reference: input.reference?.trim() || null,
+        notes: input.notes?.trim() || null,
+      },
+    });
+
+    const paidTotal = alreadyPaid + amount;
+    const remaining = Math.max(invoiceTotal - paidTotal, 0);
+    const status =
+      remaining <= 0.000001
+        ? INVOICE_STATUS.PAID
+        : INVOICE_STATUS.PARTIALLY_PAID;
+
+    await tx.invoice.update({
+      where: { id: invoice.id },
+      data: {
+        status,
+        updated_at: new Date(),
+      },
+    });
+
+    if (status === INVOICE_STATUS.PAID) {
+      await tx.paymentSchedule.updateMany({
+        where: {
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+          status: PAYMENT_SCHEDULE_STATUS.PENDING,
+        },
+        data: {
+          status: PAYMENT_SCHEDULE_STATUS.PAID,
+        },
       });
     }
 
-    return this.prisma.paymentSchedule.createMany({
-      data: schedules
-    });
+    return {
+      payment,
+      invoice_id: invoice.id,
+      invoice_total: invoiceTotal,
+      paid_total: paidTotal,
+      remaining,
+      status,
+    };
   }
 
-  /**
-   * RÉCUPÉRATION DES RAPPELS (Le cœur du réacteur)
-   * Liste toutes les échéances dépassées non payées.
-   */
-// apps/backend/src/modules/finance/payments.service.ts
+  async recordInvoicePayment(
+    workspaceId: string,
+    input: RecordInvoicePaymentInput,
+  ) {
+    if (!workspaceId) {
+      throw new BadRequestException(
+        'Le workspace est obligatoire.',
+      );
+    }
 
-async getOverdueSchedules(workspaceId: string) {
-  const today = new Date();
+    return this.prisma.$transaction((tx) =>
+      this.createPaymentInTransaction(
+        tx,
+        workspaceId,
+        input,
+      ),
+    );
+  }
 
-  return this.prisma.paymentSchedule.findMany({
-    where: {
-      workspace_id: workspaceId,
-      // Cette ligne est cruciale : on ne veut que ce qui n'est pas payé
-      status: PAYMENT_SCHEDULE_STATUS.PENDING,
-      due_date: { lt: today }
+  async createPaymentSchedule(
+    workspaceId: string,
+    dto: {
+      invoice_id: string;
+      installments: number;
+      interval_days: number;
     },
-    include: {
-      invoice: {
-        include: {
-          client: true,
-          appointment: { include: { vehicle: true } }
-        }
-      }
-    },
-    orderBy: { due_date: 'asc' }
-  });
-}
+  ) {
+    const installments = Number(dto.installments);
+    const intervalDays = Number(dto.interval_days);
 
+    if (
+      !Number.isInteger(installments)
+      || installments <= 0
+    ) {
+      throw new BadRequestException(
+        'Le nombre d’échéances doit être un entier positif.',
+      );
+    }
 
-// DANS LE BACKEND
-  async recordPayment(workspaceId: string, dto: { schedule_id: string, method: string, user_id?: string }) {
-    // Liste des statuts considérés comme "En attente" pour la flexibilité
-    const pendingStatus = PAYMENT_SCHEDULE_STATUS.PENDING;
+    if (
+      !Number.isInteger(intervalDays)
+      || intervalDays < 0
+    ) {
+      throw new BadRequestException(
+        'L’intervalle entre les échéances est invalide.',
+      );
+    }
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Récupérer l'échéance (PaymentSchedule)
-      const schedule = await tx.paymentSchedule.findUnique({
-        where: { id: dto.schedule_id },
-        include: { invoice: true }
-      });
-
-      if (!schedule) throw new NotFoundException("Échéance introuvable");
-
-      // 2. SÉCURITÉ UTILISATEUR (éviter l'erreur 500)
-      let finalUserId = dto.user_id;
-      const userExists = await tx.user.findFirst({ where: { id: finalUserId } });
-
-      if (!userExists) {
-        // Si l'utilisateur envoyé n'existe pas, on prend le premier du workspace
-        const fallbackUser = await tx.user.findFirst({ where: { workspace_id: workspaceId } });
-        if (!fallbackUser) throw new BadRequestException("Aucun utilisateur valide pour l'encaissement.");
-        finalUserId = fallbackUser.id;
-      }
-
-      // 3. CREER LE PAIEMENT DANS LA SOURCE UNIQUE Payment
-      if (!schedule.invoice.client_id) {
-        throw new BadRequestException(
-          'La facture ne possede aucun client.',
-        );
-      }
-
-      if (!finalUserId) {
-        throw new BadRequestException(
-          'Aucun utilisateur valide pour l\u2019encaissement.',
-        );
-      }
-
-      const payment = await tx.payment.create({
-        data: {
+      const invoice = await tx.invoice.findFirst({
+        where: {
+          id: dto.invoice_id,
           workspace_id: workspaceId,
-          invoice_id: schedule.invoice_id,
-          client_id: schedule.invoice.client_id,
-          user_id: finalUserId,
-          amount: schedule.amount,
-          method: dto.method || 'CASH',
+          deleted_at: null,
+        },
+        include: {
+          payments: {
+            where: { deleted_at: null },
+          },
+          paymentSchedules: true,
         },
       });
 
-      // 4. MARQUER L'ÉCHÉANCE COMME PAYÉE
-      // On utilise le format majuscule par convention, mais le code est prêt pour tout
-      await tx.paymentSchedule.update({
-        where: { id: dto.schedule_id },
-        data: { status: PAYMENT_SCHEDULE_STATUS.PAID }
-      });
+      if (!invoice) {
+        throw new NotFoundException(
+          'Facture introuvable.',
+        );
+      }
 
-      // 5. VÉRIFICATION DU SOLDE DE LA FACTURE
-      // On compte combien il reste d'échéances en attente (majuscule ou minuscule)
-      const remainingSchedules = await tx.paymentSchedule.count({
-        where: {
-          invoice_id: schedule.invoice_id,
-          status: pendingStatus // Gère 'pending' ET 'PENDING'
-        }
-      });
+      if (invoice.paymentSchedules.length > 0) {
+        throw new BadRequestException(
+          'Un échéancier existe déjà pour cette facture.',
+        );
+      }
 
-      // 6. SI TOUT EST PAYÉ, ON SOLDE LA FACTURE
-      if (remainingSchedules === 0) {
-        await tx.invoice.update({
-          where: { id: schedule.invoice_id },
-          data: { status: INVOICE_STATUS.PAID }
+      const alreadyPaid = invoice.payments.reduce(
+        (sum, payment) => sum + Number(payment.amount),
+        0,
+      );
+      const remaining = Math.max(
+        Number(invoice.total) - alreadyPaid,
+        0,
+      );
+
+      if (remaining <= 0) {
+        throw new BadRequestException(
+          'Cette facture est déjà payée.',
+        );
+      }
+
+      const baseAmount = Number(
+        (remaining / installments).toFixed(2),
+      );
+      const schedules = [];
+      let allocated = 0;
+
+      for (let index = 0; index < installments; index += 1) {
+        const dueDate = new Date();
+        dueDate.setDate(
+          dueDate.getDate() + index * intervalDays,
+        );
+
+        const amount =
+          index === installments - 1
+            ? Number((remaining - allocated).toFixed(2))
+            : baseAmount;
+
+        allocated += amount;
+
+        schedules.push({
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+          amount,
+          due_date: dueDate,
+          status: PAYMENT_SCHEDULE_STATUS.PENDING,
         });
       }
 
-      console.log(`[PAYMENT SUCCESS] Échéance ${dto.schedule_id} soldée par l'user ${finalUserId}`);
-      return payment;
+      await tx.paymentSchedule.createMany({
+        data: schedules,
+      });
+
+      return tx.paymentSchedule.findMany({
+        where: {
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+        },
+        orderBy: { due_date: 'asc' },
+      });
+    });
+  }
+
+  async getOverdueSchedules(workspaceId: string) {
+    return this.prisma.paymentSchedule.findMany({
+      where: {
+        workspace_id: workspaceId,
+        status: PAYMENT_SCHEDULE_STATUS.PENDING,
+        due_date: { lt: new Date() },
+      },
+      include: {
+        invoice: {
+          include: {
+            client: true,
+            appointment: {
+              include: { vehicle: true },
+            },
+          },
+        },
+      },
+      orderBy: { due_date: 'asc' },
+    });
+  }
+
+  async recordPayment(
+    workspaceId: string,
+    dto: RecordSchedulePaymentInput,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const schedule = await tx.paymentSchedule.findFirst({
+        where: {
+          id: dto.schedule_id,
+          workspace_id: workspaceId,
+        },
+        include: {
+          invoice: true,
+        },
+      });
+
+      if (!schedule) {
+        throw new NotFoundException(
+          'Échéance introuvable.',
+        );
+      }
+
+      if (
+        schedule.status === PAYMENT_SCHEDULE_STATUS.PAID
+      ) {
+        throw new BadRequestException(
+          'Cette échéance est déjà payée.',
+        );
+      }
+
+      const result = await this.createPaymentInTransaction(
+        tx,
+        workspaceId,
+        {
+          invoice_id: schedule.invoice_id,
+          amount: schedule.amount,
+          method: dto.method,
+          user_id: dto.user_id,
+          reference: dto.reference,
+          notes: dto.notes,
+          paid_at: dto.paid_at,
+        },
+      );
+
+      await tx.paymentSchedule.update({
+        where: { id: schedule.id },
+        data: {
+          status: PAYMENT_SCHEDULE_STATUS.PAID,
+        },
+      });
+
+      return {
+        ...result,
+        schedule_id: schedule.id,
+      };
     });
   }
 }
-
-

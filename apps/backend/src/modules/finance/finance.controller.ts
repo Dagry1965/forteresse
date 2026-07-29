@@ -45,6 +45,8 @@ export class FinanceController {
     @Body('amount') amount: number,
     @Body('method') method: string,
     @Body('user_id') userId?: string,
+    @Body('reference') reference?: string,
+    @Body('notes') notes?: string,
   ) {
     return this.financeService.registerPayment(
       workspaceId,
@@ -52,6 +54,8 @@ export class FinanceController {
       amount,
       method,
       userId,
+      reference,
+      notes,
     );
   }
 

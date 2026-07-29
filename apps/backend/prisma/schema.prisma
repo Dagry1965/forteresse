@@ -330,6 +330,9 @@ model Payment {
   id         String    @id @default(cuid())
   amount     Float
   method     String
+  paid_at    DateTime  @default(now())
+  reference  String?
+  notes      String?
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
   deleted_at DateTime?
@@ -348,6 +351,8 @@ model Payment {
 
   @@index([workspace_id])
   @@index([invoice_id])
+  @@index([client_id])
+  @@index([paid_at])
 }
 
 model Intervention {

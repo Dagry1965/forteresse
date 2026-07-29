@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { PaymentsService } from './payments.service';
 import {
   INVOICE_STATUS,
   INVOICE_TYPE,
@@ -7,7 +8,10 @@ import {
 
 @Injectable()
 export class FinanceService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly paymentsService: PaymentsService,
+  ) {}
 
   // ---------------------------------------------------------
   // Helpers de normalisation (majuscules)
@@ -161,94 +165,20 @@ export class FinanceService {
     amount: number,
     method: string,
     userId?: string,
+    reference?: string,
+    notes?: string,
   ) {
-    return this.prisma.$transaction(async (tx) => {
-      const invoice = await tx.invoice.findFirst({
-        where: {
-          id: invoiceId,
-          workspace_id: workspaceId,
-        },
-        include: {
-          payments: true,
-        },
-      });
-
-      if (!invoice) {
-        throw new BadRequestException('Facture introuvable');
-      }
-
-      if (!amount || amount <= 0) {
-        throw new BadRequestException('Le montant doit ?tre sup?rieur ? z?ro');
-      }
-
-      if (invoice.status === INVOICE_STATUS.PAID) {
-        throw new BadRequestException('Cette facture est d?j? pay?e');
-      }
-
-      const alreadyPaid = invoice.payments.reduce(
-        (sum, payment) => sum + Number(payment.amount),
-        0,
-      );
-
-      const remaining = Number(invoice.total) - alreadyPaid;
-
-      if (amount > remaining) {
-        throw new BadRequestException(
-          `Le montant d?passe le solde restant de ${remaining.toFixed(2)} ?`,
-        );
-      }
-
-      let finalUserId = userId;
-
-      if (!finalUserId) {
-        const fallbackUser = await tx.user.findFirst({
-          where: {
-            workspace_id: workspaceId,
-          },
-        });
-
-        if (!fallbackUser) {
-          throw new BadRequestException(
-            "Aucun utilisateur disponible pour enregistrer l'encaissement",
-          );
-        }
-
-        finalUserId = fallbackUser.id;
-      }
-
-      const payment = await tx.payment.create({
-        data: {
-          amount,
-          invoice_id: invoice.id,
-          method: method || 'especes',
-          workspace_id: workspaceId,
-          client_id: invoice.client_id!,
-          user_id: finalUserId,
-        },
-      });
-
-      const newPaidTotal = alreadyPaid + amount;
-      const newStatus =
-        newPaidTotal >= Number(invoice.total)
-          ? INVOICE_STATUS.PAID
-          : INVOICE_STATUS.PARTIALLY_PAID;
-
-      await tx.invoice.update({
-        where: {
-          id: invoice.id,
-        },
-        data: {
-          status: newStatus,
-          updated_at: new Date(),
-        },
-      });
-
-      return {
-        payment,
-        status: newStatus,
-        remaining: Math.max(Number(invoice.total) - newPaidTotal, 0),
-      };
-    });
+    return this.paymentsService.recordInvoicePayment(
+      workspaceId,
+      {
+        invoice_id: invoiceId,
+        amount,
+        method,
+        user_id: userId,
+        reference,
+        notes,
+      },
+    );
   }
 
   // ---------------------------------------------------------
