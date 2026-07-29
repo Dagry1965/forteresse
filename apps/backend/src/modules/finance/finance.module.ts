@@ -11,10 +11,11 @@ import { PaymentsService } from './payments.service';
 import { CashierController } from './cashier.controller';
 import { CashierService } from './cashier.service';
 
-import { PrismaService } from '../../core/prisma/prisma.service';
+import { PrismaModule } from '../../core/prisma/prisma.module';
+import { AuthModule } from '../../core/auth/auth.module';
 
 @Module({
-  imports: [], // <-- Bonne pratique, même vide
+  imports: [PrismaModule, AuthModule],
   controllers: [
     FinanceController,
     ReportsController,
@@ -26,7 +27,6 @@ import { PrismaService } from '../../core/prisma/prisma.service';
     ReportsService,
     PaymentsService,
     CashierService,
-    PrismaService,
   ],
   exports: [
     FinanceService,

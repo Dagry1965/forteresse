@@ -1,7 +1,16 @@
-import { Controller, Get, Query, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CashierService } from './cashier.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('finance/cashier')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CashierController {
   constructor(private readonly cashierService: CashierService) {}
 

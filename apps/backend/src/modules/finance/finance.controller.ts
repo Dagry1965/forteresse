@@ -5,18 +5,23 @@ import {
   Param,
   Query,
   Body,
-  Headers
+  Headers,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('finance')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
   @Get('proforma/:id')
   getProforma(
     @Param('id') id: string,
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
   ) {
     return this.financeService.getProforma(id, workspaceId);
   }
@@ -24,16 +29,21 @@ export class FinanceController {
   @Post('proforma/:id/generate-invoice')
   generateInvoice(
     @Param('id') id: string,
-    @Query('workspaceId') workspaceId: string,
-    @Query('userId') userId: string,
+    @Headers('x-workspace-id') workspaceId: string,
+    @Req() req: any,
   ) {
-    return this.financeService.generateInvoiceFromProforma(id, workspaceId, userId);
+    const userId = req.user?.id || req.user?.sub;
+    return this.financeService.generateInvoiceFromProforma(
+      id,
+      workspaceId,
+      userId,
+    );
   }
 
   @Get('invoice/:id')
   getInvoice(
     @Param('id') id: string,
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
   ) {
     return this.financeService.getInvoice(id, workspaceId);
   }
@@ -44,7 +54,7 @@ export class FinanceController {
     @Headers('x-workspace-id') workspaceId: string,
     @Body('amount') amount: number,
     @Body('method') method: string,
-    @Body('user_id') userId?: string,
+    @Req() req: any,
     @Body('reference') reference?: string,
     @Body('notes') notes?: string,
   ) {
@@ -53,7 +63,7 @@ export class FinanceController {
       id,
       amount,
       method,
-      userId,
+      req.user?.id || req.user?.sub,
       reference,
       notes,
     );

@@ -1,8 +1,17 @@
-﻿import { Controller, Get, Query,Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { ReportsService } from './reports.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('finance/reports')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ReportsController {
    constructor(
     private readonly reportsService: ReportsService,
@@ -14,7 +23,7 @@ export class ReportsController {
   // ---------------------------------------------------------
   @Get('payments')
   async paymentsReport(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Query('from') from: string,
     @Query('to') to: string,
   ) {
@@ -44,7 +53,7 @@ export class ReportsController {
   // ---------------------------------------------------------
   @Get('revenue')
   async revenueReport(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Query('from') from: string,
     @Query('to') to: string,
   ) {
