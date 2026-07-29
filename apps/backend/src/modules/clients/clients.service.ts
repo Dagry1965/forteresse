@@ -81,10 +81,16 @@ export class ClientsService {
     return client;
   }
 
-  async create(dto: CreateClientDto) {
+  async create(workspaceId: string, dto: CreateClientDto) {
+    if (!workspaceId) {
+      throw new BadRequestException(
+        'workspaceId est requis',
+      );
+    }
+
     return this.prisma.client.create({
       data: {
-        workspace_id: dto.workspaceId,
+        workspace_id: workspaceId,
         name: dto.name.trim(),
         phone: dto.phone?.trim() ?? '',
         email: dto.email?.trim() ?? '',

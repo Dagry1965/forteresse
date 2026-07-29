@@ -25,7 +25,7 @@ import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
-  @Get(':workspaceId')
+  @Get()
   findAll(
     @Headers('x-workspace-id') workspaceId: string,
   ) {
@@ -41,8 +41,11 @@ export class ClientsController {
   }
 
   @Post()
-  create(@Body() dto: CreateClientDto) {
-    return this.clientsService.create(dto);
+  create(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: CreateClientDto,
+  ) {
+    return this.clientsService.create(workspaceId, dto);
   }
 
   @Patch(':id')
