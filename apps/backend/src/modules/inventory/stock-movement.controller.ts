@@ -4,11 +4,15 @@ import {
   Get,
   Headers,
   Param,
+  UseGuards,
 } from '@nestjs/common';
 
 import { StockMovementService } from './stock-movement.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('inventory/movements')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class StockMovementController {
   constructor(
     private readonly movementService: StockMovementService,

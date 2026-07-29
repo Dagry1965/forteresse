@@ -147,13 +147,24 @@ export class StockService {
   }
 
 async generateAutoOrder(workspaceId: string, itemId: string) {
-  const item = await this.prisma.stockItem.findUnique({
-    where: { id: itemId },
-    include: { supplier: true }
+  const item = await this.prisma.stockItem.findFirst({
+    where: {
+      id: itemId,
+      workspace_id: workspaceId,
+      deleted_at: null,
+    },
+    include: { supplier: true },
   });
 
-  if (!item || !item.supplier_id) {
-    throw new Error("Article ou fournisseur introuvable");
+  if (
+    !item ||
+    !item.supplier_id ||
+    !item.supplier ||
+    item.supplier.workspace_id !== workspaceId
+  ) {
+    throw new NotFoundException(
+      'Article ou fournisseur introuvable dans ce workspace.',
+    );
   }
 
   // Chercher ou créer un brouillon de commande
