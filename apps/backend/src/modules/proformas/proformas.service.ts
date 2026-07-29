@@ -90,17 +90,29 @@ export class ProformasService {
           }
         });
 
-        await tx.case.update({
-          where: { id: proforma.case_id },
+        const updatedCase = await tx.case.updateMany({
+          where: {
+            id: proforma.case_id,
+            workspace_id: workspaceId,
+          },
           data: {
             status: CASE_STATUS.IN_PROGRESS,
-            updated_at: new Date()
-          }
+            updated_at: new Date(),
+          },
         });
+
+        if (updatedCase.count === 0) {
+          throw new NotFoundException(
+            'Dossier introuvable dans ce workspace',
+          );
+        }
       }
 
-      return tx.proforma.findUnique({
-        where: { id: proformaId }
+      return tx.proforma.findFirst({
+        where: {
+          id: proformaId,
+          workspace_id: workspaceId,
+        },
       });
     });
   }
@@ -130,12 +142,12 @@ export class ProformasService {
       });
 
       if (existingInvoice) {
-        throw new BadRequestException('Ce devis a d?j? ?t? factur?');
+        throw new BadRequestException('Ce devis a d\u00e9j\u00e0 \u00e9t\u00e9 factur\u00e9');
       }
 
       if (!proforma.case_id || proforma.case?.status !== CASE_STATUS.COMPLETED) {
         throw new BadRequestException(
-          'Les travaux doivent ?tre termin?s avant la facturation'
+          'Les travaux doivent \u00eatre termin\u00e9s avant la facturation'
         );
       }
 
@@ -196,15 +208,22 @@ export class ProformasService {
         }
       });
 
-      await tx.case.update({
+      const invoicedCase = await tx.case.updateMany({
         where: {
-          id: proforma.case_id
+          id: proforma.case_id,
+          workspace_id: workspaceId,
         },
         data: {
           status: CASE_STATUS.INVOICED,
-          updated_at: new Date()
-        }
+          updated_at: new Date(),
+        },
       });
+
+      if (invoicedCase.count === 0) {
+        throw new NotFoundException(
+          'Dossier introuvable dans ce workspace',
+        );
+      }
 
       return invoice;
     });
