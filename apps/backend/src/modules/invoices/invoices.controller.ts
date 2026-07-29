@@ -1,7 +1,18 @@
-import { Controller, Get, Post, Body, Headers, Param } from '@nestjs/common'; 
-import { InvoicesService } from './invoices.service'; // Utilisez InvoicesService au lieu de FinanceService
+import {
+  Body,
+  Controller,
+  Get,
+  Headers,
+  Param,
+  Post,
+  UseGuards,
+} from '@nestjs/common'; 
+import { InvoicesService } from './invoices.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard'; // Utilisez InvoicesService au lieu de FinanceService
 
 @Controller('invoices')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class InvoicesController {
   // Injectez le bon service qui contient la méthode findUnpaidInvoices
   constructor(private readonly invoicesService: InvoicesService) {}

@@ -107,7 +107,8 @@ export class InvoicesService {
       const appointments = await tx.appointment.findMany({
         where: {
           id: { in: dto.appointment_ids },
-          workspace_id: workspaceId
+          workspace_id: workspaceId,
+          client_id: dto.client_id
         },
         include: { 
           vehicle: true,
@@ -117,9 +118,12 @@ export class InvoicesService {
         }
       });
 
-      if (appointments.length === 0) throw new BadRequestException("Aucun dossier trouvé.");
-
-      // 2. Calculer le total global
+      if (appointments.length !== dto.appointment_ids.length) {
+        throw new BadRequestException(
+          'Un ou plusieurs rendez-vous sont introuvables pour ce client et ce workspace.',
+        );
+      }
+// 2. Calculer le total global
       const totalAmount = appointments.reduce((sum, appt) => {
         const amount = appt.proformas?.[0]?.total || 0;
         return sum + Number(amount);
