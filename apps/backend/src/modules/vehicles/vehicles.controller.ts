@@ -7,10 +7,13 @@ import {
   Patch,
   Post,
   Query,
+  Req,
+  ForbiddenException,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('vehicles')
 export class VehiclesController {
@@ -48,9 +51,21 @@ export class VehiclesController {
     return this.vehiclesService.restore(id);
   }
 
-  // Hard Delete (protégé plus tard)
+  // Suppression définitive réservée aux administrateurs
   @Delete(':id/hard')
-  hardDelete(@Param('id') id: string) {
+  hardDelete(@Param('id') id: string, @Req() req: any) {
+    const user = req.user;
+
+    const isAdmin =
+      user?.role === USER_ROLE.ADMIN ||
+      user?.roles?.includes(USER_ROLE.ADMIN);
+
+    if (!user || !isAdmin) {
+      throw new ForbiddenException(
+        'Accès réservé aux administrateurs',
+      );
+    }
+
     return this.vehiclesService.hardDelete(id);
   }
 }
