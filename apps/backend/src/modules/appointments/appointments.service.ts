@@ -599,82 +599,119 @@ workspaceId =
   /**
  * Bascule un Rendez-vous en Dossier (Case) + Intervention
  */
-async convertToIntervention(workspaceId: string, appointmentId: string) {
-  return this.prisma.$transaction(async (tx) => {
-    // 1. Vérifier si le RDV existe et appartient au workspace
-    const appointment = await tx.appointment.findFirst({
-      where: { id: appointmentId, workspace_id: workspaceId },
-      include: {
-        client: true,
-        vehicle: true,
-      },
-    });
-
-    if (!appointment) {
-      throw new NotFoundException('Rendez-vous introuvable');
+async convertToIntervention(
+    workspaceId: string,
+    appointmentId: string,
+  ) {
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId est requis.');
     }
 
-    // 2. Vérifier s'il existe déjà un Case pour ce client/véhicule
-const existingCase = await tx.case.findFirst({
-  where: {
-    workspace_id: workspaceId,
-    customer_id: appointment.client_id,
-    vehicle_id: appointment.vehicle_id,
-  },
-  include: { interventions: true },
-});
+    if (!appointmentId) {
+      throw new BadRequestException('appointmentId est requis.');
+    }
 
-if (existingCase && existingCase.interventions.length > 0) {
-  // Idempotent : on renvoie l'existant sans erreur
-  return {
-    appointment,
-    case: existingCase,
-    intervention: existingCase.interventions[0],
-  };
-}
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findFirst({
+        where: {
+          id: appointmentId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        include: {
+          client: true,
+          vehicle: true,
+        },
+      });
 
-    // 3. Créer ou réutiliser le Case
-const repairCase = existingCase ?? await tx.case.create({
-  data: {
-    workspace_id: workspaceId,
-    status: CASE_STATUS.RECEIVED,
-    // On mappe le client_id du RDV vers le customer_id du Dossier
-    customer_id: appointment.client_id, 
-    vehicle_id: appointment.vehicle_id,
-    // Titre ultra-clair : Date + Immatriculation
-    title: `Atelier - ${appointment.vehicle.registration} (${appointment.date.toLocaleDateString('fr-FR')})`,
-    description: `Dossier créé automatiquement depuis le RDV #${appointment.id}`,
-  },
-});
+      if (!appointment) {
+        throw new NotFoundException(
+          'Rendez-vous introuvable dans ce workspace.',
+        );
+      }
 
+      if (appointment.status === APPOINTMENT_STATUS.CANCELLED) {
+        throw new BadRequestException(
+          'Un rendez-vous annulé ne peut pas être envoyé à l’atelier.',
+        );
+      }
 
-    // 4. Mettre à jour le statut du rendez-vous
-    await tx.appointment.update({
-      where: { id: appointmentId },
-      data: { status: APPOINTMENT_STATUS.COMPLETED },
+      const existingCase = await tx.case.findFirst({
+        where: {
+          workspace_id: workspaceId,
+          appointment_id: appointment.id,
+        },
+        include: {
+          interventions: {
+            where: {
+              deleted_at: null,
+            },
+            orderBy: {
+              created_at: 'asc',
+            },
+          },
+        },
+      });
+
+      if (existingCase) {
+        const existingIntervention =
+          existingCase.interventions[0];
+
+        if (!existingIntervention) {
+          throw new ConflictException(
+            'Le dossier lié au rendez-vous existe sans intervention active.',
+          );
+        }
+
+        return {
+          appointment,
+          case: existingCase,
+          intervention: existingIntervention,
+          alreadyStarted: true,
+        };
+      }
+
+      const repairCase = await tx.case.create({
+        data: {
+          workspace_id: workspaceId,
+          appointment_id: appointment.id,
+          status: CASE_STATUS.RECEIVED,
+          customer_id: appointment.client_id,
+          vehicle_id: appointment.vehicle_id,
+          title: `Atelier - ${appointment.vehicle.registration} (${appointment.date.toLocaleDateString('fr-FR')})`,
+          description: `Dossier créé automatiquement depuis le rendez-vous #${appointment.id}`,
+        },
+      });
+
+      await tx.appointment.update({
+        where: {
+          id: appointment.id,
+        },
+        data: {
+          status: APPOINTMENT_STATUS.COMPLETED,
+        },
+      });
+
+      const intervention = await tx.intervention.create({
+        data: {
+          workspace_id: workspaceId,
+          case_id: repairCase.id,
+          description: `Diagnostic généré depuis le rendez-vous du ${appointment.date.toLocaleDateString('fr-FR')}`,
+          status: INTERVENTION_STATUS.DIAGNOSIS,
+        },
+        include: {
+          case: true,
+        },
+      });
+
+      return {
+        appointment,
+        case: repairCase,
+        intervention,
+        alreadyStarted: false,
+      };
     });
-
-    // 5. Créer l'intervention initiale liée au Case
-    const intervention = await tx.intervention.create({
-      data: {
-        workspace_id: workspaceId,
-        case_id: repairCase.id,
-        description: `Diagnostic g?n?r? depuis le RDV du ${appointment.date.toLocaleDateString('fr-FR')}`,
-        status: INTERVENTION_STATUS.DIAGNOSIS,
-      },
-      include: {
-        case: true,
-      },
-    });
-
-    // 6. Retour au front
-    return {
-      appointment,
-      case: repairCase,
-      intervention,
-    };
-  });
-}
+  }
 
 
 

@@ -234,8 +234,9 @@ model Appointment {
   createdBy User? @relation("AppointmentCreatedBy", fields: [created_by], references: [id])
   updatedBy User? @relation("AppointmentUpdatedBy", fields: [updated_by], references: [id])
 
-  invoices  Invoice[]
-  proformas Proforma[]
+  invoices   Invoice[]
+  proformas  Proforma[]
+  repairCase Case?
 
   @@index([workspace_id])
   @@index([workspace_id, status])
@@ -624,6 +625,9 @@ model Case {
 
   title       String?
   description String?
+
+  appointment_id String?      @unique
+  appointment    Appointment? @relation(fields: [appointment_id], references: [id])
 
   interventions Intervention[]
   proformas     Proforma[]
