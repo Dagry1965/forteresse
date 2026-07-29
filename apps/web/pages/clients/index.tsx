@@ -37,9 +37,14 @@ export default function ClientsListPage() {
       name: '',
       email: '',
       phone: '',
-      siret: '',
-      vatNumber: '',
-      contactPerson: '',
+      company_name: '',
+      trade_name: '',
+      registration_number: '',
+      vat_number: '',
+      address: '',
+      billing_address: '',
+      payment_terms_days: 0,
+      credit_limit: '',
     },
     onSuccess: async (result) => {
       await loadClients();
@@ -197,22 +202,108 @@ export default function ClientsListPage() {
             <>
               <input
                 className="w-full border rounded-2xl px-4 py-3"
-                placeholder="SIRET"
-                value={formData.siret}
-                onChange={(e) => setFormData({ ...formData, siret: e.target.value })}
+                placeholder="Raison sociale"
+                value={formData.company_name}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    company_name: e.target.value,
+                    name: e.target.value || formData.name,
+                  })
+                }
               />
+
               <input
                 className="w-full border rounded-2xl px-4 py-3"
-                placeholder="Numéro TVA"
-                value={formData.vatNumber}
-                onChange={(e) => setFormData({ ...formData, vatNumber: e.target.value })}
+                placeholder="Nom commercial"
+                value={formData.trade_name}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    trade_name: e.target.value,
+                  })
+                }
               />
+
               <input
                 className="w-full border rounded-2xl px-4 py-3"
-                placeholder="Contact principal"
-                value={formData.contactPerson}
-                onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                placeholder="Num?ro d'entreprise / SIRET / BCE / RCCM"
+                value={formData.registration_number}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    registration_number: e.target.value,
+                  })
+                }
               />
+
+              <input
+                className="w-full border rounded-2xl px-4 py-3"
+                placeholder="Num?ro de TVA"
+                value={formData.vat_number}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    vat_number: e.target.value,
+                  })
+                }
+              />
+
+              <textarea
+                className="w-full border rounded-2xl px-4 py-3 min-h-[90px]"
+                placeholder="Adresse principale"
+                value={formData.address}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    address: e.target.value,
+                  })
+                }
+              />
+
+              <textarea
+                className="w-full border rounded-2xl px-4 py-3 min-h-[90px]"
+                placeholder="Adresse de facturation"
+                value={formData.billing_address}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    billing_address: e.target.value,
+                  })
+                }
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="number"
+                  min="0"
+                  step="1"
+                  className="w-full border rounded-2xl px-4 py-3"
+                  placeholder="D?lai de paiement en jours"
+                  value={formData.payment_terms_days}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      payment_terms_days: Number(e.target.value || 0),
+                    })
+                  }
+                />
+
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  className="w-full border rounded-2xl px-4 py-3"
+                  placeholder="Plafond de cr?dit"
+                  value={formData.credit_limit}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      credit_limit: e.target.value,
+                    })
+                  }
+                />
+              </div>
             </>
           )}
         </div>

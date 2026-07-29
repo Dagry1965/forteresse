@@ -4,117 +4,187 @@ export interface Vehicle {
   id: string;
   _id?: string;
 
-  make?: string;
-  brand?: string;
+  registration: string;
+  brand: string;
   model: string;
-
-  plateNumber?: string;
-  registration?: string;
+  status?: string;
 
   clientId?: string;
   client_id?: string;
 
+  fleet_number?: string | null;
+  vin?: string | null;
+  year?: number | null;
+  mileage?: number | null;
+  usual_driver?: string | null;
+  cost_center?: string | null;
+  service_name?: string | null;
+
   client?: {
     id: string;
     name: string;
+    company_name?: string | null;
   };
 
+  created_at?: string;
+  updated_at?: string;
   deleted_at?: string | null;
 }
 
+export interface VehiclePayload {
+  clientId: string;
+  registration: string;
+  brand: string;
+  model: string;
+  status?: string;
+  fleet_number?: string;
+  vin?: string;
+  year?: number | string;
+  mileage?: number | string;
+  usual_driver?: string;
+  cost_center?: string;
+  service_name?: string;
+}
+
+function normalizePayload(
+  data: Partial<VehiclePayload> & Record<string, any>,
+) {
+  const payload: Record<string, any> = {
+    clientId:
+      data.clientId ??
+      data.client_id ??
+      '',
+    registration:
+      data.registration ??
+      data.plateNumber ??
+      '',
+    brand:
+      data.brand ??
+      data.make ??
+      '',
+    model: data.model ?? '',
+  };
+
+  const optionalTextFields = [
+    'status',
+    'fleet_number',
+    'vin',
+    'usual_driver',
+    'cost_center',
+    'service_name',
+  ] as const;
+
+  for (const field of optionalTextFields) {
+    const value = data[field];
+
+    if (value !== undefined) {
+      payload[field] =
+        typeof value === 'string'
+          ? value.trim()
+          : value;
+    }
+  }
+
+  if (
+    data.year !== undefined &&
+    data.year !== null &&
+    data.year !== ''
+  ) {
+    payload.year = Number(data.year);
+  }
+
+  if (
+    data.mileage !== undefined &&
+    data.mileage !== null &&
+    data.mileage !== ''
+  ) {
+    payload.mileage = Number(data.mileage);
+  }
+
+  return payload;
+}
+
 export const vehicleService = {
-  async getAll(workspaceId?: string) {
-    try {
-      const params = workspaceId ? `?workspaceId=${workspaceId}` : '';
-      return await API.get<Vehicle[]>(`/api/vehicles${params}`);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur getAll:', error);
-      throw error;
-    }
+  async getAll(workspaceId?: string): Promise<Vehicle[]> {
+    const effectiveWorkspaceId =
+      workspaceId ??
+      localStorage.getItem('current_workspace_id');
+
+    const params = effectiveWorkspaceId
+      ? `?workspaceId=${encodeURIComponent(effectiveWorkspaceId)}`
+      : '';
+
+    return API.get<Vehicle[]>(`/api/vehicles${params}`);
   },
 
-  async getByClient(clientId: string, workspaceId?: string) {
-    try {
-      const params = workspaceId
-        ? `?clientId=${clientId}&workspaceId=${workspaceId}`
-        : `?clientId=${clientId}`;
+  async getByClient(
+    clientId: string,
+    workspaceId?: string,
+  ): Promise<Vehicle[]> {
+    const effectiveWorkspaceId =
+      workspaceId ??
+      localStorage.getItem('current_workspace_id');
 
-      return await API.get<Vehicle[]>(`/api/vehicles${params}`);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur getByClient:', error);
-      throw error;
+    const query = new URLSearchParams({
+      clientId,
+    });
+
+    if (effectiveWorkspaceId) {
+      query.set('workspaceId', effectiveWorkspaceId);
     }
+
+    return API.get<Vehicle[]>(
+      `/api/vehicles?${query.toString()}`,
+    );
   },
 
-  async getOne(id: string) {
-    try {
-      return await API.get<Vehicle>(`/api/vehicles/${id}`);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur getOne:', error);
-      throw error;
-    }
+  async getOne(id: string): Promise<Vehicle> {
+    return API.get<Vehicle>(`/api/vehicles/${id}`);
   },
 
-  async create(data: Partial<Vehicle>) {
-    try {
-      const workspaceId =
-        localStorage.getItem("current_workspace_id");
+  async create(
+    data: Partial<VehiclePayload> & Record<string, any>,
+  ): Promise<Vehicle> {
+    const workspaceId =
+      localStorage.getItem('current_workspace_id');
 
-      if (!workspaceId) {
-        throw new Error("Aucun workspace sélectionné");
-      }
-
-      const payload = {
-        ...data,
-        workspaceId,
-        brand: data.brand ?? data.make,
-        registration:
-          data.registration ?? data.plateNumber,
-      };
-
-      return await API.post<Vehicle>(
-        "/api/vehicles",
-        payload,
+    if (!workspaceId) {
+      throw new Error(
+        'Aucun workspace s?lectionn?',
       );
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur création:', error);
-      throw error;
     }
+
+    return API.post<Vehicle>('/api/vehicles', {
+      ...normalizePayload(data),
+      workspaceId,
+    });
   },
 
-  async update(id: string, data: Partial<Vehicle>) {
-    try {
-      return await API.patch<Vehicle>(`/api/vehicles/${id}`, data);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur mise à jour:', error);
-      throw error;
-    }
+  async update(
+    id: string,
+    data: Partial<VehiclePayload> & Record<string, any>,
+  ): Promise<Vehicle> {
+    return API.patch<Vehicle>(
+      `/api/vehicles/${id}`,
+      normalizePayload(data),
+    );
   },
 
   async delete(id: string) {
-    try {
-      return await API.patch(`/api/vehicles/${id}/soft-delete`);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur soft delete:', error);
-      throw error;
-    }
+    return API.patch(
+      `/api/vehicles/${id}/soft-delete`,
+    );
   },
 
   async restore(id: string) {
-    try {
-      return await API.patch(`/api/vehicles/${id}/restore`);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur restore:', error);
-      throw error;
-    }
+    return API.patch(
+      `/api/vehicles/${id}/restore`,
+    );
   },
 
   async hardDelete(id: string) {
-    try {
-      return await API.delete(`/api/vehicles/${id}/hard`);
-    } catch (error: any) {
-      console.error('[vehicleService] Erreur hard delete:', error);
-      throw error;
-    }
+    return API.delete(
+      `/api/vehicles/${id}/hard`,
+    );
   },
 };

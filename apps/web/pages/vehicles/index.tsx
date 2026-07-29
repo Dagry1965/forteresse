@@ -38,10 +38,18 @@ export default function VehiclesListPage() {
   } = useEntityForm({
     service: vehicleService,
     initialData: {
-      make: '',
-      model: '',
-      plateNumber: '',
       clientId: '',
+      registration: '',
+      brand: '',
+      model: '',
+      status: 'DISPONIBLE',
+      fleet_number: '',
+      vin: '',
+      year: '',
+      mileage: '',
+      usual_driver: '',
+      cost_center: '',
+      service_name: '',
     },
     onSuccess: async (result) => {
       await loadVehicles();
@@ -65,11 +73,13 @@ export default function VehiclesListPage() {
     newErrors.clientId = "Le client est obligatoire";
   }
 
-  if (!formData.plateNumber?.trim()) {
-    newErrors.plateNumber = "L'immatriculation est obligatoire";
+  if (!formData.registration?.trim()) {
+    newErrors.registration =
+      "L'immatriculation est obligatoire";
   }
-  if (!formData.make?.trim()) {
-    newErrors.make = "La marque est obligatoire";
+
+  if (!formData.brand?.trim()) {
+    newErrors.brand = "La marque est obligatoire";
   }
   if (!formData.model?.trim()) {
     newErrors.model = "Le modèle est obligatoire";
@@ -117,13 +127,31 @@ export default function VehiclesListPage() {
   }, []);
 
   const columns: Column<any>[] = [
-    { key: 'plateNumber', header: 'Immatriculation' },
-    { key: 'make', header: 'Marque' },
-    { key: 'model', header: 'Modèle' },
+    {
+      key: 'registration',
+      header: 'Immatriculation',
+    },
+    {
+      key: 'brand',
+      header: 'Marque',
+    },
+    {
+      key: 'model',
+      header: 'Modèle',
+    },
+    {
+      key: 'fleet_number',
+      header: 'N° flotte',
+      render: (vehicle) =>
+        vehicle.fleet_number || '—',
+    },
     {
       key: 'client',
       header: 'Client',
-      render: (v) => v.client?.name || '—',
+      render: (vehicle) =>
+        vehicle.client?.company_name ||
+        vehicle.client?.name ||
+        '—',
     },
   ];
 
@@ -135,10 +163,35 @@ export default function VehiclesListPage() {
 const handleOpenEdit = (vehicle: any) => {
   const normalizedVehicle = {
     id: vehicle.id || vehicle._id,
-    make: vehicle.make || '',
+    clientId:
+      vehicle.client_id ||
+      vehicle.clientId ||
+      '',
+    registration:
+      vehicle.registration ||
+      vehicle.plateNumber ||
+      '',
+    brand:
+      vehicle.brand ||
+      vehicle.make ||
+      '',
     model: vehicle.model || '',
-    plateNumber: vehicle.plateNumber || vehicle.registration || '',
-    clientId: vehicle.client_id || vehicle.clientId || '',
+    status: vehicle.status || 'DISPONIBLE',
+    fleet_number: vehicle.fleet_number || '',
+    vin: vehicle.vin || '',
+    year:
+      vehicle.year === null ||
+      vehicle.year === undefined
+        ? ''
+        : String(vehicle.year),
+    mileage:
+      vehicle.mileage === null ||
+      vehicle.mileage === undefined
+        ? ''
+        : String(vehicle.mileage),
+    usual_driver: vehicle.usual_driver || '',
+    cost_center: vehicle.cost_center || '',
+    service_name: vehicle.service_name || '',
   };
 
   openEdit(normalizedVehicle);
@@ -200,81 +253,250 @@ const handleOpenEdit = (vehicle: any) => {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-
-          {/* Client */}
           <div>
-            <label className="block text-sm font-medium mb-1">Client *</label>
+            <label className="block text-sm font-medium mb-1">
+              Client *
+            </label>
+
             <select
-              className={`w-full border rounded-2xl px-4 py-3 ${errors.clientId ? 'border-red-500' : ''}`}
+              className={`w-full border rounded-2xl px-4 py-3 ${
+                errors.clientId ? 'border-red-500' : ''
+              }`}
               value={formData.clientId}
-              onChange={(e) => {
-                setFormData({ ...formData, clientId: e.target.value });
-                if (errors.clientId) setErrors({ ...errors, clientId: '' });
+              onChange={(event) => {
+                setFormData({
+                  ...formData,
+                  clientId: event.target.value,
+                });
+
+                if (errors.clientId) {
+                  setErrors({
+                    ...errors,
+                    clientId: '',
+                  });
+                }
               }}
             >
-              <option value="">-- Sélectionner un client --</option>
+              <option value="">
+                -- Sélectionner un client --
+              </option>
+
               {clientsList.map((client: any) => (
-                <option key={client.id} value={client.id}>
-                  {client.name}
+                <option
+                  key={client.id}
+                  value={client.id}
+                >
+                  {client.company_name || client.name}
                 </option>
               ))}
             </select>
+
             {errors.clientId && (
-              <p className="text-red-500 text-sm mt-1">{errors.clientId}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.clientId}
+              </p>
             )}
           </div>
 
-          {/* Immatriculation */}
           <div>
-            <label className="block text-sm font-medium mb-1">Immatriculation *</label>
+            <label className="block text-sm font-medium mb-1">
+              Immatriculation *
+            </label>
+
             <input
-              className={`w-full border rounded-2xl px-4 py-3 ${errors.plateNumber ? 'border-red-500' : ''}`}
+              className={`w-full border rounded-2xl px-4 py-3 ${
+                errors.registration
+                  ? 'border-red-500'
+                  : ''
+              }`}
               placeholder="Immatriculation"
-              value={formData.plateNumber}
-              onChange={(e) => {
-                setFormData({ ...formData, plateNumber: e.target.value });
-                if (errors.plateNumber) setErrors({ ...errors, plateNumber: '' });
+              value={formData.registration}
+              onChange={(event) => {
+                setFormData({
+                  ...formData,
+                  registration: event.target.value,
+                });
+
+                if (errors.registration) {
+                  setErrors({
+                    ...errors,
+                    registration: '',
+                  });
+                }
               }}
             />
-            {errors.plateNumber && (
-              <p className="text-red-500 text-sm mt-1">{errors.plateNumber}</p>
+
+            {errors.registration && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.registration}
+              </p>
             )}
           </div>
 
-          {/* Marque */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Marque *</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Marque *
+              </label>
+
+              <input
+                className={`w-full border rounded-2xl px-4 py-3 ${
+                  errors.brand ? 'border-red-500' : ''
+                }`}
+                placeholder="Marque"
+                value={formData.brand}
+                onChange={(event) => {
+                  setFormData({
+                    ...formData,
+                    brand: event.target.value,
+                  });
+
+                  if (errors.brand) {
+                    setErrors({
+                      ...errors,
+                      brand: '',
+                    });
+                  }
+                }}
+              />
+
+              {errors.brand && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.brand}
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Modèle *
+              </label>
+
+              <input
+                className={`w-full border rounded-2xl px-4 py-3 ${
+                  errors.model ? 'border-red-500' : ''
+                }`}
+                placeholder="Modèle"
+                value={formData.model}
+                onChange={(event) => {
+                  setFormData({
+                    ...formData,
+                    model: event.target.value,
+                  });
+
+                  if (errors.model) {
+                    setErrors({
+                      ...errors,
+                      model: '',
+                    });
+                  }
+                }}
+              />
+
+              {errors.model && (
+                <p className="text-red-500 text-sm mt-1">
+                  {errors.model}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border bg-slate-50 p-5 space-y-4">
+            <h3 className="font-bold text-slate-900">
+              Informations de flotte
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                className="w-full border rounded-2xl px-4 py-3 bg-white"
+                placeholder="Numéro de flotte"
+                value={formData.fleet_number}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    fleet_number: event.target.value,
+                  })
+                }
+              />
+
+              <input
+                className="w-full border rounded-2xl px-4 py-3 bg-white"
+                placeholder="Numéro VIN"
+                value={formData.vin}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    vin: event.target.value,
+                  })
+                }
+              />
+
+              <input
+                type="number"
+                min="1900"
+                max="2100"
+                className="w-full border rounded-2xl px-4 py-3 bg-white"
+                placeholder="Année"
+                value={formData.year}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    year: event.target.value,
+                  })
+                }
+              />
+
+              <input
+                type="number"
+                min="0"
+                className="w-full border rounded-2xl px-4 py-3 bg-white"
+                placeholder="Kilométrage"
+                value={formData.mileage}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    mileage: event.target.value,
+                  })
+                }
+              />
+
+              <input
+                className="w-full border rounded-2xl px-4 py-3 bg-white"
+                placeholder="Conducteur habituel"
+                value={formData.usual_driver}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    usual_driver: event.target.value,
+                  })
+                }
+              />
+
+              <input
+                className="w-full border rounded-2xl px-4 py-3 bg-white"
+                placeholder="Centre de coût"
+                value={formData.cost_center}
+                onChange={(event) =>
+                  setFormData({
+                    ...formData,
+                    cost_center: event.target.value,
+                  })
+                }
+              />
+            </div>
+
             <input
-              className={`w-full border rounded-2xl px-4 py-3 ${errors.make ? 'border-red-500' : ''}`}
-              placeholder="Marque"
-              value={formData.make}
-              onChange={(e) => {
-                setFormData({ ...formData, make: e.target.value });
-                if (errors.make) setErrors({ ...errors, make: '' });
-              }}
+              className="w-full border rounded-2xl px-4 py-3 bg-white"
+              placeholder="Service / département"
+              value={formData.service_name}
+              onChange={(event) =>
+                setFormData({
+                  ...formData,
+                  service_name: event.target.value,
+                })
+              }
             />
-            {errors.make && (
-              <p className="text-red-500 text-sm mt-1">{errors.make}</p>
-            )}
           </div>
-
-          {/* Modèle */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Modèle *</label>
-            <input
-              className={`w-full border rounded-2xl px-4 py-3 ${errors.model ? 'border-red-500' : ''}`}
-              placeholder="Modèle"
-              value={formData.model}
-              onChange={(e) => {
-                setFormData({ ...formData, model: e.target.value });
-                if (errors.model) setErrors({ ...errors, model: '' });
-              }}
-            />
-            {errors.model && (
-              <p className="text-red-500 text-sm mt-1">{errors.model}</p>
-            )}
-          </div>
-
         </div>
       </EntityFormModal>
 
@@ -285,7 +507,7 @@ const handleOpenEdit = (vehicle: any) => {
         title="Supprimer ce véhicule ?"
         description={
           vehicleToDelete
-            ? `Êtes-vous sûr de vouloir supprimer le véhicule "${vehicleToDelete.plateNumber}" ?`
+            ? `Êtes-vous sûr de vouloir supprimer le véhicule "${vehicleToDelete.registration}" ?`
             : ""
         }
         onConfirm={confirmDeletion}
