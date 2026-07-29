@@ -9,6 +9,8 @@ import {
   Body,
   Param,
   Query,
+  Headers,
+  UseGuards,
   UsePipes,
   ValidationPipe,
   HttpCode,
@@ -17,8 +19,11 @@ import {
 import { TimeSlotsService } from './timeslots.service';
 import { CreateTimeslotDto } from './dto/create-timeslot.dto';
 import { UpdateTimeslotDto } from './dto/update-timeslot.dto';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('time-slots')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
 export class TimeSlotsController {
   constructor(private readonly service: TimeSlotsService) {}
@@ -26,20 +31,20 @@ export class TimeSlotsController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateTimeslotDto,
   ) {
     return this.service.create(workspaceId, dto);
   }
 
   @Get()
-  findAll(@Query('workspaceId') workspaceId: string) {
+  findAll(@Headers('x-workspace-id') workspaceId: string) {
     return this.service.findAll(workspaceId);
   }
 
   @Get('available')
   findAvailable(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Query('date') date: string,
   ) {
     return this.service.findAvailable(workspaceId, date);
@@ -47,7 +52,7 @@ export class TimeSlotsController {
 
   @Get(':id')
   findOne(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
   ) {
     return this.service.findOne(workspaceId, id);
@@ -55,7 +60,7 @@ export class TimeSlotsController {
 
   @Patch(':id')
   update(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
     @Body() dto: UpdateTimeslotDto,
   ) {
@@ -65,7 +70,7 @@ export class TimeSlotsController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async cancel(
-    @Query('workspaceId') workspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
   ) {
     await this.service.cancel(workspaceId, id);

@@ -30,10 +30,10 @@ export class TimeSlotsService {
   }
 
   // ==================== READ ====================
-  async findAll(workspaceId?: string) {
+  async findAll(workspaceId: string) {
     return this.prisma.timeSlot.findMany({
       where: {
-      ...(workspaceId && { workspace_id: workspaceId }),
+        workspace_id: workspaceId,
         deleted_at: null,
       },
       orderBy: { start: 'asc' },

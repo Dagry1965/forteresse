@@ -1,11 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TimeSlotsService } from './timeslots.service';
 import { TimeSlotsController } from './timeslots.controller';
-import { PrismaService } from '../../core/prisma/prisma.service';
+import { PrismaModule } from '../../core/prisma/prisma.module';
+import { AuthModule } from '../../core/auth/auth.module';
 
 @Module({
+  imports: [PrismaModule, AuthModule],
   controllers: [TimeSlotsController],
-  providers: [TimeSlotsService, PrismaService],
+  providers: [TimeSlotsService],
   exports: [TimeSlotsService],
 })
 export class TimeSlotsModule {}
