@@ -7,7 +7,6 @@ import {
   Param,
   Patch,
   Post,
-  Query,
   Req,
   UseGuards,
   ForbiddenException,
@@ -25,7 +24,7 @@ export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 
   @Get()
-  findAll(@Query('workspaceId') workspaceId: string) {
+  findAll(@Headers('x-workspace-id') workspaceId: string) {
     return this.vehiclesService.findAll(workspaceId);
   }
 
@@ -38,8 +37,11 @@ export class VehiclesController {
   }
 
   @Post()
-  create(@Body() dto: CreateVehicleDto) {
-    return this.vehiclesService.create(dto);
+  create(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: CreateVehicleDto,
+  ) {
+    return this.vehiclesService.create(workspaceId, dto);
   }
 
   @Patch(':id')

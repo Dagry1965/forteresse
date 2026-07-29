@@ -124,8 +124,8 @@ export class VehiclesService {
 
   // ==================== CREATE ====================
 
-  async create(dto: CreateVehicleDto) {
-    if (!dto.workspaceId) {
+  async create(workspaceId: string, dto: CreateVehicleDto) {
+    if (!workspaceId) {
       throw new BadRequestException('workspaceId est requis');
     }
 
@@ -146,12 +146,12 @@ export class VehiclesService {
     }
 
     this.validateStatus(dto.status);
-    await this.validateClient(dto.clientId, dto.workspaceId);
-    await this.validateUniqueRegistration(dto.registration, dto.workspaceId);
+    await this.validateClient(dto.clientId, workspaceId);
+    await this.validateUniqueRegistration(dto.registration, workspaceId);
 
     return this.prisma.vehicle.create({
       data: {
-        workspace_id: dto.workspaceId,
+        workspace_id: workspaceId,
         client_id: dto.clientId,
         registration: dto.registration.trim(),
         brand: dto.brand.trim(),

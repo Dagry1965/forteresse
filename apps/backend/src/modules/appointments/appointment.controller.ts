@@ -33,11 +33,9 @@ export class AppointmentController {
 
   @Get('available-slots')
   getAvailableSlots(
-    @Headers('x-workspace-id') headerWorkspaceId: string,
-    @Query('workspaceId') queryWorkspaceId: string,
+    @Headers('x-workspace-id') workspaceId: string,
     @Query('date') date: string,
   ) {
-    const workspaceId = headerWorkspaceId || queryWorkspaceId;
     return this.appointmentsService.getAvailableSlots(workspaceId, date);
   }
   @Post(':id/start-workshop')
