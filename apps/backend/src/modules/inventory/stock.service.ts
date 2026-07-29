@@ -82,25 +82,6 @@ export class StockService {
   }
 
   /**
-   * Récupère l'état actuel du stock pour un article précis
-   */
-  async getStock(itemId: string) {
-    const item = await this.prisma.stockItem.findUnique({
-      where: { id: itemId },
-      select: { id: true, name: true, quantity: true, unit: true }
-    });
-
-    if (!item) throw new NotFoundException("Article non trouvé");
-
-    return {
-      item_id: item.id,
-      name: item.name,
-      current_stock: item.quantity,
-      unit: item.unit
-    };
-  }
-
-  /**
    * Liste l'historique des mouvements (Entrées / Sorties)
    */
   async listMovements(workspaceId: string) {
