@@ -153,14 +153,23 @@ model ClientContact {
 }
 
 model Vehicle {
-  id           String    @id @default(cuid())
+  id           String @id @default(cuid())
   registration String
   brand        String
   model        String
-  status       String    @default("DISPONIBLE")
-  created_at   DateTime  @default(now())
-  updated_at   DateTime  @updatedAt
-  deleted_at   DateTime?
+  status       String @default("DISPONIBLE")
+
+  fleet_number String?
+  vin          String?
+  year         Int?
+  mileage      Int?
+  usual_driver String?
+  cost_center  String?
+  service_name String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
 
   workspace_id String
   workspace    Workspace @relation(fields: [workspace_id], references: [id])
@@ -173,6 +182,9 @@ model Vehicle {
 
   @@index([workspace_id])
   @@index([client_id])
+  @@index([workspace_id, registration])
+  @@index([workspace_id, fleet_number])
+  @@index([workspace_id, vin])
 }
 
 model TimeSlot {

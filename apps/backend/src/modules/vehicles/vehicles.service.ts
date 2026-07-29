@@ -112,9 +112,16 @@ export class VehiclesService {
       data: {
         workspace_id: dto.workspaceId,
         client_id: dto.clientId,
-        registration: dto.registration,
-        brand: dto.brand,
-        model: dto.model,
+        registration: dto.registration.trim(),
+        brand: dto.brand.trim(),
+        model: dto.model.trim(),
+        fleet_number: dto.fleet_number?.trim() || null,
+        vin: dto.vin?.trim() || null,
+        year: dto.year ?? null,
+        mileage: dto.mileage ?? null,
+        usual_driver: dto.usual_driver?.trim() || null,
+        cost_center: dto.cost_center?.trim() || null,
+        service_name: dto.service_name?.trim() || null,
         status: dto.status || VEHICLE_STATUS.DISPONIBLE,
       },
       include: { client: true },
@@ -139,9 +146,36 @@ export class VehiclesService {
     return this.prisma.vehicle.update({
       where: { id },
       data: {
-        registration: dto.registration,
-        brand: dto.brand,
-        model: dto.model,
+        ...(dto.registration !== undefined
+          ? { registration: dto.registration.trim() }
+          : {}),
+        ...(dto.brand !== undefined
+          ? { brand: dto.brand.trim() }
+          : {}),
+        ...(dto.model !== undefined
+          ? { model: dto.model.trim() }
+          : {}),
+        ...(dto.fleet_number !== undefined
+          ? { fleet_number: dto.fleet_number.trim() || null }
+          : {}),
+        ...(dto.vin !== undefined
+          ? { vin: dto.vin.trim() || null }
+          : {}),
+        ...(dto.year !== undefined
+          ? { year: dto.year }
+          : {}),
+        ...(dto.mileage !== undefined
+          ? { mileage: dto.mileage }
+          : {}),
+        ...(dto.usual_driver !== undefined
+          ? { usual_driver: dto.usual_driver.trim() || null }
+          : {}),
+        ...(dto.cost_center !== undefined
+          ? { cost_center: dto.cost_center.trim() || null }
+          : {}),
+        ...(dto.service_name !== undefined
+          ? { service_name: dto.service_name.trim() || null }
+          : {}),
         ...(dto.clientId && { client_id: dto.clientId }),
         ...(dto.status && { status: dto.status }),
       },
