@@ -1,4 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
@@ -7,26 +10,29 @@ import { UpdateSupplierDto } from './dto/update-supplier.dto';
 export class SuppliersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ---------------------------------------------------------
-  // CREATE
-  // ---------------------------------------------------------
-  async create(dto: CreateSupplierDto) {
+  async create(
+    workspaceId: string,
+    dto: CreateSupplierDto,
+  ) {
     return this.prisma.supplier.create({
       data: {
-        name: dto.name,
-        phone: dto.phone,
-        email: dto.email,
-        workspace: { connect: { id: dto.workspace_id } },
+        name: dto.name.trim(),
+        phone: dto.phone.trim(),
+        email: dto.email.trim(),
+        workspace: {
+          connect: {
+            id: workspaceId,
+          },
+        },
       },
     });
   }
 
-  // ---------------------------------------------------------
-  // FIND ALL
-  // ---------------------------------------------------------
-  async findAll(workspaceId?: string) {
+  async findAll(workspaceId: string) {
     return this.prisma.supplier.findMany({
-      where: workspaceId ? { workspace_id: workspaceId } : undefined,
+      where: {
+        workspace_id: workspaceId,
+      },
       include: {
         items: true,
         purchaseOrders: true,
@@ -34,35 +40,65 @@ export class SuppliersService {
     });
   }
 
-  // ---------------------------------------------------------
-  // FIND ONE
-  // ---------------------------------------------------------
-  async findOne(id: string, workspaceId: string) {
-    return this.prisma.supplier.findFirst({
-      where: { id, workspace_id: workspaceId },
+  async findOne(
+    workspaceId: string,
+    id: string,
+  ) {
+    const supplier = await this.prisma.supplier.findFirst({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
       include: {
         items: true,
         purchaseOrders: true,
       },
     });
+
+    if (!supplier) {
+      throw new NotFoundException(
+        'Fournisseur introuvable dans ce workspace.',
+      );
+    }
+
+    return supplier;
   }
 
-  // ---------------------------------------------------------
-  // UPDATE
-  // ---------------------------------------------------------
-  async update(id: string, workspaceId: string, dto: UpdateSupplierDto) {
+  async update(
+    workspaceId: string,
+    id: string,
+    dto: UpdateSupplierDto,
+  ) {
+    await this.findOne(workspaceId, id);
+
     return this.prisma.supplier.update({
-      where: { id },
-      data: dto,
+      where: {
+        id,
+      },
+      data: {
+        ...(dto.name !== undefined
+          ? { name: dto.name.trim() }
+          : {}),
+        ...(dto.phone !== undefined
+          ? { phone: dto.phone.trim() }
+          : {}),
+        ...(dto.email !== undefined
+          ? { email: dto.email.trim() }
+          : {}),
+      },
     });
   }
 
-  // ---------------------------------------------------------
-  // DELETE
-  // ---------------------------------------------------------
-  async remove(id: string) {
+  async remove(
+    workspaceId: string,
+    id: string,
+  ) {
+    await this.findOne(workspaceId, id);
+
     return this.prisma.supplier.delete({
-      where: { id },
+      where: {
+        id,
+      },
     });
   }
 }
