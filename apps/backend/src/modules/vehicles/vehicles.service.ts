@@ -74,10 +74,48 @@ export class VehiclesService {
   async findOne(id: string) {
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
-      include: { client: true },
+      include: {
+        client: true,
+        appointments: {
+          where: {
+            deleted_at: null,
+          },
+          include: {
+            time_slot: true,
+          },
+          orderBy: {
+            date: 'desc',
+          },
+        },
+        cases: {
+          include: {
+            interventions: {
+              where: {
+                deleted_at: null,
+              },
+              orderBy: {
+                created_at: 'desc',
+              },
+            },
+            proformas: {
+              orderBy: {
+                created_at: 'desc',
+              },
+            },
+          },
+          orderBy: {
+            created_at: 'desc',
+          },
+        },
+      },
     });
 
-    if (!vehicle) throw new NotFoundException('Vehicle not found');
+    if (!vehicle) {
+      throw new NotFoundException(
+        'Véhicule introuvable',
+      );
+    }
+
     return vehicle;
   }
 
