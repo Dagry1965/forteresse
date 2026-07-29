@@ -71,9 +71,12 @@ export class VehiclesService {
     });
   }
 
-  async findOne(id: string) {
-    const vehicle = await this.prisma.vehicle.findUnique({
-      where: { id },
+  async findOne(workspaceId: string, id: string) {
+    const vehicle = await this.prisma.vehicle.findFirst({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
       include: {
         client: true,
         appointments: {
@@ -168,8 +171,12 @@ export class VehiclesService {
 
   // ==================== UPDATE ====================
 
-  async update(id: string, dto: UpdateVehicleDto) {
-    const vehicle = await this.findOne(id);
+  async update(
+    workspaceId: string,
+    id: string,
+    dto: UpdateVehicleDto,
+  ) {
+    const vehicle = await this.findOne(workspaceId, id);
 
     this.validateStatus(dto.status);
 
@@ -223,10 +230,10 @@ export class VehiclesService {
 
   // ==================== SOFT DELETE ====================
 
-  async softDelete(id: string) {
-    await this.findOne(id);
+  async softDelete(workspaceId: string, id: string) {
+    await this.findOne(workspaceId, id);
 
-    if (await this.hasActiveAppointments(id)) {
+    if (await this.hasActiveAppointments(workspaceId, id)) {
       throw new BadRequestException(
         'Impossible de supprimer ce véhicule : il a des rendez-vous actifs'
       );
@@ -238,9 +245,8 @@ export class VehiclesService {
     });
   }
 
-  async restore(id: string) {
-    const vehicle = await this.prisma.vehicle.findUnique({ where: { id } });
-    if (!vehicle) throw new NotFoundException('Vehicle not found');
+  async restore(workspaceId: string, id: string) {
+    const vehicle = await this.findOne(workspaceId, id);
 
     return this.prisma.vehicle.update({
       where: { id },
@@ -248,16 +254,20 @@ export class VehiclesService {
     });
   }
 
-  async hardDelete(id: string) {
-    await this.findOne(id);
+  async hardDelete(workspaceId: string, id: string) {
+    await this.findOne(workspaceId, id);
     return this.prisma.vehicle.delete({ where: { id } });
   }
 
   // ==================== MÉTHODES UTILITAIRES ====================
 
-  private async hasActiveAppointments(vehicleId: string): Promise<boolean> {
+  private async hasActiveAppointments(
+    workspaceId: string,
+    vehicleId: string,
+  ): Promise<boolean> {
     const count = await this.prisma.appointment.count({
       where: {
+        workspace_id: workspaceId,
         vehicle_id: vehicleId,
         deleted_at: null,
         status: {

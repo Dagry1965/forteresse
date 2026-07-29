@@ -3,19 +3,24 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
   Query,
   Req,
+  UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { USER_ROLE } from '../../../../../shared/constants/status.constants';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('vehicles')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 
@@ -25,8 +30,11 @@ export class VehiclesController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.vehiclesService.findOne(id);
+  findOne(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.vehiclesService.findOne(workspaceId, id);
   }
 
   @Post()
@@ -35,25 +43,39 @@ export class VehiclesController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateVehicleDto) {
-    return this.vehiclesService.update(id, dto);
+  update(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateVehicleDto,
+  ) {
+    return this.vehiclesService.update(workspaceId, id, dto);
   }
 
   // Soft Delete
   @Patch(':id/soft-delete')
-  softDelete(@Param('id') id: string) {
-    return this.vehiclesService.softDelete(id);
+  softDelete(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.vehiclesService.softDelete(workspaceId, id);
   }
 
   // Restore
   @Patch(':id/restore')
-  restore(@Param('id') id: string) {
-    return this.vehiclesService.restore(id);
+  restore(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.vehiclesService.restore(workspaceId, id);
   }
 
   // Suppression définitive réservée aux administrateurs
   @Delete(':id/hard')
-  hardDelete(@Param('id') id: string, @Req() req: any) {
+  hardDelete(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
     const user = req.user;
 
     const isAdmin =
@@ -66,6 +88,6 @@ export class VehiclesController {
       );
     }
 
-    return this.vehiclesService.hardDelete(id);
+    return this.vehiclesService.hardDelete(workspaceId, id);
   }
 }
