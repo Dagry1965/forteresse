@@ -6,8 +6,6 @@ import {
 } from 'class-validator';
 
 export class CreateClientContactDto {
-  @IsString()
-  workspaceId: string;
 
   @IsString()
   first_name: string;

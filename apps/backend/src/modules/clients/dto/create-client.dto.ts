@@ -9,8 +9,6 @@ import {
 } from 'class-validator';
 
 export class CreateClientDto {
-  @IsString()
-  workspaceId: string;
 
   @IsString()
   name: string;

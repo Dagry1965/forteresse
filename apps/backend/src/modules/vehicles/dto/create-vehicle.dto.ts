@@ -13,9 +13,6 @@ export class CreateVehicleDto {
   clientId: string;
 
   @IsString()
-  workspaceId: string;
-
-  @IsString()
   @MinLength(2)
   registration: string;
 

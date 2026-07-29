@@ -9,7 +9,4 @@ export class CreateSupplierDto {
 
   @IsString()
   email: string;
-
-  @IsUUID()
-  workspace_id: string;
 }
