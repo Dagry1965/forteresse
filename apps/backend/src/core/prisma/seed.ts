@@ -8,7 +8,7 @@ async function main() {
     create: {
       email: 'admin@forteresse.local',
       name: 'Admin Forteresse',
-      password: 'adminpassword', // Ã€ hasher en prod
+      password: 'adminpassword', // À hacher en production
     },
   });
 
