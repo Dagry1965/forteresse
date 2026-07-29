@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 
 import { InventoryService } from './inventory.service';
@@ -14,8 +15,11 @@ import { PurchaseReceiptService } from './purchase-receipt.service';
 import { StockService } from './stock.service';
 
 import { InventoryFilterDto } from './dto/inventory-filter.dto';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('inventory')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class InventoryController {
   constructor(
     private readonly purchaseOrderService: PurchaseOrderService,

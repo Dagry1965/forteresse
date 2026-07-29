@@ -12,11 +12,12 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { PurchaseOrderService } from './purchase-order.service';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 
 @Controller('purchase-orders')
-@UseGuards(WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true })) // ← Important
 export class PurchaseOrderController {
   constructor(private readonly poService: PurchaseOrderService) {}
@@ -28,8 +29,6 @@ export class PurchaseOrderController {
     @Req() req: any,
   ) {
     const userId = req.user?.id || req.user?.sub || null;
-
-    console.log('📥 DTO brut reçu :', dto); // Debug
 
     return this.poService.createOrder(workspaceId, userId, dto);
   }
