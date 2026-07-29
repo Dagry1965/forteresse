@@ -227,13 +227,14 @@ export class ClientsService {
   }
 
   async createContact(
+    workspaceId: string,
     clientId: string,
     dto: CreateClientContactDto,
   ) {
     const client = await this.prisma.client.findFirst({
       where: {
         id: clientId,
-        workspace_id: dto.workspaceId,
+        workspace_id: workspaceId,
         deleted_at: null,
       },
     });
@@ -249,7 +250,7 @@ export class ClientsService {
         await tx.clientContact.updateMany({
           where: {
             client_id: clientId,
-            workspace_id: dto.workspaceId,
+            workspace_id: workspaceId,
             deleted_at: null,
             is_primary: true,
           },
@@ -261,7 +262,7 @@ export class ClientsService {
 
       return tx.clientContact.create({
         data: {
-          workspace_id: dto.workspaceId,
+          workspace_id: workspaceId,
           client_id: clientId,
           first_name: dto.first_name.trim(),
           last_name: dto.last_name.trim(),
@@ -277,6 +278,7 @@ export class ClientsService {
   }
 
   async updateContact(
+    workspaceId: string,
     clientId: string,
     contactId: string,
     dto: UpdateClientContactDto,
@@ -284,6 +286,7 @@ export class ClientsService {
     const contact = await this.prisma.clientContact.findFirst({
       where: {
         id: contactId,
+        workspace_id: workspaceId,
         client_id: clientId,
         deleted_at: null,
       },
@@ -344,12 +347,14 @@ export class ClientsService {
   }
 
   async softDeleteContact(
+    workspaceId: string,
     clientId: string,
     contactId: string,
   ) {
     const contact = await this.prisma.clientContact.findFirst({
       where: {
         id: contactId,
+        workspace_id: workspaceId,
         client_id: clientId,
         deleted_at: null,
       },

@@ -57,27 +57,43 @@ export class ClientsController {
 
   @Post(':clientId/contacts')
   createContact(
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('clientId') clientId: string,
     @Body() dto: CreateClientContactDto,
   ) {
-    return this.clientsService.createContact(clientId, dto);
+    return this.clientsService.createContact(
+      workspaceId,
+      clientId,
+      dto,
+    );
   }
 
   @Patch(':clientId/contacts/:contactId')
   updateContact(
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('clientId') clientId: string,
     @Param('contactId') contactId: string,
     @Body() dto: UpdateClientContactDto,
   ) {
-    return this.clientsService.updateContact(clientId, contactId, dto);
+    return this.clientsService.updateContact(
+      workspaceId,
+      clientId,
+      contactId,
+      dto,
+    );
   }
 
   @Delete(':clientId/contacts/:contactId')
   softDeleteContact(
+    @Headers('x-workspace-id') workspaceId: string,
     @Param('clientId') clientId: string,
     @Param('contactId') contactId: string,
   ) {
-    return this.clientsService.softDeleteContact(clientId, contactId);
+    return this.clientsService.softDeleteContact(
+      workspaceId,
+      clientId,
+      contactId,
+    );
   }
 
   // === SOFT DELETE (accessible à tous) ===
