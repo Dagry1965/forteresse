@@ -25,25 +25,25 @@ export class AuthService {
       },
     });
 
-    // 2. VÃ©rification identitÃ©
+    // 2. Vérification de l'identité
     if (!user || !user.password || user.deleted_at) {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    // ðŸ”¥ TEST TEMPORAIRE : bypass du mot de passe
+    // TEST TEMPORAIRE : contournement du mot de passe
     const isPasswordValid = await argon2.verify(user.password, password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Identifiants incorrects');
     }
 
-    // 3. VÃ©rification des accÃ¨s Workspace
+    // 3. Vérification des accès au workspace
     if (!user.workspaceMembers || user.workspaceMembers.length === 0) {
-      throw new ForbiddenException("AccÃ¨s refusÃ© : vous n'Ãªtes rattachÃ© Ã  aucun garage.");
+      throw new ForbiddenException("Accès refusé : vous n'êtes rattaché à aucun garage.");
     }
 
     const defaultMembership = user.workspaceMembers[0];
 
-    // 4. Payload JWT (ðŸ”¥ rÃ´le pris depuis WorkspaceMember)
+    // 4. Payload JWT : rôle issu de WorkspaceMember
     const payload = {
       sub: user.id,
       email: user.email,
@@ -51,7 +51,7 @@ export class AuthService {
       workspaceId: defaultMembership.workspace_id,
     };
 
-    // 5. Retour API alignÃ© avec le front (ðŸ”¥ aucun undefined)
+    // 5. Retour API aligné avec le frontend : aucune valeur undefined
     const response = {
       access_token: this.jwtService.sign(payload),
       user: {
@@ -68,7 +68,7 @@ export class AuthService {
       },
     };
 
-    console.log(">>> PAYLOAD RENVOYÃ‰ =", response);
+    console.log(">>> PAYLOAD RENVOYÉ =", response);
 
     return response;
   }
