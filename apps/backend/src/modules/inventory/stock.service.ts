@@ -117,29 +117,51 @@ export class StockService {
   /**
    * Enregistre un mouvement manuel (Ajustement, Casse, Perte)
    */
-  async registerMovement(dto: {
-    item_id: string;
-    workspace_id: string;
-    quantity: number;
-    type: string;
-    userId?: string;
-  }) {
+  async registerMovement(
+    workspaceId: string,
+    userId: string | undefined,
+    dto: {
+      item_id: string;
+      quantity: number;
+      type: string;
+    },
+  ) {
     return this.prisma.$transaction(async (tx) => {
-      const movement = await tx.stockMovement.create({
-        data: {
-          item_id: dto.item_id,
-          workspace_id: dto.workspace_id,
-          quantity: dto.quantity,
-          type: dto.type,
-          created_by: dto.userId,
+      const item = await tx.stockItem.findFirst({
+        where: {
+          id: dto.item_id,
+          workspace_id: workspaceId,
+          deleted_at: null,
         },
       });
 
-      const adjustment = dto.type.startsWith('IN') ? dto.quantity : -dto.quantity;
-      
+      if (!item) {
+        throw new NotFoundException(
+          'Article introuvable dans ce workspace.',
+        );
+      }
+
+      const movement = await tx.stockMovement.create({
+        data: {
+          item_id: item.id,
+          workspace_id: workspaceId,
+          quantity: dto.quantity,
+          type: dto.type,
+          created_by: userId,
+        },
+      });
+
+      const adjustment = dto.type.startsWith('IN')
+        ? dto.quantity
+        : -dto.quantity;
+
       await tx.stockItem.update({
-        where: { id: dto.item_id },
-        data: { quantity: { increment: adjustment } },
+        where: { id: item.id },
+        data: {
+          quantity: {
+            increment: adjustment,
+          },
+        },
       });
 
       return movement;

@@ -46,20 +46,41 @@ export class InvoicesService {
   // ---------------------------------------------------------
   // CREATE INVOICE (Simple / Individuelle)
   // ---------------------------------------------------------
-  async create(dto: any) {
+  async create(
+    workspaceId: string,
+    userId: string,
+    dto: any,
+  ) {
     const status = this.normalizeStatus(dto.status);
     const type = this.normalizeType(dto.type);
 
-    const client = await this.prisma.client.findFirst({
-      where: {
-        id: dto.client_id,
-        workspace_id: dto.workspace_id,
-        deleted_at: null,
-      },
-    });
+    const [client, user] = await Promise.all([
+      this.prisma.client.findFirst({
+        where: {
+          id: dto.client_id,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      }),
+      this.prisma.user.findFirst({
+        where: {
+          id: userId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      }),
+    ]);
 
     if (!client) {
-      throw new NotFoundException('Client introuvable.');
+      throw new NotFoundException(
+        'Client introuvable dans ce workspace.',
+      );
+    }
+
+    if (!user) {
+      throw new NotFoundException(
+        'Utilisateur introuvable dans ce workspace.',
+      );
     }
 
     return this.prisma.invoice.create({
@@ -68,9 +89,9 @@ export class InvoicesService {
         total: dto.total,
         status,
         type,
-        workspace: { connect: { id: dto.workspace_id } },
-        client: { connect: { id: dto.client_id } },
-        user: { connect: { id: dto.user_id } },
+        workspace: { connect: { id: workspaceId } },
+        client: { connect: { id: client.id } },
+        user: { connect: { id: user.id } },
         customer_name_snapshot:
           client.company_name || client.name || null,
         customer_address_snapshot:
