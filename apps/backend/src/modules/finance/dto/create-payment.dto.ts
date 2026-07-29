@@ -2,7 +2,7 @@ import { IsEnum, IsNotEmpty, IsNumber, IsUUID, Min } from 'class-validator';
 
 export enum PaymentMethod {
   CARTE = 'carte',
-  ESPECES = 'espÃ¨ces',
+  ESPECES = 'espèces',
   VIREMENT = 'virement',
 }
 
@@ -11,16 +11,16 @@ export class CreatePaymentDto {
   @IsNotEmpty({ message: "Le workspaceId est obligatoire." })
   workspaceId: string;
 
-  @IsUUID("4", { message: "La facture sÃ©lectionnÃ©e est invalide." })
+  @IsUUID("4", { message: "La facture sélectionnée est invalide." })
   @IsNotEmpty({ message: "L'identifiant de la facture est obligatoire." })
   invoice_id: string;
 
-  @IsNumber({}, { message: "Le montant doit Ãªtre un nombre valide." })
-  @Min(0.01, { message: "Le montant du paiement doit Ãªtre au moins de 0.01â‚¬." })
+  @IsNumber({}, { message: "Le montant doit être un nombre valide." })
+  @Min(0.01, { message: "Le montant du paiement doit être au moins de 0.01 €." })
   amount: number;
 
   @IsEnum(PaymentMethod, { 
-    message: "La mÃ©thode de paiement doit Ãªtre l'une des suivantes : carte, espÃ¨ces ou virement." 
+    message: "La méthode de paiement doit être l'une des suivantes : carte, espèces ou virement."
   })
   method: PaymentMethod;
 }
