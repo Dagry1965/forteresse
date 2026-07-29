@@ -1,9 +1,7 @@
 import {
-  Body,
   Controller,
   Get,
   Headers,
-  Post,
   UseGuards,
 } from '@nestjs/common';
 import { StockService } from './stock.service';
@@ -33,19 +31,6 @@ export class StockController {
     return this.stockService.getStockValue(workspaceId);
   }
 
-  /**
-   * Crée ou met à jour un brouillon de commande fournisseur
-   * POST /api/inventory/purchases/auto-generate
-   */
-  @Post('purchases/auto-generate')
-  async autoGenerate(
-    @Headers('x-workspace-id') workspaceId: string,
-    @Body('itemId') itemId: string
-  ) {
-    // Cette méthode appellera la logique de transaction Prisma
-    // qui utilise PurchaseOrder et PurchaseOrderItem
-    return this.stockService.generateAutoOrder(workspaceId, itemId);
-  }
 
 
   

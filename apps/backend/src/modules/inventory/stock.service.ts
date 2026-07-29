@@ -146,57 +146,6 @@ export class StockService {
     });
   }
 
-async generateAutoOrder(workspaceId: string, itemId: string) {
-  const item = await this.prisma.stockItem.findFirst({
-    where: {
-      id: itemId,
-      workspace_id: workspaceId,
-      deleted_at: null,
-    },
-    include: { supplier: true },
-  });
-
-  if (
-    !item ||
-    !item.supplier_id ||
-    !item.supplier ||
-    item.supplier.workspace_id !== workspaceId
-  ) {
-    throw new NotFoundException(
-      'Article ou fournisseur introuvable dans ce workspace.',
-    );
-  }
-
-  // Chercher ou créer un brouillon de commande
-  let order = await this.prisma.purchaseOrder.findFirst({
-    where: {
-      workspace_id: workspaceId,
-      supplier_id: item.supplier_id,
-      status: PURCHASE_ORDER_STATUS.DRAFT
-    }
-  });
-
-  if (!order) {
-    order = await this.prisma.purchaseOrder.create({
-      data: {
-        reference: `CMD-${Date.now()}`,
-        workspace_id: workspaceId,
-        supplier_id: item.supplier_id,
-        status: PURCHASE_ORDER_STATUS.DRAFT
-      }
-    });
-  }
-
-  // Ajouter l'article à la commande
-  return this.prisma.purchaseOrderItem.create({
-    data: {
-      purchase_order_id: order.id,
-      item_id: item.id,
-      quantity: item.min_stock > 0 ? item.min_stock * 2 : 10,
-      price_buy: item.price_buy
-    }
-  });
-}
 
 
 
