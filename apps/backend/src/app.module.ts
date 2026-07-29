@@ -52,7 +52,7 @@ console.log({
     ProformasModule,
     UsersModule,
   ],
-  controllers: [], // ðŸ‘ˆ NettoyÃ© (InvoicesController est dÃ©jÃ  dans InvoicesModule)
+  controllers: [], // Nettoyé : InvoicesController est déjà déclaré dans InvoicesModule
   providers: [],
 })
 export class AppModule {}
