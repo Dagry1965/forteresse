@@ -10,23 +10,23 @@ export class PaymentsService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * GÃ©nÃ¨re un Ã©chÃ©ancier pour une facture.
+   * Génère un échéancier pour une facture.
    * Fonctionne pour un particulier (3 fois sans frais)
-   * ou une flotte (1 Ã©chÃ©ance Ã  30 jours).
+   * ou une flotte (1 échéance à 30 jours).
    */
   async createPaymentSchedule(workspaceId: string, dto: any) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: dto.invoice_id, workspace_id: workspaceId }
     });
 
-    if (!invoice) throw new NotFoundException("Facture non trouvÃ©e");
+    if (!invoice) throw new NotFoundException("Facture non trouvée");
 
     const amountPerInstallment = invoice.total / dto.installments;
     const schedules = [];
 
     for (let i = 0; i < dto.installments; i++) {
       const dueDate = new Date();
-      // On dÃ©cale la date : i=0 (aujourd'hui), i=1 (+30 jours), etc.
+      // On décale la date : i=0 (aujourd'hui), i=1 (+30 jours), etc.
       dueDate.setDate(dueDate.getDate() + (i * dto.interval_days));
 
       schedules.push({
@@ -44,8 +44,8 @@ export class PaymentsService {
   }
 
   /**
-   * RÃ‰CUPÃ‰RATION DES RAPPELS (Le coeur du rÃ©acteur)
-   * Liste toutes les Ã©chÃ©ances dÃ©passÃ©es non payÃ©es.
+   * RÉCUPÉRATION DES RAPPELS (Le cœur du réacteur)
+   * Liste toutes les échéances dépassées non payées.
    */
 // apps/backend/src/modules/finance/payments.service.ts
 
@@ -55,7 +55,7 @@ async getOverdueSchedules(workspaceId: string) {
   return this.prisma.paymentSchedule.findMany({
     where: {
       workspace_id: workspaceId,
-      // â¬‡ï¸ CETTE LIGNE EST CRUCIALE : On ne veut QUE ce qui n'est pas payÃ©
+      // Cette ligne est cruciale : on ne veut que ce qui n'est pas payé
       status: PAYMENT_SCHEDULE_STATUS.PENDING,
       due_date: { lt: today }
     },
@@ -74,24 +74,24 @@ async getOverdueSchedules(workspaceId: string) {
 
 // DANS LE BACKEND
   async recordPayment(workspaceId: string, dto: { schedule_id: string, method: string, user_id?: string }) {
-    // Liste des statuts considÃ©rÃ©s comme "En attente" pour la flexibilitÃ©
+    // Liste des statuts considérés comme "En attente" pour la flexibilité
     const pendingStatus = PAYMENT_SCHEDULE_STATUS.PENDING;
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. RÃ©cupÃ©rer l'Ã©chÃ©ance (PaymentSchedule)
+      // 1. Récupérer l'échéance (PaymentSchedule)
       const schedule = await tx.paymentSchedule.findUnique({
         where: { id: dto.schedule_id },
         include: { invoice: true }
       });
 
-      if (!schedule) throw new NotFoundException("Ã‰chÃ©ance introuvable");
+      if (!schedule) throw new NotFoundException("Échéance introuvable");
 
-      // 2. SÃ‰CURITÃ‰ UTILISATEUR (Ã‰viter l'erreur 500)
+      // 2. SÉCURITÉ UTILISATEUR (éviter l'erreur 500)
       let finalUserId = dto.user_id;
       const userExists = await tx.user.findFirst({ where: { id: finalUserId } });
 
       if (!userExists) {
-        // Si l'utilisateur envoyÃ© n'existe pas, on prend le premier du workspace
+        // Si l'utilisateur envoyé n'existe pas, on prend le premier du workspace
         const fallbackUser = await tx.user.findFirst({ where: { workspace_id: workspaceId } });
         if (!fallbackUser) throw new BadRequestException("Aucun utilisateur valide pour l'encaissement.");
         finalUserId = fallbackUser.id;
@@ -121,23 +121,23 @@ async getOverdueSchedules(workspaceId: string) {
         },
       });
 
-      // 4. MARQUER L'Ã‰CHÃ‰ANCE COMME PAYÃ‰E
-      // On utilise le format majuscule par convention, mais le code est prÃªt pour tout
+      // 4. MARQUER L'ÉCHÉANCE COMME PAYÉE
+      // On utilise le format majuscule par convention, mais le code est prêt pour tout
       await tx.paymentSchedule.update({
         where: { id: dto.schedule_id },
         data: { status: PAYMENT_SCHEDULE_STATUS.PAID }
       });
 
-      // 5. VÃ‰RIFICATION DU SOLDE DE LA FACTURE
-      // On compte combien il reste d'Ã©chÃ©ances en attente (Maj ou Min)
+      // 5. VÉRIFICATION DU SOLDE DE LA FACTURE
+      // On compte combien il reste d'échéances en attente (majuscule ou minuscule)
       const remainingSchedules = await tx.paymentSchedule.count({
         where: {
           invoice_id: schedule.invoice_id,
-          status: pendingStatus // GÃ¨re 'pending' ET 'PENDING'
+          status: pendingStatus // Gère 'pending' ET 'PENDING'
         }
       });
 
-      // 6. SI TOUT EST PAYÃ‰, ON SOLDE LA FACTURE
+      // 6. SI TOUT EST PAYÉ, ON SOLDE LA FACTURE
       if (remainingSchedules === 0) {
         await tx.invoice.update({
           where: { id: schedule.invoice_id },
@@ -145,7 +145,7 @@ async getOverdueSchedules(workspaceId: string) {
         });
       }
 
-      console.log(`[PAYMENT SUCCESS] Ã‰chÃ©ance ${dto.schedule_id} soldÃ©e par l'user ${finalUserId}`);
+      console.log(`[PAYMENT SUCCESS] Échéance ${dto.schedule_id} soldée par l'user ${finalUserId}`);
       return payment;
     });
   }
