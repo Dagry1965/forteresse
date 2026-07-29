@@ -21,9 +21,12 @@ export class ClientsService {
     });
   }
 
-  async findOne(id: string) {
-    const client = await this.prisma.client.findUnique({
-      where: { id },
+  async findOne(workspaceId: string, id: string) {
+    const client = await this.prisma.client.findFirst({
+      where: {
+        id,
+        workspace_id: workspaceId,
+      },
       include: {
         contacts: {
           where: { deleted_at: null },
@@ -98,8 +101,12 @@ export class ClientsService {
     });
   }
 
-  async update(id: string, dto: UpdateClientDto) {
-    await this.findOne(id);
+  async update(
+    workspaceId: string,
+    id: string,
+    dto: UpdateClientDto,
+  ) {
+    await this.findOne(workspaceId, id);
 
     return this.prisma.client.update({
       where: { id },
@@ -137,12 +144,15 @@ export class ClientsService {
   }
 
   // === SOFT DELETE avec protections ===
-  async softDelete(id: string) {
-    await this.findOne(id);
+  async softDelete(workspaceId: string, id: string) {
+    await this.findOne(workspaceId, id);
 
     // Vérifie les véhicules
     const vehicleCount = await this.prisma.vehicle.count({
-      where: { client_id: id },
+      where: {
+        workspace_id: workspaceId,
+        client_id: id,
+      },
     });
 
     if (vehicleCount > 0) {
@@ -154,6 +164,7 @@ export class ClientsService {
     // Vérifie les créances ouvertes
     const unpaidInvoicesCount = await this.prisma.invoice.count({
       where: {
+        workspace_id: workspaceId,
         client_id: id,
         status: { not: INVOICE_STATUS.PAID },
       },
@@ -172,9 +183,8 @@ export class ClientsService {
     });
   }
 
-  async restore(id: string) {
-    const client = await this.prisma.client.findUnique({ where: { id } });
-    if (!client) throw new NotFoundException('Client not found');
+  async restore(workspaceId: string, id: string) {
+    await this.findOne(workspaceId, id);
 
     return this.prisma.client.update({
       where: { id },
@@ -183,11 +193,14 @@ export class ClientsService {
   }
 
   // === HARD DELETE (avec protections aussi) ===
-  async hardDelete(id: string) {
-    await this.findOne(id);
+  async hardDelete(workspaceId: string, id: string) {
+    await this.findOne(workspaceId, id);
 
     const vehicleCount = await this.prisma.vehicle.count({
-      where: { client_id: id },
+      where: {
+        workspace_id: workspaceId,
+        client_id: id,
+      },
     });
 
     if (vehicleCount > 0) {
@@ -198,6 +211,7 @@ export class ClientsService {
 
     const unpaidInvoicesCount = await this.prisma.invoice.count({
       where: {
+        workspace_id: workspaceId,
         client_id: id,
         status: { not: INVOICE_STATUS.PAID },
       },

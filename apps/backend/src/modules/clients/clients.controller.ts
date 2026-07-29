@@ -3,11 +3,13 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   Param,
   Patch,
   Post,
   Req,
   ForbiddenException,
+  UseGuards,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -15,19 +17,27 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { CreateClientContactDto } from './dto/create-client-contact.dto';
 import { UpdateClientContactDto } from './dto/update-client-contact.dto';
 import { USER_ROLE } from '../../../../../shared/constants/status.constants';
+import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
 @Controller('clients')
+@UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
   @Get(':workspaceId')
-  findAll(@Param('workspaceId') workspaceId: string) {
+  findAll(
+    @Headers('x-workspace-id') workspaceId: string,
+  ) {
     return this.clientsService.findAll(workspaceId);
   }
 
   @Get('one/:id')
-  findOne(@Param('id') id: string) {
-    return this.clientsService.findOne(id);
+  findOne(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.clientsService.findOne(workspaceId, id);
   }
 
   @Post()
@@ -36,8 +46,12 @@ export class ClientsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateClientDto) {
-    return this.clientsService.update(id, dto);
+  update(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateClientDto,
+  ) {
+    return this.clientsService.update(workspaceId, id, dto);
   }
 
 
@@ -68,18 +82,28 @@ export class ClientsController {
 
   // === SOFT DELETE (accessible à tous) ===
   @Patch(':id/soft-delete')
-  softDelete(@Param('id') id: string) {
-    return this.clientsService.softDelete(id);
+  softDelete(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.clientsService.softDelete(workspaceId, id);
   }
 
   @Patch(':id/restore')
-  restore(@Param('id') id: string) {
-    return this.clientsService.restore(id);
+  restore(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.clientsService.restore(workspaceId, id);
   }
 
   // === HARD DELETE (uniquement Admin) ===
   @Delete(':id/hard')
- hardDelete(@Param('id') id: string, @Req() req: any) {
+  hardDelete(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
     // Vérification du rôle
     const user = req.user;
 
@@ -91,6 +115,6 @@ export class ClientsController {
       throw new ForbiddenException('Accès réservé aux administrateurs');
     }
 
-    return this.clientsService.hardDelete(id);
+    return this.clientsService.hardDelete(workspaceId, id);
   }
 }
