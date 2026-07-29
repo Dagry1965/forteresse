@@ -5,7 +5,7 @@ import { ClientsService } from './clients.service';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule],
   controllers: [ClientsController],
   providers: [ClientsService],
   exports: [ClientsService], // Utile si d'autres modules en ont besoin
