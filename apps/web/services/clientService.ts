@@ -85,7 +85,7 @@ export const clientService = {
       throw new Error('workspaceId est requis');
     }
 
-    return API.get<Client[]>(`/api/clients/${workspaceId}`);
+    return API.get<Client[]>('/api/clients');
   },
 
   async getOne(id: string): Promise<Client> {
