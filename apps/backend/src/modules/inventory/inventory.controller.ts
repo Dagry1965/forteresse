@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
@@ -15,6 +16,7 @@ import { PurchaseReceiptService } from './purchase-receipt.service';
 import { StockService } from './stock.service';
 
 import { InventoryFilterDto } from './dto/inventory-filter.dto';
+import { CreatePurchaseReceiptDto } from './dto/create-purchase-receipt.dto';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
@@ -62,11 +64,15 @@ export class InventoryController {
   @Post('receipts')
   async createReceipt(
     @Headers('x-workspace-id') workspaceId: string,
-    @Body() data: any,
+    @Body() data: CreatePurchaseReceiptDto,
+    @Req() req: any,
   ) {
     return this.purchaseReceiptService.createReceipt(
       workspaceId,
-      data,
+      {
+        ...data,
+        userId: req.user?.id,
+      },
     );
   }
 
