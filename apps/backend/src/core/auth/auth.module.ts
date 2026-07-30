@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersService } from './users.service';
 import { JwtStrategy } from './jwt.strategy';
+import { getJwtSecret } from './jwt-secret';
 
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { WorkspaceGuard } from './workspace.guard';
@@ -17,7 +18,7 @@ import { PrismaModule } from '../../core/prisma/prisma.module';
     PrismaModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'super-secret-key',
+      secret: getJwtSecret(),
       signOptions: { expiresIn: '1d' },
     }),
   ],
