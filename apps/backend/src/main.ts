@@ -44,20 +44,6 @@ async function bootstrap() {
   console.log(`🚀 Forteresse ERP Backend listening on port ${port}`);
   console.log(`🛡️  Multi-tenant Interceptor active`);
 
-  const server = app.getHttpAdapter().getInstance();
-  const router = server._router || server.router;
-
-  const routes = router.stack
-    .filter((layer: any) => layer.route)
-    .map((layer: any) => {
-      const method = Object.keys(layer.route.methods)[0].toUpperCase();
-      return `${method} ${layer.route.path}`;
-    });
-
-  console.log('\n=== 📍 Routes disponibles ===');
-  routes.forEach((route: string) => console.log(route));
-  console.log('================================\n');
-  // =============================================
 }
 
 bootstrap();
