@@ -196,8 +196,6 @@ async getPendingFleetItems(workspaceId: string, clientId: string) {
     }
   });
   
-  // LOG DE DEBUG : Regarde ton terminal noir NestJS après avoir rafraîchi la page
-  console.log("Nombre de proformas sur le premier RDV:", data[0]?.proformas?.length);
   
   return data;
 }
