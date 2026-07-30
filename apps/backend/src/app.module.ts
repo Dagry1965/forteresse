@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 
@@ -21,10 +21,6 @@ import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { TimeSlotsModule } from './modules/timeslots/timeslots.module';
 import { ProformasModule } from './modules/proformas/proformas.module';
 import { UsersModule } from './modules/users/users.module'; 
-
-console.log({
-  InventoryModule,
-});
 
 @Module({
   imports: [
