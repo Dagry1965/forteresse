@@ -11,6 +11,7 @@ import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { CreateScheduleDto } from './dto/create-schedule.dto';
+import { RecordSchedulePaymentDto } from './dto/record-schedule-payment.dto';
 
 @Controller('finance/payments')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -36,7 +37,7 @@ export class PaymentsController {
   @Post('record')
   async record(
     @Headers('x-workspace-id') workspaceId: string,
-    @Body() dto: any,
+    @Body() dto: RecordSchedulePaymentDto,
     @Req() req: any,
   ) {
     return this.paymentsService.recordPayment(
