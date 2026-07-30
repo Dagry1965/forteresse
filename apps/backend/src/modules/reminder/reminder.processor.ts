@@ -11,7 +11,6 @@ export class ReminderProcessor extends WorkerHost {
   }
 
   async process(job: Job<any>): Promise<any> {
-    console.log(`Reminder job ignored temporarily: ${job.name}`);
 
     return this.reminderService.processPaymentReminders();
   }
