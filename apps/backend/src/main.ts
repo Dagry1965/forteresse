@@ -44,9 +44,6 @@ async function bootstrap() {
   console.log(`🚀 Forteresse ERP Backend listening on port ${port}`);
   console.log(`🛡️  Multi-tenant Interceptor active`);
 
-  // =============================================
-  // ✅ LOG DES ROUTES (à enlever après debug)
-  // =============================================
   const server = app.getHttpAdapter().getInstance();
   const router = server._router || server.router;
 
