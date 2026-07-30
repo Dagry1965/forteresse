@@ -18,7 +18,6 @@ export class PurchaseOrderService {
    * Création d'une commande fournisseur
    */
   async createOrder(workspaceId: string, userId: string | null, data: any) {
-    console.log('🔍 Données reçues dans le service :', data);
 
     if (!workspaceId) {
       throw new BadRequestException('Workspace manquant');
