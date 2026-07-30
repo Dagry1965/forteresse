@@ -1,4 +1,4 @@
-﻿import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import Database from 'better-sqlite3';
 import { readdir, stat, unlink } from 'fs/promises';
@@ -18,7 +18,6 @@ export class BackupService {
   private readonly databasePath = join(this.dataDir, 'dev.db');
   private readonly backupPrefix = 'dev-backup-auto-';
   private readonly retentionCount = 7;
-
 
   @Cron('0 2 * * *')
   async createDailyBackup(): Promise<void> {
@@ -46,27 +45,48 @@ export class BackupService {
 
       await database.backup(backupPath);
 
-      this.logger.log(`Sauvegarde SQLite créée : ${backupPath}`);
+      this.logger.log(
+        `Sauvegarde SQLite créée : ${backupPath}`,
+      );
 
       this.verifyBackupIntegrity(backupPath);
 
-      await this.googleDriveService.uploadBackup(
-        backupPath,
-        backupFileName,
-      );
+      let status = 'SUCCESS';
+      let destination = 'LOCAL_AND_GOOGLE_DRIVE';
+      let driveErrorMessage: string | null = null;
+
+      try {
+        await this.googleDriveService.uploadBackup(
+          backupPath,
+          backupFileName,
+        );
+      } catch (error) {
+        status = 'PARTIAL';
+        destination = 'LOCAL';
+
+        driveErrorMessage =
+          error instanceof Error
+            ? error.stack ?? error.message
+            : String(error);
+
+        this.logger.warn(
+          `Sauvegarde locale réussie, mais envoi Google Drive impossible : ${driveErrorMessage}`,
+        );
+      }
 
       await this.removeOldBackups();
 
       await this.prisma.backupLog.create({
         data: {
           file_name: backupFileName,
-          status: 'SUCCESS',
-          destination: 'LOCAL_AND_GOOGLE_DRIVE',
+          status,
+          destination,
+          error_message: driveErrorMessage,
         },
       });
 
       this.logger.log(
-        `Journal de sauvegarde enregistré : ${backupFileName}`,
+        `Journal de sauvegarde enregistré : ${backupFileName} (${status})`,
       );
     } catch (error) {
       const errorMessage =
@@ -75,7 +95,7 @@ export class BackupService {
           : String(error);
 
       this.logger.error(
-        'Échec de la sauvegarde automatique',
+        'Échec de la sauvegarde automatique locale',
         errorMessage,
       );
 
@@ -84,7 +104,7 @@ export class BackupService {
           data: {
             file_name: backupFileName,
             status: 'FAILED',
-            destination: 'LOCAL_AND_GOOGLE_DRIVE',
+            destination: 'LOCAL',
             error_message: errorMessage,
           },
         });
@@ -153,5 +173,3 @@ export class BackupService {
     }
   }
 }
-
-
