@@ -178,58 +178,7 @@ export class PurchaseOrderService {
     return this.findOne(workspaceId, id);
   }
 
-  async generateFromAlert(workspaceId: string, itemId: string) {
-  return this.prisma.$transaction(async (tx) => {
-    // 1. Récupérer l'article et son fournisseur
-    const item = await tx.stockItem.findUnique({
-      where: { id: itemId },
-      include: { supplier: true }
-    });
 
-    if (!item || !item.supplier_id) throw new Error("Fournisseur non défini pour cet article");
-
-    // 2. Chercher une commande existante en DRAFT pour ce fournisseur
-    let draftOrder = await tx.purchaseOrder.findFirst({
-      where: {
-        supplier_id: item.supplier_id,
-        status: PURCHASE_ORDER_STATUS.DRAFT,
-        workspace_id: workspaceId
-      }
-    });
-
-    // 3. Si pas de brouillon, on en crée un
-    if (!draftOrder) {
-      draftOrder = await tx.purchaseOrder.create({
-        data: {
-          reference: `CMD-${Date.now()}`,
-          supplier_id: item.supplier_id,
-          workspace_id: workspaceId,
-          status: PURCHASE_ORDER_STATUS.DRAFT
-        }
-      });
-    }
-
-    // 4. Ajouter l'article à la commande (ou mettre à jour la quantité)
-    const orderQuantity = item.min_stock * 2; // Stratégie de commande simple (ex: double du seuil)
-
-    await tx.purchaseOrderItem.upsert({
-      where: {
-        // Attention : Nécessite un index unique sur purchase_order_id + item_id dans votre Prisma
-        // Sinon, faites une recherche simple avant
-        id: `temp-${draftOrder.id}-${item.id}` 
-      },
-      update: { quantity: { increment: orderQuantity } },
-      create: {
-        purchase_order_id: draftOrder.id,
-        item_id: item.id,
-        quantity: orderQuantity,
-        price_buy: item.price_buy
-      }
-    });
-
-    return draftOrder;
-  });
-}
 
 
 
