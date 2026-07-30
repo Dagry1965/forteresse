@@ -15,6 +15,8 @@ import {
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { AppointmentsService } from './appointments.service';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('appointments')
@@ -57,7 +59,7 @@ export class AppointmentController {
    @Post()
   create(
     @Headers('x-workspace-id') headerWorkspaceId: string,
-    @Body() dto: any,
+    @Body() dto: CreateAppointmentDto,
     @Req() req: any,
   ) {
     const workspaceId =
@@ -84,7 +86,7 @@ export class AppointmentController {
   update(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: UpdateAppointmentDto,
   ) {
     return this.appointmentsService.update(workspaceId, id, dto);
   }
