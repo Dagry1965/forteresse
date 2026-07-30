@@ -10,6 +10,7 @@ import {
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { CreateScheduleDto } from './dto/create-schedule.dto';
 
 @Controller('finance/payments')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -19,7 +20,7 @@ export class PaymentsController {
   @Post('schedule')
   async createSchedule(
     @Headers('x-workspace-id') workspaceId: string,
-    @Body() dto: any,
+    @Body() dto: CreateScheduleDto,
   ) {
     return this.paymentsService.createPaymentSchedule(
       workspaceId,
