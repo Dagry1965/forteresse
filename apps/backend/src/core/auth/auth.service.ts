@@ -1,4 +1,4 @@
-﻿import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as argon2 from 'argon2';
@@ -68,7 +68,6 @@ export class AuthService {
       },
     };
 
-    console.log(">>> PAYLOAD RENVOYÉ =", response);
 
     return response;
   }
