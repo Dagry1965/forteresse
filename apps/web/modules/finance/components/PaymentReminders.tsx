@@ -33,8 +33,7 @@ const handleQuickPay = async (scheduleId: string) => {
     // On appelle le service frontend qui, lui, appellera l'API
     await financeService.recordPayment({
       schedule_id: scheduleId,
-      method: 'CB', 
-      user_id: 'votre-id-user' // À dynamiser plus tard avec l'auth
+      method: 'CB',
     });
     
     toast.success("Paiement encaissé avec succès !");

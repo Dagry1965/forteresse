@@ -1,4 +1,4 @@
-﻿import { API } from '@/lib/api';
+import { API } from '@/lib/api';
 
 export const financeService = {
   async getUnpaidInvoices(workspaceId?: string) {
@@ -26,7 +26,6 @@ export const financeService = {
   async recordPayment(data: {
     schedule_id: string;
     method: string;
-    user_id?: string;
   }) {
     return API.post(
       '/api/finance/payments/record',
