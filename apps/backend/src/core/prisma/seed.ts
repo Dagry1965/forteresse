@@ -30,10 +30,10 @@ const PAPA_SY_SAVANE_EMAIL = 'papa.sy.savane@amarkhys.com';
 const PAPA_SY_SAVANE_PASSWORD = 'bonjourpapa';
 
 const pick = <T>(values: readonly T[]): T =>
-  values[Math.floor(Math.random() * values.length)];
+  faker.helpers.arrayElement([...values]);
 
 const randomInt = (min: number, max: number): number =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
+  faker.number.int({ min, max });
 
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
@@ -507,10 +507,19 @@ async function main(): Promise<void> {
     CASE_STATUS.INVOICED,
   ] as const;
 
+  const proformaStages = [
+    PROFORMA_STATUS.ACCEPTED,
+    PROFORMA_STATUS.SENT,
+    PROFORMA_STATUS.ACCEPTED,
+    PROFORMA_STATUS.DRAFT,
+    PROFORMA_STATUS.ACCEPTED,
+    PROFORMA_STATUS.REJECTED,
+  ] as const;
+
   const invoiceStages = [
-    INVOICE_STATUS.DRAFT,
-    INVOICE_STATUS.UNPAID,
+    INVOICE_STATUS.OVERDUE,
     INVOICE_STATUS.PARTIALLY_PAID,
+    INVOICE_STATUS.UNPAID,
     INVOICE_STATUS.PAID,
     INVOICE_STATUS.OVERDUE,
     INVOICE_STATUS.CANCELLED,
@@ -672,12 +681,8 @@ async function main(): Promise<void> {
       lineTotals.reduce((sum, value) => sum + value, 0),
     );
 
-    const proformaStatus = pick([
-      PROFORMA_STATUS.DRAFT,
-      PROFORMA_STATUS.SENT,
-      PROFORMA_STATUS.ACCEPTED,
-      PROFORMA_STATUS.REJECTED,
-    ]);
+    const proformaStatus =
+      proformaStages[proformaCount % proformaStages.length];
 
     const proforma = await prisma.proforma.create({
       data: {
