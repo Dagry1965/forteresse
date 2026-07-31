@@ -50,7 +50,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
         {/* LOGO */}
         <div className="p-6 text-xl font-bold border-b border-[oklch(0.35_0_0)] tracking-wide">
-          forteresse <span className="text-[oklch(0.65_0.15_260)]">erp</span>
+          AMARKHYS <span className="text-[oklch(0.65_0.15_260)]">ERP</span>
         </div>
 
         {/* NAVIGATION */}

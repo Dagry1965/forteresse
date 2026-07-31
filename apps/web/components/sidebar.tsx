@@ -25,7 +25,7 @@ export default function Sidebar() {
       {/* HEADER */}
       <div className="px-6 py-6 border-b border-[oklch(0.35_0_0)]">
         <h1 className="text-xl font-bold tracking-wide">
-          forteresse <span className="text-[oklch(0.65_0.15_260)]">erp</span>
+          AMARKHYS <span className="text-[oklch(0.65_0.15_260)]">ERP</span>
         </h1>
 
         <p className="mt-2 text-sm text-[oklch(0.85_0_0)]">

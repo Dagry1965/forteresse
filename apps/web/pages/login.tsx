@@ -79,7 +79,7 @@ export default function LoginPage() {
         className="w-full max-w-md rounded-2xl bg-white px-6 py-8 shadow-lg"
       >
         <h2 className="mb-6 text-center text-2xl font-bold text-slate-900">
-          Forteresse ERP - Login
+          AMARKHYS ERP - Login
         </h2>
 
         {error && (
