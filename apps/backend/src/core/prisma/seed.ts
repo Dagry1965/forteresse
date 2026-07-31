@@ -23,11 +23,17 @@ const WORKSPACE_ID = 'seed-workspace-1';
 const ADMIN_EMAIL = 'admin@forteresse.local';
 const PASSWORD = 'adminpassword';
 
+const JEAN_LUC_EMAIL = 'jean.luc.ohin@amarkhys.com';
+const JEAN_LUC_PASSWORD = 'bonjourjeanluc';
+
+const PAPA_SY_SAVANE_EMAIL = 'papa.sy.savane@amarkhys.com';
+const PAPA_SY_SAVANE_PASSWORD = 'bonjourpapa';
+
 const pick = <T>(values: readonly T[]): T =>
-  values[Math.floor(Math.random() * values.length)];
+  faker.helpers.arrayElement([...values]);
 
 const randomInt = (min: number, max: number): number =>
-  Math.floor(Math.random() * (max - min + 1)) + min;
+  faker.number.int({ min, max });
 
 const addDays = (date: Date, days: number): Date => {
   const result = new Date(date);
@@ -211,7 +217,7 @@ async function main(): Promise<void> {
   const workspace = await prisma.workspace.create({
     data: {
       id: WORKSPACE_ID,
-      name: 'Garage Forteresse D\u00e9monstration',
+      name: 'Garage AMARKHYS D\u00e9monstration',
       businessSettings: {
         create: {
           openingTime: '08:00',
@@ -225,17 +231,37 @@ async function main(): Promise<void> {
   });
 
   const hashedPassword = await argon2.hash(PASSWORD);
+  const jeanLucPassword = await argon2.hash(JEAN_LUC_PASSWORD);
+  const papaSySavanePassword = await argon2.hash(PAPA_SY_SAVANE_PASSWORD);
 
   const admin = await prisma.user.create({
     data: {
       email: ADMIN_EMAIL,
-      name: 'Administrateur Forteresse',
+      name: 'Administrateur AMARKHYS',
       password: hashedPassword,
       workspace_id: workspace.id,
     },
   });
 
-  const users = [admin];
+  const jeanLucOhin = await prisma.user.create({
+    data: {
+      email: JEAN_LUC_EMAIL,
+      name: 'Jean-Luc Ohin',
+      password: jeanLucPassword,
+      workspace_id: workspace.id,
+    },
+  });
+
+  const papaSySavane = await prisma.user.create({
+    data: {
+      email: PAPA_SY_SAVANE_EMAIL,
+      name: 'Papa Sy Savané',
+      password: papaSySavanePassword,
+      workspace_id: workspace.id,
+    },
+  });
+
+  const users = [admin, jeanLucOhin, papaSySavane];
 
   for (let index = 1; index <= 7; index += 1) {
     users.push(
@@ -255,9 +281,9 @@ async function main(): Promise<void> {
       workspace_id: workspace.id,
       user_id: user.id,
       role:
-        index === 0
+        index <= 2
           ? USER_ROLE.ADMIN
-          : index <= 5
+          : index <= 7
             ? USER_ROLE.MECHANIC
             : USER_ROLE.MEMBER,
     })),
@@ -481,10 +507,19 @@ async function main(): Promise<void> {
     CASE_STATUS.INVOICED,
   ] as const;
 
+  const proformaStages = [
+    PROFORMA_STATUS.ACCEPTED,
+    PROFORMA_STATUS.SENT,
+    PROFORMA_STATUS.ACCEPTED,
+    PROFORMA_STATUS.DRAFT,
+    PROFORMA_STATUS.ACCEPTED,
+    PROFORMA_STATUS.REJECTED,
+  ] as const;
+
   const invoiceStages = [
-    INVOICE_STATUS.DRAFT,
-    INVOICE_STATUS.UNPAID,
+    INVOICE_STATUS.OVERDUE,
     INVOICE_STATUS.PARTIALLY_PAID,
+    INVOICE_STATUS.UNPAID,
     INVOICE_STATUS.PAID,
     INVOICE_STATUS.OVERDUE,
     INVOICE_STATUS.CANCELLED,
@@ -646,12 +681,8 @@ async function main(): Promise<void> {
       lineTotals.reduce((sum, value) => sum + value, 0),
     );
 
-    const proformaStatus = pick([
-      PROFORMA_STATUS.DRAFT,
-      PROFORMA_STATUS.SENT,
-      PROFORMA_STATUS.ACCEPTED,
-      PROFORMA_STATUS.REJECTED,
-    ]);
+    const proformaStatus =
+      proformaStages[proformaCount % proformaStages.length];
 
     const proforma = await prisma.proforma.create({
       data: {

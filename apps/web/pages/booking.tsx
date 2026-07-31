@@ -120,7 +120,7 @@ export default function BookingPage() {
         </h1>
 
         <p className="mt-2 text-[oklch(0.45_0_0)]">
-          Votre garage Forteresse à votre service
+          Votre garage AMARKHYS à votre service
         </p>
       </div>
 
