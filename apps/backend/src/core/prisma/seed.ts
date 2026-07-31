@@ -211,7 +211,7 @@ async function main(): Promise<void> {
   const workspace = await prisma.workspace.create({
     data: {
       id: WORKSPACE_ID,
-      name: 'Garage Forteresse D\u00e9monstration',
+      name: 'Garage AMARKHYS D\u00e9monstration',
       businessSettings: {
         create: {
           openingTime: '08:00',
