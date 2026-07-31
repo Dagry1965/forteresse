@@ -23,6 +23,12 @@ const WORKSPACE_ID = 'seed-workspace-1';
 const ADMIN_EMAIL = 'admin@forteresse.local';
 const PASSWORD = 'adminpassword';
 
+const JEAN_LUC_EMAIL = 'jean.luc.ohin@amarkhys.com';
+const JEAN_LUC_PASSWORD = 'bonjourjeanluc';
+
+const PAPA_SY_SAVANE_EMAIL = 'papa.sy.savane@amarkhys.com';
+const PAPA_SY_SAVANE_PASSWORD = 'bonjourpapa';
+
 const pick = <T>(values: readonly T[]): T =>
   values[Math.floor(Math.random() * values.length)];
 
@@ -225,17 +231,37 @@ async function main(): Promise<void> {
   });
 
   const hashedPassword = await argon2.hash(PASSWORD);
+  const jeanLucPassword = await argon2.hash(JEAN_LUC_PASSWORD);
+  const papaSySavanePassword = await argon2.hash(PAPA_SY_SAVANE_PASSWORD);
 
   const admin = await prisma.user.create({
     data: {
       email: ADMIN_EMAIL,
-      name: 'Administrateur Forteresse',
+      name: 'Administrateur AMARKHYS',
       password: hashedPassword,
       workspace_id: workspace.id,
     },
   });
 
-  const users = [admin];
+  const jeanLucOhin = await prisma.user.create({
+    data: {
+      email: JEAN_LUC_EMAIL,
+      name: 'Jean-Luc Ohin',
+      password: jeanLucPassword,
+      workspace_id: workspace.id,
+    },
+  });
+
+  const papaSySavane = await prisma.user.create({
+    data: {
+      email: PAPA_SY_SAVANE_EMAIL,
+      name: 'Papa Sy Savané',
+      password: papaSySavanePassword,
+      workspace_id: workspace.id,
+    },
+  });
+
+  const users = [admin, jeanLucOhin, papaSySavane];
 
   for (let index = 1; index <= 7; index += 1) {
     users.push(
@@ -255,9 +281,9 @@ async function main(): Promise<void> {
       workspace_id: workspace.id,
       user_id: user.id,
       role:
-        index === 0
+        index <= 2
           ? USER_ROLE.ADMIN
-          : index <= 5
+          : index <= 7
             ? USER_ROLE.MECHANIC
             : USER_ROLE.MEMBER,
     })),
