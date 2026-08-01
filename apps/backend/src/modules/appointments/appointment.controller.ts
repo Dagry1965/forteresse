@@ -11,6 +11,7 @@ import {
   Req,
   UseGuards,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
@@ -73,11 +74,13 @@ export class AppointmentController {
       throw new BadRequestException('Workspace ID missing');
     }
 
-    const userId =
-      req.user?.id ||
-      req.user?.userId ||
-      req.user?.sub ||
-      null;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Utilisateur authentifie introuvable.',
+      );
+    }
 
     return this.appointmentsService.create(workspaceId, userId, dto);
   }

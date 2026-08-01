@@ -14,7 +14,7 @@ type RecordInvoicePaymentInput = {
   invoice_id: string;
   amount: number;
   method: string;
-  user_id?: string;
+  user_id: string;
   reference?: string;
   notes?: string;
   paid_at?: Date;
@@ -23,7 +23,7 @@ type RecordInvoicePaymentInput = {
 type RecordSchedulePaymentInput = {
   schedule_id: string;
   method: string;
-  user_id?: string;
+  user_id: string;
   reference?: string;
   notes?: string;
   paid_at?: Date;
@@ -36,39 +36,24 @@ export class PaymentsService {
   private async resolveUserId(
     tx: Prisma.TransactionClient,
     workspaceId: string,
-    requestedUserId?: string,
+    requestedUserId: string,
   ): Promise<string> {
-    if (requestedUserId) {
-      const requestedUser = await tx.user.findFirst({
-        where: {
-          id: requestedUserId,
-          workspace_id: workspaceId,
-          deleted_at: null,
-        },
-        select: { id: true },
-      });
-
-      if (requestedUser) {
-        return requestedUser.id;
-      }
-    }
-
-    const fallbackUser = await tx.user.findFirst({
+    const requestedUser = await tx.user.findFirst({
       where: {
+        id: requestedUserId,
         workspace_id: workspaceId,
         deleted_at: null,
       },
-      orderBy: { created_at: 'asc' },
       select: { id: true },
     });
 
-    if (!fallbackUser) {
+    if (!requestedUser) {
       throw new BadRequestException(
-        'Aucun utilisateur valide pour enregistrer l’encaissement.',
+        'Utilisateur invalide pour enregistrer l encaissement.',
       );
     }
 
-    return fallbackUser.id;
+    return requestedUser.id;
   }
 
   private async createPaymentInTransaction(

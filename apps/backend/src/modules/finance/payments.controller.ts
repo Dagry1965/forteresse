@@ -6,6 +6,7 @@ import {
   Post,
   Req,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common'; // <-- Ajoutez Post et Body ici
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
@@ -40,11 +41,19 @@ export class PaymentsController {
     @Body() dto: RecordSchedulePaymentDto,
     @Req() req: any,
   ) {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Utilisateur authentifie introuvable.',
+      );
+    }
+
     return this.paymentsService.recordPayment(
       workspaceId,
       {
         ...dto,
-        user_id: req.user?.id || req.user?.sub,
+        user_id: userId,
       },
     );
   }

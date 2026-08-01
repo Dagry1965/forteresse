@@ -8,6 +8,7 @@ import {
   Headers,
   Req,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { FinanceService } from './finance.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
@@ -32,7 +33,14 @@ export class FinanceController {
     @Headers('x-workspace-id') workspaceId: string,
     @Req() req: any,
   ) {
-    const userId = req.user?.id || req.user?.sub;
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Utilisateur authentifie introuvable.',
+      );
+    }
+
     return this.financeService.generateInvoiceFromProforma(
       id,
       workspaceId,
@@ -58,12 +66,20 @@ export class FinanceController {
     @Body('reference') reference?: string,
     @Body('notes') notes?: string,
   ) {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Utilisateur authentifie introuvable.',
+      );
+    }
+
     return this.financeService.registerPayment(
       workspaceId,
       id,
       amount,
       method,
-      req.user?.id || req.user?.sub,
+      userId,
       reference,
       notes,
     );

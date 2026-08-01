@@ -32,25 +32,6 @@ export class AppointmentsService {
       throw new BadRequestException('Workspace ID missing');
     }
 
-    if (!userId) {
-      const fallbackUser = await this.prisma.user.findFirst({
-        where: {
-          workspace_id: workspaceId,
-          deleted_at: null,
-        },
-        orderBy: {
-          created_at: 'asc',
-        },
-      });
-
-      if (!fallbackUser) {
-        throw new BadRequestException(
-          'Aucun utilisateur actif trouvé dans ce workspace',
-        );
-      }
-
-      userId = fallbackUser.id;
-    }
 
     return this.prisma.$transaction(async (tx) => {
       await this.validateAppointmentRelations(tx, workspaceId, dto, userId);

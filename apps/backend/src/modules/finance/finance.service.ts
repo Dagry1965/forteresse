@@ -92,6 +92,21 @@ export class FinanceService {
 
     if (!proforma) throw new BadRequestException('Proforma introuvable.');
 
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new BadRequestException(
+        'Utilisateur invalide pour generer la facture.',
+      );
+    }
+
     const existingInvoice = await this.prisma.invoice.findFirst({
       where: { proforma_id: id },
     });
@@ -118,7 +133,7 @@ export class FinanceService {
         proforma_id: id,
         appointment_id: proforma.appointment_id,
         client_id: appointment.client_id,
-        user_id: userId,
+        user_id: user.id,
         customer_name_snapshot:
           proforma.customer_name_snapshot,
         customer_address_snapshot:
@@ -164,7 +179,7 @@ export class FinanceService {
     invoiceId: string,
     amount: number,
     method: string,
-    userId?: string,
+    userId: string,
     reference?: string,
     notes?: string,
   ) {

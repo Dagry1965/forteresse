@@ -34,7 +34,7 @@ La production ne doit pas etre modifiee directement.
 
 ### LOT 0 - Point de depart et documentation
 
-Statut : EN COURS
+Statut : TERMINE
 
 Objectifs :
 
@@ -47,6 +47,8 @@ Objectifs :
 - creer ce document de suivi.
 
 ### LOT 1 - Utilisateur connecte obligatoire
+
+Statut : TERMINE
 
 Objectifs :
 
@@ -202,3 +204,14 @@ Objectifs :
 - sauvegarde locale creee et ignoree par Git ;
 - infrastructure de tests jugee insuffisante ;
 - document de pilotage initialise.
+
+### 2026-08-01
+
+- suppression du fallback utilisateur sur la creation des rendez-vous ;
+- identite authentifiee obligatoire pour les paiements directs et les paiements d echeance ;
+- suppression du fallback vers le premier utilisateur du workspace ;
+- identite authentifiee obligatoire pour les factures groupees ;
+- validation de l utilisateur actif dans le workspace pour les paiements et factures ;
+- generation de facture depuis devis rattachee a l utilisateur authentifie ;
+- build backend valide apres modifications ;
+- fichier DTO orphelin create-public-appointment.dto.ts conserve pour le LOT 16.

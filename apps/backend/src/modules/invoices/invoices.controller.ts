@@ -5,6 +5,8 @@ import {
   Headers,
   Param,
   Post,
+  Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common'; 
 import { InvoicesService } from './invoices.service';
@@ -32,9 +34,22 @@ export class InvoicesController {
 @Post('fleet')
 async createFleetInvoice(
   @Headers('x-workspace-id') workspaceId: string,
-  @Body() dto: { client_id: string, appointment_ids: string[] }
+  @Body() dto: { client_id: string, appointment_ids: string[] },
+  @Req() req: any,
 ) {
-  return this.invoicesService.createGroupedInvoice(workspaceId, dto);
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new UnauthorizedException(
+      'Utilisateur authentifie introuvable.',
+    );
+  }
+
+  return this.invoicesService.createGroupedInvoice(
+    workspaceId,
+    userId,
+    dto,
+  );
 }
 
 

@@ -122,7 +122,7 @@ export class InvoicesService {
   // CREATE GROUPED INVOICE (La méthode utilisée par Fleet/index.tsx)
   // Enrichie avec copie détaillée des lignes de chaque dossier
   // ---------------------------------------------------------
-  async createGroupedInvoice(workspaceId: string, dto: { client_id: string, appointment_ids: string[] }) {
+  async createGroupedInvoice(workspaceId: string, userId: string, dto: { client_id: string, appointment_ids: string[] }) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Récupérer les dossiers avec le détail complet (Pièces/Main d'oeuvre)
       const appointments = await tx.appointment.findMany({
@@ -150,7 +150,7 @@ export class InvoicesService {
         return sum + Number(amount);
       }, 0);
 
-      // 3. Utilisateur par défaut
+      // 3. Client et utilisateur authentifie
       const client = await tx.client.findFirst({
         where: {
           id: dto.client_id,
@@ -163,8 +163,20 @@ export class InvoicesService {
         throw new NotFoundException('Client introuvable.');
       }
 
-      const defaultUser = await tx.user.findFirst({ where: { workspace_id: workspaceId } });
-      if (!defaultUser) throw new NotFoundException("Utilisateur introuvable.");
+      const user = await tx.user.findFirst({
+        where: {
+          id: userId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        select: { id: true },
+      });
+
+      if (!user) {
+        throw new BadRequestException(
+          'Utilisateur invalide pour creer la facture groupee.',
+        );
+      }
 
       // 4. Créer la Facture Parente
       const invoice = await tx.invoice.create({
@@ -175,7 +187,7 @@ export class InvoicesService {
           type: INVOICE_TYPE.FLEET,
           workspace_id: workspaceId,
           client_id: dto.client_id,
-          user_id: defaultUser.id,
+          user_id: user.id,
           customer_name_snapshot:
             client.company_name || client.name || null,
           customer_address_snapshot:
@@ -305,7 +317,7 @@ export class InvoicesService {
   // ---------------------------------------------------------
   // MÉTHODES DE COMPATIBILITÉ (Gardées pour ne rien casser)
   // ---------------------------------------------------------
-  async createFleetInvoice(workspaceId: string, clientId: string) {
+  async createFleetInvoice(workspaceId: string, userId: string, clientId: string) {
     // Version simplifiée pour un seul client
     return this.prisma.$transaction(async (tx) => {
       const client = await tx.client.findFirst({
@@ -334,6 +346,7 @@ export class InvoicesService {
           type: INVOICE_TYPE.FLEET,
           workspace_id: workspaceId,
           client_id: clientId,
+          user_id: userId,
           customer_name_snapshot:
             client.company_name || client.name || null,
           customer_address_snapshot:
@@ -353,9 +366,9 @@ export class InvoicesService {
     });
   }
 
-  async createGroupedFleetInvoice(workspaceId: string, dto: { client_id: string; appointment_ids: string[] }) {
+  async createGroupedFleetInvoice(workspaceId: string, userId: string, dto: { client_id: string; appointment_ids: string[] }) {
     // Redirige vers la nouvelle logique détaillée
-    return this.createGroupedInvoice(workspaceId, dto);
+    return this.createGroupedInvoice(workspaceId, userId, dto);
   }
 
   // ---------------------------------------------------------
