@@ -57,6 +57,7 @@ export class PurchaseOrderService {
       where: {
         id: { in: itemIds },
         workspace_id: workspaceId,
+        deleted_at: null,
       },
       select: { id: true },
     });
@@ -112,6 +113,7 @@ export class PurchaseOrderService {
     return this.prisma.purchaseOrder.findMany({
       where: {
         workspace_id: workspaceId,
+        deleted_at: null,
       },
       include: {
         supplier: true,
@@ -135,6 +137,7 @@ export class PurchaseOrderService {
       where: {
         id,
         workspace_id: workspaceId,
+        deleted_at: null,
       },
       include: {
         supplier: true,
@@ -163,6 +166,7 @@ export class PurchaseOrderService {
       where: {
         id,
         workspace_id: workspaceId,
+        deleted_at: null,
       },
       data: {
         status,

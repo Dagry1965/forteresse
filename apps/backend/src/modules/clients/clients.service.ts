@@ -16,7 +16,7 @@ export class ClientsService {
     }
 
     return this.prisma.client.findMany({
-      where: { workspace_id: workspaceId },
+      where: { workspace_id: workspaceId, deleted_at: null },
       orderBy: { created_at: 'desc' },
     });
   }
@@ -26,6 +26,7 @@ export class ClientsService {
       where: {
         id,
         workspace_id: workspaceId,
+        deleted_at: null,
       },
       include: {
         contacts: {

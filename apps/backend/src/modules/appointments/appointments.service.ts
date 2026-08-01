@@ -76,6 +76,7 @@ export class AppointmentsService {
           where: {
             id: dto.timeSlotId,
             workspace_id: workspaceId,
+            deleted_at: null,
           },
         });
         if (!timeSlot) {
@@ -239,7 +240,7 @@ export class AppointmentsService {
       );
 
       const newTimeSlot = await tx.timeSlot.findFirst({
-        where: { id: dto.timeSlotId, workspace_id: workspaceId },
+        where: { id: dto.timeSlotId, workspace_id: workspaceId, deleted_at: null },
       });
       if (!newTimeSlot) throw new NotFoundException('TimeSlot not found');
 
@@ -464,18 +465,19 @@ export class AppointmentsService {
       tx.workspace.findFirst({ where: { id: workspaceId } }),
       tx.user.findFirst({ where: { id: userId, workspace_id: workspaceId } }),
       tx.client.findFirst({
-        where: { id: dto.clientId, workspace_id: workspaceId },
+        where: { id: dto.clientId, workspace_id: workspaceId, deleted_at: null },
       }),
       tx.vehicle.findFirst({
         where: {
           id: dto.vehicleId,
           workspace_id: workspaceId,
           client_id: dto.clientId,
+          deleted_at: null,
         },
       }),
       dto.timeSlotId
         ? tx.timeSlot.findFirst({
-            where: { id: dto.timeSlotId, workspace_id: workspaceId },
+            where: { id: dto.timeSlotId, workspace_id: workspaceId, deleted_at: null },
           })
         : Promise.resolve(null),
     ]);
@@ -519,7 +521,7 @@ export class AppointmentsService {
     excludeAppointmentId?: string,
   ) {
     const timeSlot = await prisma.timeSlot.findFirst({
-      where: { id: timeSlotId, workspace_id: workspaceId },
+      where: { id: timeSlotId, workspace_id: workspaceId, deleted_at: null },
     });
     if (!timeSlot) throw new NotFoundException('TimeSlot not found');
     if (timeSlot.status !== TIME_SLOT_STATUS.OPEN) {

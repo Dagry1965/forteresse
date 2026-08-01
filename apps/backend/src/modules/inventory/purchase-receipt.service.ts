@@ -383,6 +383,9 @@ export class PurchaseReceiptService {
       return await this.prisma.purchaseReceipt.findMany({
         where: {
           workspace_id: workspaceId,
+          purchase_order: {
+            deleted_at: null,
+          },
         },
         include: {
           purchase_order: {
@@ -436,6 +439,9 @@ export class PurchaseReceiptService {
         where: {
           id: receiptId,
           workspace_id: workspaceId,
+          purchase_order: {
+            deleted_at: null,
+          },
         },
         include: {
           purchase_order: {

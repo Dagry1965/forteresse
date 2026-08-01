@@ -58,6 +58,8 @@ Objectifs :
 
 ### LOT 2 - Filtres deleted_at
 
+Statut : TERMINE
+
 Objectifs :
 
 - uniformiser l exclusion des entites archivees ;
@@ -215,3 +217,18 @@ Objectifs :
 - generation de facture depuis devis rattachee a l utilisateur authentifie ;
 - build backend valide apres modifications ;
 - fichier DTO orphelin create-public-appointment.dto.ts conserve pour le LOT 16.
+
+### 2026-08-01 - LOT 2
+
+- exclusion uniforme des clients et vehicules archives dans les listes et lectures detaillees ;
+- rendez-vous refuses lorsque le client, le vehicule ou le creneau est archive ;
+- devis et factures archives exclus des listes, lectures, conversions et controles de doublons ;
+- factures groupees et flotte limitees aux rendez-vous et devis actifs ;
+- commandes fournisseurs archivees exclues des listes, lectures et changements de statut ;
+- articles de stock archives refuses lors de la creation de commandes ;
+- receptions liees a une commande archivee exclues des lectures ;
+- paiements archives et factures archivees exclus des rapports de caisse et calculs actifs ;
+- echeances liees a une facture archivee exclues des encaissements et relances ;
+- rapports de consommation limites aux interventions actives ;
+- build backend valide apres modifications.
+

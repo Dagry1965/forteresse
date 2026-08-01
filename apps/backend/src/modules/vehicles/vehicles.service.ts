@@ -76,6 +76,7 @@ export class VehiclesService {
       where: {
         id,
         workspace_id: workspaceId,
+        deleted_at: null,
       },
       include: {
         client: true,

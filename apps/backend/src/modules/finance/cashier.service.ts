@@ -22,7 +22,12 @@ export class CashierService {
     // 2. Récupérer tous les paiements de la journée
     const payments = await this.prisma.payment.findMany({
       where: {
-        invoice: { workspace_id: workspaceId },
+        workspace_id: workspaceId,
+        deleted_at: null,
+        invoice: {
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
         created_at: {
           gte: startOfDay,
           lte: endOfDay,

@@ -129,11 +129,13 @@ export class InvoicesService {
         where: {
           id: { in: dto.appointment_ids },
           workspace_id: workspaceId,
-          client_id: dto.client_id
+          client_id: dto.client_id,
+          deleted_at: null,
         },
         include: { 
           vehicle: true,
           proformas: {
+            where: { deleted_at: null },
             include: { lines: true } // On va chercher les lignes pour le détail
           } 
         }
@@ -266,7 +268,7 @@ export class InvoicesService {
   // ---------------------------------------------------------
   async findOne(id: string, workspaceId: string) {
     const invoice = await this.prisma.invoice.findFirst({
-      where: { id, workspace_id: workspaceId },
+      where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
         client: true,
         user: { select: { name: true } },
@@ -287,7 +289,7 @@ export class InvoicesService {
   // ---------------------------------------------------------
   async findAll(workspaceId: string) {
     const invoices = await this.prisma.invoice.findMany({
-      where: { workspace_id: workspaceId },
+      where: { workspace_id: workspaceId, deleted_at: null },
       include: {
         client: true,
         payments: true,
@@ -306,6 +308,7 @@ export class InvoicesService {
       where: {
         workspace_id: workspaceId,
         status: INVOICE_STATUS.UNPAID,
+        deleted_at: null,
       },
       include: {
         client: true,
@@ -334,7 +337,11 @@ export class InvoicesService {
 
       const pendingCases = await tx.case.findMany({
         where: { workspace_id: workspaceId, customer_id: clientId, status: CASE_STATUS.COMPLETED },
-        include: { proformas: true },
+        include: {
+          proformas: {
+            where: { deleted_at: null },
+          },
+        },
       });
       if (pendingCases.length === 0) throw new Error("Aucun dossier trouvé.");
       const totalAmount = pendingCases.reduce((sum, c) => sum + (c.proformas[0]?.total || 0), 0);
@@ -379,6 +386,7 @@ export class InvoicesService {
       where: {
         id,
         workspace_id: workspaceId,
+        deleted_at: null,
       },
     });
 
@@ -414,6 +422,7 @@ export class InvoicesService {
       where: {
         id,
         workspace_id: workspaceId,
+        deleted_at: null,
       },
     });
 

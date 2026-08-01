@@ -21,7 +21,7 @@ export class ProformasService {
   // ---------------------------------------------------------
   async findAll(workspaceId: string) {
     return this.prisma.proforma.findMany({
-      where: { workspace_id: workspaceId },
+      where: { workspace_id: workspaceId, deleted_at: null },
       include: {
         case: {
           include: { client: true, vehicle: true }
@@ -36,7 +36,7 @@ export class ProformasService {
   // ---------------------------------------------------------
   async findOne(workspaceId: string, id: string) {
     return this.prisma.proforma.findFirst({
-      where: { id, workspace_id: workspaceId },
+      where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
         case: {
           include: { 
@@ -61,7 +61,8 @@ export class ProformasService {
       const proforma = await tx.proforma.findFirst({
         where: {
           id: proformaId,
-          workspace_id: workspaceId
+          workspace_id: workspaceId,
+          deleted_at: null,
         }
       });
 
@@ -112,6 +113,7 @@ export class ProformasService {
         where: {
           id: proformaId,
           workspace_id: workspaceId,
+          deleted_at: null,
         },
       });
     });
@@ -122,7 +124,8 @@ export class ProformasService {
       const proforma = await tx.proforma.findFirst({
         where: {
           id: proformaId,
-          workspace_id: workspaceId
+          workspace_id: workspaceId,
+          deleted_at: null,
         },
         include: {
           case: true,

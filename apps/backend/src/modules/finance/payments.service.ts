@@ -310,6 +310,9 @@ export class PaymentsService {
         workspace_id: workspaceId,
         status: PAYMENT_SCHEDULE_STATUS.PENDING,
         due_date: { lt: new Date() },
+        invoice: {
+          deleted_at: null,
+        },
       },
       include: {
         invoice: {
@@ -334,6 +337,9 @@ export class PaymentsService {
         where: {
           id: dto.schedule_id,
           workspace_id: workspaceId,
+          invoice: {
+            deleted_at: null,
+          },
         },
         include: {
           invoice: true,

@@ -51,7 +51,10 @@ export class ReportsService {
       // On simplifie la requête pour SQLite
       const parts = await this.prisma.interventionPart.findMany({
         where: {
-          intervention: { workspace_id: workspaceId }
+          intervention: {
+            workspace_id: workspaceId,
+            deleted_at: null,
+          },
         },
         include: { item: true },
         take: 50 // On prend les 50 dernières consommations

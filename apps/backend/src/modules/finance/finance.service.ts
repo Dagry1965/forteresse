@@ -23,7 +23,7 @@ export class FinanceService {
   // ---------------------------------------------------------
   async findAllInvoices(workspaceId: string) {
     return this.prisma.invoice.findMany({
-      where: { workspace_id: workspaceId },
+      where: { workspace_id: workspaceId, deleted_at: null },
       include: {
         client: true,
         user: true,
@@ -47,6 +47,7 @@ export class FinanceService {
       where: {
         workspace_id: workspaceId,
         status: INVOICE_STATUS.UNPAID,
+        deleted_at: null,
       },
       include: {
         client: true,
@@ -70,7 +71,7 @@ export class FinanceService {
   // ---------------------------------------------------------
   async getProforma(id: string, workspaceId: string) {
     return this.prisma.proforma.findFirst({
-      where: { id, workspace_id: workspaceId },
+      where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
         appointment: {
           include: {
@@ -87,7 +88,7 @@ export class FinanceService {
   // ---------------------------------------------------------
   async generateInvoiceFromProforma(id: string, workspaceId: string, userId: string) {
     const proforma = await this.prisma.proforma.findFirst({
-      where: { id, workspace_id: workspaceId },
+      where: { id, workspace_id: workspaceId, deleted_at: null },
     });
 
     if (!proforma) throw new BadRequestException('Proforma introuvable.');
@@ -108,7 +109,7 @@ export class FinanceService {
     }
 
     const existingInvoice = await this.prisma.invoice.findFirst({
-      where: { proforma_id: id },
+      where: { proforma_id: id, workspace_id: workspaceId, deleted_at: null },
     });
 
     if (existingInvoice) {
@@ -116,7 +117,7 @@ export class FinanceService {
     }
 
     const appointment = await this.prisma.appointment.findFirst({
-      where: { id: proforma.appointment_id },
+      where: { id: proforma.appointment_id, workspace_id: workspaceId, deleted_at: null },
     });
 
     if (!appointment) {
@@ -157,7 +158,7 @@ export class FinanceService {
   // ---------------------------------------------------------
   async getInvoice(id: string, workspaceId: string) {
     return this.prisma.invoice.findFirst({
-      where: { id, workspace_id: workspaceId },
+      where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
         payments: true,
         proforma: true,
@@ -204,10 +205,13 @@ async getPendingFleetItems(workspaceId: string, clientId: string) {
     where: {
       workspace_id: workspaceId,
       client_id: clientId,
+      deleted_at: null,
     },
     include: {
       vehicle: true,
-      proformas: true // Assure-toi que c'est bien écrit au pluriel comme dans ton schema.prisma
+      proformas: {
+        where: { deleted_at: null },
+      }
     }
   });
   
