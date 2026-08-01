@@ -85,6 +85,14 @@ export class AppointmentController {
     return this.appointmentsService.create(workspaceId, userId, dto);
   }
 
+  @Patch(':id/cancel')
+  cancel(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.appointmentsService.cancel(workspaceId, id);
+  }
+
   @Patch(':id')
   update(
     @Headers('x-workspace-id') workspaceId: string,

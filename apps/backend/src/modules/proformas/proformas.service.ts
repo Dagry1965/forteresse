@@ -10,11 +10,30 @@ import {
   INVOICE_TYPE,
   CASE_STATUS,
   INTERVENTION_STATUS,
+  PAYMENT_SCHEDULE_STATUS,
+  PROFORMA_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class ProformasService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assertStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedTransitions = PROFORMA_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition de proforma interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
+      );
+    }
+  }
 
   // ---------------------------------------------------------
   // LISTER TOUS LES DEVIS
@@ -69,6 +88,15 @@ export class ProformasService {
       if (!proforma) {
         throw new NotFoundException('Proforma introuvable');
       }
+
+      if (proforma.status === PROFORMA_STATUS.ACCEPTED) {
+        return proforma;
+      }
+
+      this.assertStatusTransition(
+        proforma.status,
+        PROFORMA_STATUS.ACCEPTED,
+      );
 
       await tx.proforma.update({
         where: { id: proformaId },
@@ -135,6 +163,12 @@ export class ProformasService {
 
       if (!proforma) {
         throw new NotFoundException('Proforma introuvable');
+      }
+
+      if (proforma.status !== PROFORMA_STATUS.ACCEPTED) {
+        throw new BadRequestException(
+          'Seule une proforma acceptée peut être transformée en facture',
+        );
       }
 
       const existingInvoice = await tx.invoice.findFirst({
@@ -207,7 +241,7 @@ export class ProformasService {
           workspace_id: workspaceId,
           amount: Number(invoice.total),
           due_date: dueDate,
-          status: INVOICE_STATUS.UNPAID
+          status: PAYMENT_SCHEDULE_STATUS.PENDING
         }
       });
 

@@ -1,13 +1,45 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import {
   CASE_STATUS,
   INTERVENTION_STATUS,
+  CASE_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class WorkshopService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assertCaseStatusTransition(
+    currentStatus: string,
+    nextStatus: string,
+  ) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedStatuses = Object.values(CASE_STATUS) as string[];
+    if (!allowedStatuses.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Statut de dossier invalide : ' + nextStatus,
+      );
+    }
+
+    const allowedTransitions = CASE_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition de dossier interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
+      );
+    }
+  }
 
   async getDashboardMetrics(workspaceId: string) {
     const [totalActive, inDiagnosis, inProgress] = await Promise.all([
@@ -39,8 +71,10 @@ export class WorkshopService {
       });
 
       if (!repairCase) {
-        throw new Error('Dossier introuvable');
+        throw new NotFoundException('Dossier introuvable');
       }
+
+      this.assertCaseStatusTransition(repairCase.status, status);
 
       if (status === CASE_STATUS.IN_PROGRESS) {
         await tx.intervention.updateMany({

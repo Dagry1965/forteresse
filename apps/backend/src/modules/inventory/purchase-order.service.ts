@@ -5,7 +5,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SequencingService } from '../shared/sequencing.service';
-import { PURCHASE_ORDER_STATUS } from '../../../../../shared/constants/status.constants';
+import {
+  PURCHASE_ORDER_STATUS,
+  PURCHASE_ORDER_STATUS_TRANSITIONS,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class PurchaseOrderService {
@@ -13,6 +16,31 @@ export class PurchaseOrderService {
     private readonly prisma: PrismaService,
     private readonly sequencingService: SequencingService,
   ) {}
+
+  private assertStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedStatuses = Object.values(PURCHASE_ORDER_STATUS);
+    if (!allowedStatuses.includes(nextStatus as any)) {
+      throw new BadRequestException(
+        'Statut de commande fournisseur invalide : ' + nextStatus,
+      );
+    }
+
+    const allowedTransitions =
+      PURCHASE_ORDER_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition de commande fournisseur interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
+      );
+    }
+  }
 
   /**
    * Création d'une commande fournisseur
@@ -161,6 +189,9 @@ export class PurchaseOrderService {
    * Mise à jour du statut (DRAFT -> SENT -> RECEIVED)
    */
   async updateStatus(workspaceId: string, id: string, status: string) {
+    const order = await this.findOne(workspaceId, id);
+    this.assertStatusTransition(order.status, status);
+
     // On utilise updateMany pour garantir que l'utilisateur ne modifie que son workspace
     const result = await this.prisma.purchaseOrder.updateMany({
       where: {

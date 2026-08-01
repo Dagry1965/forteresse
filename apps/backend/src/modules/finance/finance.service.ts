@@ -2,8 +2,10 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { PaymentsService } from './payments.service';
 import {
+  APPOINTMENT_STATUS,
   INVOICE_STATUS,
   INVOICE_TYPE,
+  PROFORMA_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
@@ -200,24 +202,31 @@ export class FinanceService {
   // ---------------------------------------------------------
   // GET PENDING FLEET ITEMS
   // ---------------------------------------------------------
-async getPendingFleetItems(workspaceId: string, clientId: string) {
-  const data = await this.prisma.appointment.findMany({
-    where: {
-      workspace_id: workspaceId,
-      client_id: clientId,
-      deleted_at: null,
-    },
-    include: {
-      vehicle: true,
-      proformas: {
-        where: { deleted_at: null },
-      }
-    }
-  });
-  
-  
-  return data;
-}
+  async getPendingFleetItems(workspaceId: string, clientId: string) {
+    return this.prisma.appointment.findMany({
+      where: {
+        workspace_id: workspaceId,
+        client_id: clientId,
+        deleted_at: null,
+        status: APPOINTMENT_STATUS.COMPLETED,
+        proformas: {
+          some: {
+            deleted_at: null,
+            status: PROFORMA_STATUS.ACCEPTED,
+          },
+        },
+      },
+      include: {
+        vehicle: true,
+        proformas: {
+          where: {
+            deleted_at: null,
+            status: PROFORMA_STATUS.ACCEPTED,
+          },
+        },
+      },
+    });
+  }
 
 
 }

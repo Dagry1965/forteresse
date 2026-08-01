@@ -11,6 +11,7 @@ import { UpdateInterventionDto } from './dto/update-intervention.dto';
 import {
   INTERVENTION_STATUS,
   PROFORMA_STATUS,
+  INTERVENTION_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
 
 type UpdateInterventionPayload = UpdateInterventionDto & {
@@ -25,6 +26,24 @@ export class InterventionsService {
   constructor(
     private readonly prisma: PrismaService,
   ) {}
+
+  private assertStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedTransitions =
+      INTERVENTION_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition d\u2019intervention interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
+      );
+    }
+  }
 
   async create(
     workspaceId: string,
@@ -225,7 +244,13 @@ export class InterventionsService {
 
     const updateData: any = { updated_at: new Date() };
     if (payload.description !== undefined) updateData.description = payload.description.trim();
-    if (payload.status !== undefined) updateData.status = payload.status;
+    if (payload.status !== undefined) {
+      this.assertStatusTransition(
+        existingIntervention.status,
+        payload.status,
+      );
+      updateData.status = payload.status;
+    }
     if (nextCaseId !== undefined) updateData.case_id = nextCaseId;
 
     return this.prisma.intervention.update({

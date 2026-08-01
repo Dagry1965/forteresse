@@ -10,6 +10,7 @@ import {
   CASE_STATUS,
   INTERVENTION_STATUS,
   TIME_SLOT_STATUS,
+  APPOINTMENT_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
@@ -24,6 +25,27 @@ const COUNTABLE_APPOINTMENT_STATUSES = [
 @Injectable()
 export class AppointmentsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assertAppointmentStatusTransition(
+    currentStatus: string,
+    nextStatus: string,
+  ) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedTransitions =
+      APPOINTMENT_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition de rendez-vous interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
+      );
+    }
+  }
 
   // ==================== MÉTHODES PUBLIQUES ====================
 
@@ -164,6 +186,13 @@ export class AppointmentsService {
   async update(workspaceId: string, id: string, dto: UpdateAppointmentDto) {
     const appointment = await this.findOne(workspaceId, id);
 
+    if (dto.status) {
+      this.assertAppointmentStatusTransition(
+        appointment.status,
+        dto.status,
+      );
+    }
+
     if (dto.date) {
       await this.validateNoSameDayAppointment(
         this.prisma,
@@ -196,9 +225,10 @@ export class AppointmentsService {
         throw new NotFoundException('Appointment not found');
       }
 
-      if (appointment.status === APPOINTMENT_STATUS.CANCELLED) {
-        throw new BadRequestException('Appointment is already cancelled');
-      }
+      this.assertAppointmentStatusTransition(
+        appointment.status,
+        APPOINTMENT_STATUS.CANCELLED,
+      );
 
       // Si ce RDV était compté dans la capacité, décrémenter occupancy
       if (
@@ -611,11 +641,10 @@ async convertToIntervention(
         );
       }
 
-      if (appointment.status === APPOINTMENT_STATUS.CANCELLED) {
-        throw new BadRequestException(
-          'Un rendez-vous annulé ne peut pas être envoyé à l’atelier.',
-        );
-      }
+      this.assertAppointmentStatusTransition(
+        appointment.status,
+        APPOINTMENT_STATUS.IN_PROGRESS,
+      );
 
       const existingCase = await tx.case.findFirst({
         where: {
@@ -669,7 +698,7 @@ async convertToIntervention(
           id: appointment.id,
         },
         data: {
-          status: APPOINTMENT_STATUS.COMPLETED,
+          status: APPOINTMENT_STATUS.IN_PROGRESS,
         },
       });
 

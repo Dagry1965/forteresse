@@ -2,10 +2,11 @@ import { Injectable, BadRequestException, NotFoundException } from '@nestjs/comm
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
-import { 
-  VEHICLE_STATUS, 
-  APPOINTMENT_STATUS 
-}  from '../../../../../shared/constants/status.constants';
+import {
+  VEHICLE_STATUS,
+  APPOINTMENT_STATUS,
+  VEHICLE_STATUS_TRANSITIONS,
+} from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class VehiclesService {
@@ -17,6 +18,23 @@ export class VehiclesService {
     if (status && !Object.values(VEHICLE_STATUS).includes(status as any)) {
       throw new BadRequestException(
         `Statut invalide. Valeurs autorisées : ${Object.values(VEHICLE_STATUS).join(', ')}`
+      );
+    }
+  }
+
+  private assertStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedTransitions = VEHICLE_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition de v\u00e9hicule interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
       );
     }
   }
@@ -180,6 +198,10 @@ export class VehiclesService {
     const vehicle = await this.findOne(workspaceId, id);
 
     this.validateStatus(dto.status);
+
+    if (dto.status !== undefined) {
+      this.assertStatusTransition(vehicle.status, dto.status);
+    }
 
     if (dto.clientId && dto.clientId !== vehicle.client_id) {
       await this.validateClient(dto.clientId, vehicle.workspace_id);

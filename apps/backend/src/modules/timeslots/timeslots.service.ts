@@ -1,12 +1,33 @@
 import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
-import { TIME_SLOT_STATUS } from '../../../../../shared/constants/status.constants';
+import {
+  TIME_SLOT_STATUS,
+  TIME_SLOT_STATUS_TRANSITIONS,
+} from '../../../../../shared/constants/status.constants';
 import { CreateTimeslotDto } from './dto/create-timeslot.dto';
 import { UpdateTimeslotDto } from './dto/update-timeslot.dto';
 
 @Injectable()
 export class TimeSlotsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assertStatusTransition(currentStatus: string, nextStatus: string) {
+    if (currentStatus === nextStatus) {
+      return;
+    }
+
+    const allowedTransitions =
+      TIME_SLOT_STATUS_TRANSITIONS[currentStatus] ?? [];
+
+    if (!allowedTransitions.includes(nextStatus)) {
+      throw new BadRequestException(
+        'Transition de cr\u00e9neau interdite : '
+          + currentStatus
+          + ' -> '
+          + nextStatus,
+      );
+    }
+  }
 
   // ==================== CREATE ====================
   async create(workspaceId: string, dto: CreateTimeslotDto) {
@@ -65,6 +86,10 @@ export class TimeSlotsService {
 
     await this.checkOverlap(workspaceId, newStart, newEnd, id);
 
+    if (dto.status !== undefined) {
+      this.assertStatusTransition(existing.status, dto.status);
+    }
+
     return this.prisma.timeSlot.update({
       where: { id },
       data: {
@@ -77,7 +102,8 @@ export class TimeSlotsService {
 
   // ==================== CANCEL (Soft Delete style) ====================
   async cancel(workspaceId: string, id: string) {
-    await this.findOne(workspaceId, id);
+    const slot = await this.findOne(workspaceId, id);
+    this.assertStatusTransition(slot.status, TIME_SLOT_STATUS.CANCELLED);
 
     return this.prisma.timeSlot.update({
       where: { id },

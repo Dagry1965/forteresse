@@ -6,6 +6,7 @@ import {
   INVOICE_STATUS,
   INVOICE_TYPE,
   PAYMENT_SCHEDULE_STATUS,
+  PROFORMA_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
@@ -131,14 +132,24 @@ export class InvoicesService {
           workspace_id: workspaceId,
           client_id: dto.client_id,
           deleted_at: null,
+          status: APPOINTMENT_STATUS.COMPLETED,
+          proformas: {
+            some: {
+              deleted_at: null,
+              status: PROFORMA_STATUS.ACCEPTED,
+            },
+          },
         },
-        include: { 
+        include: {
           vehicle: true,
           proformas: {
-            where: { deleted_at: null },
-            include: { lines: true } // On va chercher les lignes pour le détail
-          } 
-        }
+            where: {
+              deleted_at: null,
+              status: PROFORMA_STATUS.ACCEPTED,
+            },
+            include: { lines: true },
+          },
+        },
       });
 
       if (appointments.length !== dto.appointment_ids.length) {
@@ -239,11 +250,6 @@ export class InvoicesService {
           }
         }
 
-        // C. Marquer le RDV comme facturé
-        await tx.appointment.update({
-          where: { id: appt.id },
-          data: { status: APPOINTMENT_STATUS.COMPLETED }
-        });
       }
 
       // 6. Création de l'échéancier automatique à 30 jours
