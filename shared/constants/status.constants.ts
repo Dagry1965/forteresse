@@ -245,6 +245,8 @@ export const DOCUMENT_CONFIG = {
   PURCHASE_ORDER: { code: 'CMD', type: 'PURCHASE_ORDER' },
   CASE: { code: 'DOS', type: 'CASE' },
   RECEIPT: { code: 'REC', type: 'RECEIPT' },
+  INVENTORY: { code: 'INV', type: 'INVENTORY' },
+  CREDIT_NOTE: { code: 'AV', type: 'CREDIT_NOTE' },
 } as const;
 
 // ====================== TYPES UTILES ======================

@@ -274,6 +274,7 @@ model Proforma {
   invoices Invoice[]
   lines    ProformaLine[]
 
+  @@unique([workspace_id, reference])
   @@index([workspace_id])
   @@index([appointment_id])
 }
@@ -321,6 +322,7 @@ model Invoice {
   lines            InvoiceLine[]
   paymentSchedules PaymentSchedule[] // <-- AJOUTER CETTE LIGNE
 
+  @@unique([workspace_id, reference])
   @@index([workspace_id])
   @@index([workspace_id, status])
   @@index([client_id])
@@ -466,6 +468,7 @@ model PurchaseOrder {
   receptions       StockReception[]
   purchaseReceipts PurchaseReceipt[]
 
+  @@unique([workspace_id, reference])
   @@index([workspace_id])
   @@index([workspace_id, status])
   @@index([supplier_id])
@@ -511,6 +514,7 @@ model PurchaseReceipt {
   purchase_order_id String
   purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id])
 
+  @@unique([workspace_id, reference])
   @@index([workspace_id])
   @@index([purchase_order_id])
 }
@@ -524,6 +528,7 @@ model Inventory {
   workspace Workspace       @relation(fields: [workspace_id], references: [id])
   items     InventoryItem[]
 
+  @@unique([workspace_id, reference])
   @@index([workspace_id])
 }
 
@@ -607,6 +612,7 @@ model BusinessSettings {
 
 model Case {
   id         String   @id @default(cuid())
+  reference  String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -632,6 +638,7 @@ model Case {
   interventions Intervention[]
   proformas     Proforma[]
 
+  @@unique([workspace_id, reference])
   @@index([workspace_id])
   @@index([workspace_id, status])
 }

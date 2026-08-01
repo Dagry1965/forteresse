@@ -4,6 +4,7 @@ import {
   BadRequestException 
 } from '@nestjs/common'; // 👈 Imports corrigés ici
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service';
 import {
   PROFORMA_STATUS,
   INVOICE_STATUS,
@@ -16,7 +17,10 @@ import {
 
 @Injectable()
 export class ProformasService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sequencingService: SequencingService,
+  ) {}
 
   private assertStatusTransition(currentStatus: string, nextStatus: string) {
     if (currentStatus === nextStatus) {
@@ -188,6 +192,12 @@ export class ProformasService {
         );
       }
 
+      const reference = await this.sequencingService.generateReference(
+        workspaceId,
+        'INVOICE',
+        tx,
+      );
+
       const invoice = await tx.invoice.create({
         data: {
           workspace_id: workspaceId,
@@ -211,9 +221,7 @@ export class ProformasService {
             proforma.customer_email_snapshot,
           customer_phone_snapshot:
             proforma.customer_phone_snapshot,
-          reference: `FACT-${new Date().getFullYear()}-${Math.floor(
-            1000 + Math.random() * 9000
-          )}`,
+          reference,
           lines: {
             create: proforma.lines.map((line) => ({
               type: line.type,

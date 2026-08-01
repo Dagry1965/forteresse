@@ -5,6 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service';
 import {
   APPOINTMENT_STATUS,
   CASE_STATUS,
@@ -24,7 +25,10 @@ const COUNTABLE_APPOINTMENT_STATUSES = [
 
 @Injectable()
 export class AppointmentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sequencingService: SequencingService,
+  ) {}
 
   private assertAppointmentStatusTransition(
     currentStatus: string,
@@ -681,9 +685,16 @@ async convertToIntervention(
         };
       }
 
+      const caseReference = await this.sequencingService.generateReference(
+        workspaceId,
+        'CASE',
+        tx,
+      );
+
       const repairCase = await tx.case.create({
         data: {
           workspace_id: workspaceId,
+          reference: caseReference,
           appointment_id: appointment.id,
           status: CASE_STATUS.RECEIVED,
           customer_id: appointment.client_id,

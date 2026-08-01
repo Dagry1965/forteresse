@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service';
 import { CreateInterventionDto } from './dto/create-intervention.dto';
 import { UpdateInterventionDto } from './dto/update-intervention.dto';
 
@@ -25,6 +26,7 @@ type UpdateInterventionPayload = UpdateInterventionDto & {
 export class InterventionsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly sequencingService: SequencingService,
   ) {}
 
   private assertStatusTransition(currentStatus: string, nextStatus: string) {
@@ -454,6 +456,11 @@ export class InterventionsService {
       }
 
       const client = repairCase.client;
+      const reference = await this.sequencingService.generateReference(
+        workspaceId,
+        'PROFORMA',
+        tx,
+      );
 
       return tx.proforma.create({
         data: {
@@ -462,7 +469,7 @@ export class InterventionsService {
           appointment_id: relatedAppointment.id,
           total: totalTTC,
           status: PROFORMA_STATUS.DRAFT,
-          reference: `PRO-${Date.now()}`,
+          reference,
           customer_name_snapshot:
             client?.company_name || client?.name || null,
           customer_address_snapshot:

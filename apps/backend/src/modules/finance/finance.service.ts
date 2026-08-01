@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service';
 import { PaymentsService } from './payments.service';
 import {
   APPOINTMENT_STATUS,
@@ -13,6 +14,7 @@ export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
+    private readonly sequencingService: SequencingService,
   ) {}
 
   // ---------------------------------------------------------
@@ -126,9 +128,14 @@ export class FinanceService {
       throw new BadRequestException('Rendez-vous lié introuvable.');
     }
 
+    const reference = await this.sequencingService.generateReference(
+      workspaceId,
+      'INVOICE',
+    );
+
     return this.prisma.invoice.create({
       data: {
-        reference: `INV-${Date.now()}`,
+        reference,
         total: proforma.total,
         status: INVOICE_STATUS.UNPAID,
         type: INVOICE_TYPE.INVOICE,

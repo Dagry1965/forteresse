@@ -586,6 +586,9 @@ async function main(): Promise<void> {
 
     const repairCase = await prisma.case.create({
       data: {
+        reference: `DOS-${new Date().getFullYear()}-${String(
+          caseCount + 1,
+        ).padStart(4, '0')}`,
         status: caseStatus,
         title: pick(operations),
         description: faker.lorem.sentence(),
@@ -961,6 +964,12 @@ async function main(): Promise<void> {
         prefix: 'CMD',
         year: new Date().getFullYear(),
         last_number: 20,
+      },
+      {
+        workspace_id: workspace.id,
+        prefix: 'DOS',
+        year: new Date().getFullYear(),
+        last_number: caseCount,
       },
     ],
   });

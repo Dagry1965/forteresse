@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service';
 import { InventoryFilterDto } from './dto/inventory-filter.dto';
 
 import {
@@ -14,7 +15,10 @@ import {
 
 @Injectable()
 export class InventoryService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sequencingService: SequencingService,
+  ) {}
 
   /**
    * Lister les articles du stock d'un workspace.
@@ -124,9 +128,10 @@ export class InventoryService {
         );
       }
 
-      const reference = `BC-AUTO-${Date.now()
-        .toString()
-        .slice(-8)}`;
+      const reference = await this.sequencingService.generateReference(
+        workspaceId,
+        'PURCHASE_ORDER',
+      );
 
       /*
        * Le modèle PurchaseOrder ne contient pas :

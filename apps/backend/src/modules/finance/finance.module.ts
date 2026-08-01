@@ -12,10 +12,11 @@ import { CashierController } from './cashier.controller';
 import { CashierService } from './cashier.service';
 
 import { PrismaModule } from '../../core/prisma/prisma.module';
+import { SharedModule } from '../shared/shared.module';
 import { AuthModule } from '../../core/auth/auth.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, SharedModule],
   controllers: [
     FinanceController,
     ReportsController,

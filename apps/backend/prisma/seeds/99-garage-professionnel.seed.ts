@@ -111,10 +111,10 @@ async function main(): Promise<void> {
   ]);
 
   const cases = await Promise.all([
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[0].id, vehicle_id: vehicles[0].id, status: CASE_STATUS.COMPLETED, title: 'Révision annuelle', description: 'Vidange, filtres et contrôles.' } }),
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[1].id, vehicle_id: vehicles[1].id, status: CASE_STATUS.IN_PROGRESS, title: 'Freinage avant', description: 'Bruits et vibrations.' } }),
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[2].id, status: CASE_STATUS.WAITING_PARTS, title: 'Embrayage utilitaire', description: 'Kit embrayage en attente.' } }),
-    prisma.case.create({ data: { workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[3].id, status: CASE_STATUS.DIAGNOSIS, title: 'Voyant moteur', description: 'Diagnostic électronique.' } }),
+    prisma.case.create({ data: { reference: `DOS-${new Date().getFullYear()}-0001`, workspace_id: workspace.id, customer_id: clients[0].id, vehicle_id: vehicles[0].id, status: CASE_STATUS.COMPLETED, title: 'Révision annuelle', description: 'Vidange, filtres et contrôles.' } }),
+    prisma.case.create({ data: { reference: `DOS-${new Date().getFullYear()}-0002`, workspace_id: workspace.id, customer_id: clients[1].id, vehicle_id: vehicles[1].id, status: CASE_STATUS.IN_PROGRESS, title: 'Freinage avant', description: 'Bruits et vibrations.' } }),
+    prisma.case.create({ data: { reference: `DOS-${new Date().getFullYear()}-0003`, workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[2].id, status: CASE_STATUS.WAITING_PARTS, title: 'Embrayage utilitaire', description: 'Kit embrayage en attente.' } }),
+    prisma.case.create({ data: { reference: `DOS-${new Date().getFullYear()}-0004`, workspace_id: workspace.id, customer_id: clients[2].id, vehicle_id: vehicles[3].id, status: CASE_STATUS.DIAGNOSIS, title: 'Voyant moteur', description: 'Diagnostic électronique.' } }),
   ]);
 
   const suppliers = await Promise.all([

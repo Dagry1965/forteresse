@@ -4,10 +4,11 @@ import { InterventionsService } from './interventions.service';
 import { WorkshopController } from './workshop.controller';
 import { WorkshopService } from './workshop.service';
 import { PrismaModule } from '../../core/prisma/prisma.module';
+import { SharedModule } from '../shared/shared.module';
 import { AuthModule } from '../../core/auth/auth.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule],
+  imports: [PrismaModule, AuthModule, SharedModule],
   controllers: [WorkshopController, InterventionsController],
   providers: [WorkshopService, InterventionsService],
   exports: [WorkshopService, InterventionsService],

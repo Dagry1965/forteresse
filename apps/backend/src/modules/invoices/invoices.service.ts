@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SequencingService } from '../shared/sequencing.service';
 import {
   APPOINTMENT_STATUS,
   CASE_STATUS,
@@ -11,7 +12,10 @@ import {
 
 @Injectable()
 export class InvoicesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly sequencingService: SequencingService,
+  ) {}
 
   // ---------------------------------------------------------
   // HELPERS DE NORMALISATION
@@ -84,9 +88,14 @@ export class InvoicesService {
       );
     }
 
+    const reference = await this.sequencingService.generateReference(
+      workspaceId,
+      'INVOICE',
+    );
+
     return this.prisma.invoice.create({
       data: {
-        reference: dto.reference,
+        reference,
         total: dto.total,
         status,
         type,
@@ -192,9 +201,15 @@ export class InvoicesService {
       }
 
       // 4. Créer la Facture Parente
+      const reference = await this.sequencingService.generateReference(
+        workspaceId,
+        'INVOICE',
+        tx,
+      );
+
       const invoice = await tx.invoice.create({
         data: {
-          reference: `FLOTTE-${Date.now()}`,
+          reference,
           total: totalAmount,
           status: INVOICE_STATUS.UNPAID,
           type: INVOICE_TYPE.FLEET,
@@ -351,9 +366,15 @@ export class InvoicesService {
       });
       if (pendingCases.length === 0) throw new Error("Aucun dossier trouvé.");
       const totalAmount = pendingCases.reduce((sum, c) => sum + (c.proformas[0]?.total || 0), 0);
+      const reference = await this.sequencingService.generateReference(
+        workspaceId,
+        'INVOICE',
+        tx,
+      );
+
       return tx.invoice.create({
         data: {
-          reference: `FLOTTE-${Date.now()}`,
+          reference,
           total: totalAmount,
           status: INVOICE_STATUS.UNPAID,
           type: INVOICE_TYPE.FLEET,
