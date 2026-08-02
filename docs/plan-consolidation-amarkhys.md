@@ -153,6 +153,10 @@ Objectifs :
 
 ### LOT 11 - Clients et vehicules
 
+Statut : TERMINE
+
+Commit : `6020c3a` - feat(customers): normalize clients and vehicles
+
 Objectifs :
 
 - normaliser emails, telephones, immatriculations et VIN ;
@@ -411,4 +415,40 @@ Objectifs :
 - git diff --check valide, hors avertissements LF/CRLF Windows ;
 - depot Git propre apres push ;
 - commit pousse : `fbd8b6e`.
+
+### 2026-08-02 - LOT 11
+
+- service partage `NormalizationService` ajoute pour centraliser les normalisations ;
+- emails clients normalises en minuscules et sans espaces exterieurs ;
+- telephones clients normalises en chiffres avec conservation du prefixe `+` ;
+- immatriculations normalisees en majuscules sans separateurs ;
+- VIN normalises en majuscules sans separateurs ;
+- champs `email_normalized` et `phone_normalized` ajoutes aux clients ;
+- champs `registration_normalized` et `vin_normalized` ajoutes aux vehicules ;
+- contraintes uniques ajoutees par workspace sur les emails et telephones normalises ;
+- contraintes uniques ajoutees par workspace sur les immatriculations et VIN normalises ;
+- controles de doublons appliques aux donnees actives et archivees ;
+- collisions de doublons bloquees lors de la creation, modification et restauration ;
+- restauration des clients et vehicules corrigee pour rechercher les enregistrements archives ;
+- restauration d un vehicule refusee si son client est archive ;
+- archivage client limite aux vehicules actifs et factures ouvertes ;
+- archivage vehicule refuse en presence de rendez-vous actifs ;
+- suppressions definitives clients et vehicules desactivees pour conserver l historique ;
+- routes HTTP de suppression definitive retirees des controleurs ;
+- identifiant `clientId` du DTO vehicule corrige pour accepter les identifiants Prisma `cuid` ;
+- contacts clients normalises lors de la creation et de la modification ;
+- migrations `20260802131919_add_client_vehicle_normalized_fields` et `20260802132124_require_vehicle_registration_normalized` creees ;
+- backfill des donnees existantes integre directement aux migrations ;
+- migrations retestees depuis la sauvegarde precedant le LOT 11 ;
+- 40 clients et 109 vehicules existants normalises ;
+- controle en base valide : aucune valeur normalisee manquante ;
+- controle en base valide : aucun doublon email, telephone, immatriculation ou VIN ;
+- test fonctionnel valide pour creation, normalisation et detection des doublons ;
+- test fonctionnel valide pour archivage et restauration des clients et vehicules ;
+- test fonctionnel valide pour le blocage des suppressions definitives ;
+- schema Prisma valide ;
+- 33 migrations reconnues et base a jour ;
+- build backend valide ;
+- git diff --check valide, hors avertissements LF/CRLF Windows ;
+- commit pousse : `6020c3a`.
 
