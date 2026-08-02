@@ -13,6 +13,7 @@ import {
   INTERVENTION_STATUS,
   PROFORMA_STATUS,
   INTERVENTION_STATUS_TRANSITIONS,
+  STOCK_MOVEMENT_TYPE,
 } from '../../../../../shared/constants/status.constants';
 
 type UpdateInterventionPayload = UpdateInterventionDto & {
@@ -28,6 +29,35 @@ export class InterventionsService {
     private readonly prisma: PrismaService,
     private readonly sequencingService: SequencingService,
   ) {}
+
+  private async assertActiveUser(
+    workspaceId: string,
+    userId: string,
+    client: any = this.prisma,
+  ) {
+    if (!userId) {
+      throw new BadRequestException(
+        'Utilisateur authentifie requis.',
+      );
+    }
+
+    const user = await client.user.findFirst({
+      where: {
+        id: userId,
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException(
+        'Utilisateur introuvable dans ce workspace.',
+      );
+    }
+
+    return user;
+  }
 
   private assertStatusTransition(currentStatus: string, nextStatus: string) {
     if (currentStatus === nextStatus) {
@@ -49,6 +79,7 @@ export class InterventionsService {
 
   async create(
     workspaceId: string,
+    userId: string,
     dto: CreateInterventionDto,
   ) {
     if (!workspaceId) {
@@ -118,6 +149,12 @@ export class InterventionsService {
     }
 
     return this.prisma.$transaction(async (tx) => {
+      const user = await this.assertActiveUser(
+        workspaceId,
+        userId,
+        tx,
+      );
+
       const validatedParts: Array<{
         item_id: string;
         quantity: number;
@@ -172,11 +209,14 @@ export class InterventionsService {
         },
         include: {
           case: { include: { client: true, vehicle: true } },
-          InterventionPart: { include: { item: true } },
+          InterventionPart: {
+          where: { deleted_at: null },
+          include: { item: true },
+        },
         },
       });
 
-      for (const part of validatedParts) {
+      for (const part of intervention.InterventionPart) {
         await tx.stockItem.update({
           where: { id: part.item_id },
           data: { quantity: { decrement: part.quantity } },
@@ -186,8 +226,10 @@ export class InterventionsService {
           data: {
             workspace_id: workspaceId,
             item_id: part.item_id,
+            intervention_part_id: part.id,
             quantity: -part.quantity,
-            type: 'OUT_WORKSHOP',
+            type: STOCK_MOVEMENT_TYPE.OUT_WORKSHOP,
+            created_by: user.id,
           },
         });
       }
@@ -203,7 +245,10 @@ export class InterventionsService {
     return this.prisma.intervention.findMany({
       where: { workspace_id: workspaceId, deleted_at: null },
       include: {
-        InterventionPart: { include: { item: true } },
+        InterventionPart: {
+          where: { deleted_at: null },
+          include: { item: true },
+        },
         case: {
           include: {
             client: true,
@@ -225,7 +270,10 @@ export class InterventionsService {
       where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
         case: { include: { client: true, vehicle: true } },
-        InterventionPart: { include: { item: true } },
+        InterventionPart: {
+          where: { deleted_at: null },
+          include: { item: true },
+        },
       },
     });
     if (!intervention) throw new NotFoundException('Intervention introuvable.');
@@ -260,7 +308,10 @@ export class InterventionsService {
       data: updateData,
       include: {
         case: { include: { client: true, vehicle: true } },
-        InterventionPart: { include: { item: true } },
+        InterventionPart: {
+          where: { deleted_at: null },
+          include: { item: true },
+        },
       },
     });
   }
@@ -290,9 +341,20 @@ export class InterventionsService {
     return { total, pending, inProgress, completed, newCasesToday };
   }
 
-  async addPart(workspaceId: string, interventionId: string, dto: { item_id: string; quantity: number }) {
+  async addPart(
+    workspaceId: string,
+    interventionId: string,
+    userId: string,
+    dto: { item_id: string; quantity: number },
+  ) {
     const quantity = Number(dto.quantity);
     return this.prisma.$transaction(async (tx) => {
+      const user = await this.assertActiveUser(
+        workspaceId,
+        userId,
+        tx,
+      );
+
       const intervention = await tx.intervention.findFirst({
         where: { id: interventionId, workspace_id: workspaceId, deleted_at: null },
       });
@@ -323,8 +385,10 @@ export class InterventionsService {
         data: {
           workspace_id: workspaceId,
           item_id: stockItem.id,
+          intervention_part_id: part.id,
           quantity: -quantity,
-          type: 'OUT_WORKSHOP',
+          type: STOCK_MOVEMENT_TYPE.OUT_WORKSHOP,
+          created_by: user.id,
         },
       });
 
@@ -332,18 +396,33 @@ export class InterventionsService {
     });
   }
 
-  async removePart(workspaceId: string, partId: string) {
+  async removePart(
+    workspaceId: string,
+    partId: string,
+    userId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
+      const user = await this.assertActiveUser(
+        workspaceId,
+        userId,
+        tx,
+      );
+
       const part = await tx.interventionPart.findFirst({
         where: {
           id: partId,
+          deleted_at: null,
           intervention: { workspace_id: workspaceId, deleted_at: null },
         },
         include: { item: true },
       });
       if (!part) throw new NotFoundException('Pièce introuvable.');
 
-      await tx.interventionPart.delete({ where: { id: part.id } });
+      await tx.interventionPart.update({
+        where: { id: part.id },
+        data: { deleted_at: new Date() },
+      });
+
       await tx.stockItem.update({
         where: { id: part.item_id },
         data: { quantity: { increment: part.quantity } },
@@ -352,8 +431,10 @@ export class InterventionsService {
         data: {
           workspace_id: workspaceId,
           item_id: part.item_id,
+          intervention_part_id: part.id,
           quantity: part.quantity,
-          type: 'IN_ADJUSTMENT',
+          type: STOCK_MOVEMENT_TYPE.IN_RETURN,
+          created_by: user.id,
         },
       });
       return { success: true };
@@ -373,7 +454,10 @@ export class InterventionsService {
         },
         interventions: {
           where: { deleted_at: null },
-          include: { InterventionPart: { include: { item: true } } },
+          include: { InterventionPart: {
+          where: { deleted_at: null },
+          include: { item: true },
+        } },
           orderBy: { created_at: 'asc' },
         },
       },
@@ -396,7 +480,10 @@ export class InterventionsService {
         status: INTERVENTION_STATUS.DIAGNOSIS,
       },
       include: {
-        InterventionPart: { include: { item: true } },
+        InterventionPart: {
+          where: { deleted_at: null },
+          include: { item: true },
+        },
         case: true,
       },
     });
@@ -410,7 +497,11 @@ export class InterventionsService {
           client: true,
           interventions: {
             where: { deleted_at: null },
-            include: { InterventionPart: true },
+            include: {
+              InterventionPart: {
+                where: { deleted_at: null },
+              },
+            },
           },
         },
       });

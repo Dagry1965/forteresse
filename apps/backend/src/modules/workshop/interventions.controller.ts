@@ -14,9 +14,14 @@ export class InterventionsController {
   @Post()
   create(
     @Headers('x-workspace-id') workspaceId: string,
-    @Body() dto: CreateInterventionDto
+    @Body() dto: CreateInterventionDto,
+    @CurrentUser() user: { id: string },
   ) {
-    return this.interventionsService.create(workspaceId, dto);
+    return this.interventionsService.create(
+      workspaceId,
+      user?.id,
+      dto,
+    );
   }
 
   @Get()
@@ -53,17 +58,28 @@ export class InterventionsController {
 addPart(
   @Headers('x-workspace-id') workspaceId: string,
   @Param('id') interventionId: string,
-  @Body() dto: { item_id: string; quantity: number }
+  @Body() dto: { item_id: string; quantity: number },
+  @CurrentUser() user: { id: string },
 ) {
-  return this.interventionsService.addPart(workspaceId, interventionId, dto);
+  return this.interventionsService.addPart(
+    workspaceId,
+    interventionId,
+    user?.id,
+    dto,
+  );
 }
 
 @Delete('parts/:partId')
 removePart(
   @Headers('x-workspace-id') workspaceId: string,
-  @Param('partId') partId: string
+  @Param('partId') partId: string,
+  @CurrentUser() user: { id: string },
 ) {
-  return this.interventionsService.removePart(workspaceId, partId);
+  return this.interventionsService.removePart(
+    workspaceId,
+    partId,
+    user?.id,
+  );
 }
 
 @Post('case/:caseId/proforma')

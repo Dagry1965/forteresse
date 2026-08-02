@@ -452,8 +452,16 @@ model StockMovement {
   item      StockItem @relation(fields: [item_id], references: [id])
   workspace Workspace @relation(fields: [workspace_id], references: [id])
 
+  intervention_part_id String?
+  interventionPart     InterventionPart? @relation(fields: [intervention_part_id], references: [id], onDelete: SetNull)
+
+  purchase_receipt_id String?
+  purchaseReceipt     PurchaseReceipt? @relation(fields: [purchase_receipt_id], references: [id], onDelete: SetNull)
+
   @@index([workspace_id])
   @@index([item_id])
+  @@index([intervention_part_id])
+  @@index([purchase_receipt_id])
 }
 
 model PurchaseOrder {
@@ -520,6 +528,8 @@ model PurchaseReceipt {
   purchase_order_id String
   purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id])
 
+  stockMovements StockMovement[]
+
   @@unique([workspace_id, reference])
   @@index([workspace_id])
   @@index([purchase_order_id])
@@ -558,12 +568,16 @@ model InterventionPart {
   item_id         String
   quantity        Int
   price_snapshot  Float
+  deleted_at      DateTime?
 
   intervention Intervention @relation(fields: [intervention_id], references: [id])
   item         StockItem    @relation(fields: [item_id], references: [id])
 
+  stockMovements StockMovement[]
+
   @@index([intervention_id])
   @@index([item_id])
+  @@index([deleted_at])
 }
 
 model RefreshToken {

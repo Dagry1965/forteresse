@@ -266,6 +266,7 @@ export class PurchaseReceiptService {
               data: {
                 workspace_id: workspaceId,
                 item_id: orderLine.item_id,
+                purchase_receipt_id: receipt.id,
                 quantity: receivedQuantity,
                 type: STOCK_MOVEMENT_TYPE.IN_PURCHASE,
                 created_by: data.userId ?? null,

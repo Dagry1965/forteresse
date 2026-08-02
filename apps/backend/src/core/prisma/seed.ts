@@ -185,7 +185,19 @@ async function clearDemoWorkspace(): Promise<void> {
 
   await prisma.paymentSchedule.deleteMany({ where: { workspace_id: WORKSPACE_ID } });
   await prisma.payment.deleteMany({ where: { workspace_id: WORKSPACE_ID } });
-  await prisma.invoice.deleteMany({ where: { workspace_id: WORKSPACE_ID } });
+  await prisma.invoice.deleteMany({
+    where: {
+      workspace_id: WORKSPACE_ID,
+      original_invoice_id: { not: null },
+    },
+  });
+
+  await prisma.invoice.deleteMany({
+    where: {
+      workspace_id: WORKSPACE_ID,
+      original_invoice_id: null,
+    },
+  });
   await prisma.proforma.deleteMany({ where: { workspace_id: WORKSPACE_ID } });
   await prisma.intervention.deleteMany({ where: { workspace_id: WORKSPACE_ID } });
   await prisma.case.deleteMany({ where: { workspace_id: WORKSPACE_ID } });
@@ -624,7 +636,7 @@ async function main(): Promise<void> {
       for (const item of faker.helpers.arrayElements(stockItems, randomInt(1, 3))) {
         const quantity = randomInt(1, 3);
 
-        await prisma.interventionPart.create({
+        const interventionPart = await prisma.interventionPart.create({
           data: {
             intervention_id: intervention.id,
             item_id: item.id,
@@ -638,6 +650,7 @@ async function main(): Promise<void> {
             type: STOCK_MOVEMENT_TYPE.OUT_WORKSHOP,
             quantity,
             item_id: item.id,
+            intervention_part_id: interventionPart.id,
             workspace_id: workspace.id,
             created_by: user.id,
           },
@@ -873,6 +886,18 @@ async function main(): Promise<void> {
       },
     });
 
+    const purchaseReceipt =
+      status === PURCHASE_ORDER_STATUS.RECEIVED ||
+      status === PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED
+        ? await prisma.purchaseReceipt.create({
+            data: {
+              reference: `REC-${new Date().getFullYear()}-${String(index).padStart(4, '0')}`,
+              purchase_order_id: order.id,
+              workspace_id: workspace.id,
+            },
+          })
+        : null;
+
     for (const item of faker.helpers.arrayElements(stockItems, randomInt(2, 5))) {
       const quantity = randomInt(5, 30);
 
@@ -899,6 +924,7 @@ async function main(): Promise<void> {
             type: STOCK_MOVEMENT_TYPE.IN_PURCHASE,
             quantity: receivedQuantity,
             item_id: item.id,
+            purchase_receipt_id: purchaseReceipt?.id ?? null,
             workspace_id: workspace.id,
             created_by: admin.id,
           },
@@ -912,14 +938,6 @@ async function main(): Promise<void> {
     ) {
       await prisma.stockReception.create({
         data: {
-          purchase_order_id: order.id,
-          workspace_id: workspace.id,
-        },
-      });
-
-      await prisma.purchaseReceipt.create({
-        data: {
-          reference: `REC-${new Date().getFullYear()}-${String(index).padStart(4, '0')}`,
           purchase_order_id: order.id,
           workspace_id: workspace.id,
         },
