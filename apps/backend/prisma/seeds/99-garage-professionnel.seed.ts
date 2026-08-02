@@ -142,10 +142,67 @@ async function main(): Promise<void> {
   ] });
 
   const interventions = await Promise.all([
-    prisma.intervention.create({ data: { description: 'Vidange et filtre à huile', status: INTERVENTION_STATUS.COMPLETED, workspace_id: workspace.id, case_id: cases[0].id } }),
-    prisma.intervention.create({ data: { description: 'Remplacement des plaquettes', status: INTERVENTION_STATUS.IN_PROGRESS, workspace_id: workspace.id, case_id: cases[1].id } }),
-    prisma.intervention.create({ data: { description: 'Remplacement du kit embrayage', status: INTERVENTION_STATUS.PENDING, workspace_id: workspace.id, case_id: cases[2].id } }),
-    prisma.intervention.create({ data: { description: 'Lecture des défauts moteur', status: INTERVENTION_STATUS.DIAGNOSIS, workspace_id: workspace.id, case_id: cases[3].id } }),
+    prisma.intervention.create({
+      data: {
+        description: 'Vidange et filtre \u00e0 huile',
+        status: INTERVENTION_STATUS.COMPLETED,
+        priority: 'NORMAL',
+        diagnostic: 'Entretien periodique conforme au plan constructeur.',
+        planned_minutes: 90,
+        actual_minutes: 75,
+        hourly_rate: 72,
+        quality_control_status: 'PASSED',
+        quality_control_notes:
+          'Niveaux, pression et absence de fuite controles.',
+        quality_control_at: new Date(),
+        mechanic_id: mechanic.id,
+        workspace_id: workspace.id,
+        case_id: cases[0].id,
+      },
+    }),
+    prisma.intervention.create({
+      data: {
+        description: 'Remplacement des plaquettes',
+        status: INTERVENTION_STATUS.IN_PROGRESS,
+        priority: 'HIGH',
+        diagnostic: 'Plaquettes avant usees et disques a surveiller.',
+        planned_minutes: 120,
+        actual_minutes: 60,
+        hourly_rate: 72,
+        quality_control_status: 'PENDING',
+        mechanic_id: mechanic.id,
+        workspace_id: workspace.id,
+        case_id: cases[1].id,
+      },
+    }),
+    prisma.intervention.create({
+      data: {
+        description: 'Remplacement du kit embrayage',
+        status: INTERVENTION_STATUS.PENDING,
+        priority: 'URGENT',
+        diagnostic: 'Patinage important et butee bruyante.',
+        planned_minutes: 420,
+        hourly_rate: 78,
+        quality_control_status: 'PENDING',
+        mechanic_id: mechanic.id,
+        workspace_id: workspace.id,
+        case_id: cases[2].id,
+      },
+    }),
+    prisma.intervention.create({
+      data: {
+        description: 'Lecture des defauts moteur',
+        status: INTERVENTION_STATUS.DIAGNOSIS,
+        priority: 'NORMAL',
+        diagnostic: 'Analyse electronique en cours.',
+        planned_minutes: 60,
+        hourly_rate: 75,
+        quality_control_status: 'NOT_REQUIRED',
+        mechanic_id: mechanic.id,
+        workspace_id: workspace.id,
+        case_id: cases[3].id,
+      },
+    }),
   ]);
   await prisma.interventionPart.createMany({ data: [
     { intervention_id: interventions[0].id, item_id: items[0].id, quantity: 1, price_snapshot: items[0].price_sell },

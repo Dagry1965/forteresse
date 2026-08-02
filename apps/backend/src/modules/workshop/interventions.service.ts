@@ -14,6 +14,7 @@ import {
   PROFORMA_STATUS,
   INTERVENTION_STATUS_TRANSITIONS,
   STOCK_MOVEMENT_TYPE,
+  USER_ROLE,
 } from '../../../../../shared/constants/status.constants';
 
 type UpdateInterventionPayload = UpdateInterventionDto & {
@@ -57,6 +58,40 @@ export class InterventionsService {
     }
 
     return user;
+  }
+
+  private async assertMechanic(
+    workspaceId: string,
+    mechanicId: string,
+    client: any = this.prisma,
+  ) {
+    const mechanic = await client.user.findFirst({
+      where: {
+        id: mechanicId,
+        workspace_id: workspaceId,
+        deleted_at: null,
+        workspaceMembers: {
+          some: {
+            workspace_id: workspaceId,
+            role: USER_ROLE.MECHANIC,
+            deleted_at: null,
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+
+    if (!mechanic) {
+      throw new BadRequestException(
+        'Le mecanicien selectionne est introuvable ou ne possede pas le role MECHANIC.',
+      );
+    }
+
+    return mechanic;
   }
 
   private assertStatusTransition(currentStatus: string, nextStatus: string) {
@@ -155,6 +190,14 @@ export class InterventionsService {
         tx,
       );
 
+      if (dto.mechanic_id) {
+        await this.assertMechanic(
+          workspaceId,
+          dto.mechanic_id,
+          tx,
+        );
+      }
+
       const validatedParts: Array<{
         item_id: string;
         quantity: number;
@@ -194,6 +237,20 @@ export class InterventionsService {
           case_id: repairCase.id,
           description,
           status: INTERVENTION_STATUS.DIAGNOSIS,
+          mechanic_id: dto.mechanic_id ?? null,
+          priority: dto.priority,
+          diagnostic: dto.diagnostic?.trim() || null,
+          planned_minutes: dto.planned_minutes,
+          actual_minutes: dto.actual_minutes,
+          hourly_rate: dto.hourly_rate,
+          quality_control_status: dto.quality_control_status,
+          quality_control_notes:
+            dto.quality_control_notes?.trim() || null,
+          quality_control_at:
+            dto.quality_control_status === 'PASSED'
+              || dto.quality_control_status === 'FAILED'
+              ? new Date()
+              : null,
           // CORRECTION ICI : Structure propre pour InterventionPart.create
           ...(validatedParts.length > 0
             ? {
@@ -208,6 +265,13 @@ export class InterventionsService {
             : {}),
         },
         include: {
+          mechanic: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
           case: { include: { client: true, vehicle: true } },
           InterventionPart: {
           where: { deleted_at: null },
@@ -245,6 +309,13 @@ export class InterventionsService {
     return this.prisma.intervention.findMany({
       where: { workspace_id: workspaceId, deleted_at: null },
       include: {
+        mechanic: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         InterventionPart: {
           where: { deleted_at: null },
           include: { item: true },
@@ -269,6 +340,13 @@ export class InterventionsService {
     const intervention = await this.prisma.intervention.findFirst({
       where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
+        mechanic: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         case: { include: { client: true, vehicle: true } },
         InterventionPart: {
           where: { deleted_at: null },
@@ -292,6 +370,13 @@ export class InterventionsService {
       if (!repairCase) throw new NotFoundException('Le nouveau dossier associé est introuvable.');
     }
 
+    if (payload.mechanic_id) {
+      await this.assertMechanic(
+        workspaceId,
+        payload.mechanic_id,
+      );
+    }
+
     const updateData: any = { updated_at: new Date() };
     if (payload.description !== undefined) updateData.description = payload.description.trim();
     if (payload.status !== undefined) {
@@ -302,11 +387,49 @@ export class InterventionsService {
       updateData.status = payload.status;
     }
     if (nextCaseId !== undefined) updateData.case_id = nextCaseId;
+    if (payload.mechanic_id !== undefined) {
+      updateData.mechanic_id = payload.mechanic_id || null;
+    }
+    if (payload.priority !== undefined) {
+      updateData.priority = payload.priority;
+    }
+    if (payload.diagnostic !== undefined) {
+      updateData.diagnostic = payload.diagnostic?.trim() || null;
+    }
+    if (payload.planned_minutes !== undefined) {
+      updateData.planned_minutes = payload.planned_minutes;
+    }
+    if (payload.actual_minutes !== undefined) {
+      updateData.actual_minutes = payload.actual_minutes;
+    }
+    if (payload.hourly_rate !== undefined) {
+      updateData.hourly_rate = payload.hourly_rate;
+    }
+    if (payload.quality_control_notes !== undefined) {
+      updateData.quality_control_notes =
+        payload.quality_control_notes?.trim() || null;
+    }
+    if (payload.quality_control_status !== undefined) {
+      updateData.quality_control_status =
+        payload.quality_control_status;
+      updateData.quality_control_at =
+        payload.quality_control_status === 'PASSED'
+          || payload.quality_control_status === 'FAILED'
+          ? new Date()
+          : null;
+    }
 
     return this.prisma.intervention.update({
       where: { id: existingIntervention.id },
       data: updateData,
       include: {
+        mechanic: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
         case: { include: { client: true, vehicle: true } },
         InterventionPart: {
           where: { deleted_at: null },

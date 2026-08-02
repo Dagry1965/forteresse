@@ -171,6 +171,20 @@ export const USER_ROLE = {
   MECHANIC: 'MECHANIC',
 } as const;
 
+export const INTERVENTION_PRIORITY = {
+  LOW: 'LOW',
+  NORMAL: 'NORMAL',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT',
+} as const;
+
+export const QUALITY_CONTROL_STATUS = {
+  PENDING: 'PENDING',
+  PASSED: 'PASSED',
+  FAILED: 'FAILED',
+  NOT_REQUIRED: 'NOT_REQUIRED',
+} as const;
+
 // ====================== CASE (WORK ORDER) ======================
 export const CASE_STATUS = {
   RECEIVED: 'RECEIVED',
