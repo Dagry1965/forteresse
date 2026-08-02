@@ -113,6 +113,14 @@ export const PROFORMA_STATUS_TRANSITIONS: Record<string, readonly string[]> = {
   [PROFORMA_STATUS.REJECTED]: [],
 };
 
+export const PROFORMA_LINE_TYPE = {
+  PART: 'PART',
+  LABOR: 'LABOR',
+  SERVICE: 'SERVICE',
+  PACKAGE: 'PACKAGE',
+  DISCOUNT: 'DISCOUNT',
+} as const;
+
 // ====================== INVOICE ======================
 export const INVOICE_STATUS = {
   DRAFT: 'DRAFT',

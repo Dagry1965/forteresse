@@ -6,6 +6,9 @@ import {
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { AuditService } from '../../core/audit/audit.service';
 import { SequencingService } from '../shared/sequencing.service';
+import { Prisma } from '@prisma/client';
+import { CreateProformaLineDto } from './dto/create-proforma-line.dto';
+import { UpdateProformaLineDto } from './dto/update-proforma-line.dto';
 import {
   PROFORMA_STATUS,
   INVOICE_STATUS,
@@ -14,6 +17,7 @@ import {
   INTERVENTION_STATUS,
   PAYMENT_SCHEDULE_STATUS,
   PROFORMA_STATUS_TRANSITIONS,
+  PROFORMA_LINE_TYPE,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
@@ -23,6 +27,64 @@ export class ProformasService {
     private readonly sequencingService: SequencingService,
     private readonly auditService: AuditService,
   ) {}
+
+  private calculateLineTotal(
+    type: string,
+    quantity: number,
+    unitPrice: number,
+    vatRate: number,
+    discount: number,
+  ): Prisma.Decimal {
+    const quantityDecimal = new Prisma.Decimal(quantity);
+    const unitPriceDecimal = new Prisma.Decimal(unitPrice);
+    const vatRateDecimal = new Prisma.Decimal(vatRate);
+    const discountDecimal = new Prisma.Decimal(discount);
+
+    const subtotal = quantityDecimal.mul(unitPriceDecimal);
+    const afterDiscount = subtotal.mul(
+      new Prisma.Decimal(1).minus(discountDecimal.div(100)),
+    );
+    const totalWithVat = afterDiscount.mul(
+      new Prisma.Decimal(1).plus(vatRateDecimal.div(100)),
+    );
+
+    const signedTotal =
+      type === PROFORMA_LINE_TYPE.DISCOUNT
+        ? totalWithVat.abs().negated()
+        : totalWithVat;
+
+    return new Prisma.Decimal(signedTotal.toFixed(2));
+  }
+
+  private async recalculateProformaTotal(
+    proformaId: string,
+    tx: Prisma.TransactionClient,
+  ) {
+    const lines = await tx.proformaLine.findMany({
+      where: { proforma_id: proformaId },
+      select: { total: true },
+    });
+
+    const total = lines.reduce(
+      (sum, line) => sum.plus(line.total),
+      new Prisma.Decimal(0),
+    );
+
+    await tx.proforma.update({
+      where: { id: proformaId },
+      data: { total: Number(total.toFixed(2)) },
+    });
+
+    return new Prisma.Decimal(total.toFixed(2));
+  }
+
+  private assertEditableProforma(status: string) {
+    if (status !== PROFORMA_STATUS.DRAFT) {
+      throw new BadRequestException(
+        'Seul un devis en brouillon peut etre modifie.',
+      );
+    }
+  }
 
   private assertStatusTransition(currentStatus: string, nextStatus: string) {
     if (currentStatus === nextStatus) {
@@ -48,6 +110,7 @@ export class ProformasService {
     return this.prisma.proforma.findMany({
       where: { workspace_id: workspaceId, deleted_at: null },
       include: {
+        lines: true,
         case: {
           include: { client: true, vehicle: true }
         }
@@ -63,6 +126,7 @@ export class ProformasService {
     return this.prisma.proforma.findFirst({
       where: { id, workspace_id: workspaceId, deleted_at: null },
       include: {
+        lines: true,
         case: {
           include: { 
             client: true, 
@@ -103,6 +167,18 @@ export class ProformasService {
         proforma.status,
         PROFORMA_STATUS.ACCEPTED,
       );
+
+      const lineCount = await tx.proformaLine.count({
+        where: { proforma_id: proformaId },
+      });
+
+      if (lineCount === 0) {
+        throw new BadRequestException(
+          'Impossible d\u2019accepter un devis sans ligne',
+        );
+      }
+
+      await this.recalculateProformaTotal(proformaId, tx);
 
       await tx.proforma.update({
         where: { id: proformaId },
@@ -149,7 +225,178 @@ export class ProformasService {
           workspace_id: workspaceId,
           deleted_at: null,
         },
+        include: {
+          lines: true,
+        },
       });
+    });
+  }
+
+  async addLine(
+    workspaceId: string,
+    proformaId: string,
+    dto: CreateProformaLineDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const proforma = await tx.proforma.findFirst({
+        where: {
+          id: proformaId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!proforma) {
+        throw new NotFoundException('Proforma introuvable');
+      }
+
+      this.assertEditableProforma(proforma.status);
+
+      const discount = dto.discount ?? 0;
+      const total = this.calculateLineTotal(
+        dto.type,
+        dto.quantity,
+        dto.unit_price,
+        dto.vat_rate,
+        discount,
+      );
+
+      const line = await tx.proformaLine.create({
+        data: {
+          proforma_id: proforma.id,
+          type: dto.type,
+          label: dto.label.trim(),
+          description: dto.description?.trim() || null,
+          quantity: new Prisma.Decimal(dto.quantity),
+          unit_price: new Prisma.Decimal(dto.unit_price),
+          vat_rate: new Prisma.Decimal(dto.vat_rate),
+          discount: new Prisma.Decimal(discount),
+          total,
+        },
+      });
+
+      await this.recalculateProformaTotal(proforma.id, tx);
+
+      return line;
+    });
+  }
+
+  async updateLine(
+    workspaceId: string,
+    proformaId: string,
+    lineId: string,
+    dto: UpdateProformaLineDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const proforma = await tx.proforma.findFirst({
+        where: {
+          id: proformaId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!proforma) {
+        throw new NotFoundException('Proforma introuvable');
+      }
+
+      this.assertEditableProforma(proforma.status);
+
+      const existingLine = await tx.proformaLine.findFirst({
+        where: {
+          id: lineId,
+          proforma_id: proforma.id,
+        },
+      });
+
+      if (!existingLine) {
+        throw new NotFoundException('Ligne de devis introuvable');
+      }
+
+      const type = dto.type ?? existingLine.type;
+      const quantity = dto.quantity ?? Number(existingLine.quantity);
+      const unitPrice = dto.unit_price ?? Number(existingLine.unit_price);
+      const vatRate = dto.vat_rate ?? Number(existingLine.vat_rate);
+      const discount = dto.discount ?? Number(existingLine.discount);
+
+      const total = this.calculateLineTotal(
+        type,
+        quantity,
+        unitPrice,
+        vatRate,
+        discount,
+      );
+
+      const line = await tx.proformaLine.update({
+        where: { id: existingLine.id },
+        data: {
+          type,
+          label:
+            dto.label !== undefined
+              ? dto.label.trim()
+              : existingLine.label,
+          description:
+            dto.description !== undefined
+              ? dto.description.trim() || null
+              : existingLine.description,
+          quantity: new Prisma.Decimal(quantity),
+          unit_price: new Prisma.Decimal(unitPrice),
+          vat_rate: new Prisma.Decimal(vatRate),
+          discount: new Prisma.Decimal(discount),
+          total,
+        },
+      });
+
+      await this.recalculateProformaTotal(proforma.id, tx);
+
+      return line;
+    });
+  }
+
+  async removeLine(
+    workspaceId: string,
+    proformaId: string,
+    lineId: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const proforma = await tx.proforma.findFirst({
+        where: {
+          id: proformaId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!proforma) {
+        throw new NotFoundException('Proforma introuvable');
+      }
+
+      this.assertEditableProforma(proforma.status);
+
+      const line = await tx.proformaLine.findFirst({
+        where: {
+          id: lineId,
+          proforma_id: proforma.id,
+        },
+      });
+
+      if (!line) {
+        throw new NotFoundException('Ligne de devis introuvable');
+      }
+
+      await tx.proformaLine.delete({
+        where: { id: line.id },
+      });
+
+      const total = await this.recalculateProformaTotal(
+        proforma.id,
+        tx,
+      );
+
+      return {
+        success: true,
+        total: Number(total),
+      };
     });
   }
 
