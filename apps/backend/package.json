@@ -11,7 +11,11 @@
     "prisma:reset": "prisma migrate reset",
     "prisma:studio": "prisma studio",
     "seed:garage": "ts-node src/core/prisma/seed.ts",
-    "test:restore": "ts-node scripts/test-restore.ts"
+    "test:restore": "ts-node scripts/test-restore.ts",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand"
   },
   "dependencies": {
     "@faker-js/faker": "^10.5.0",
@@ -50,9 +54,13 @@
     "@types/bcryptjs": "^3.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
-    "@types/jest": "^30.0.0",
+    "@types/jest": "^29.5.14",
     "@types/passport-jwt": "^4.0.1",
+    "@types/supertest": "^7.2.1",
+    "jest": "^29.7.0",
     "prisma": "^5.22.0",
+    "supertest": "^7.2.2",
+    "ts-jest": "^29.4.12",
     "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.6"
