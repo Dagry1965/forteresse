@@ -166,6 +166,10 @@ Objectifs :
 
 ### LOT 12 - Paiements et caisse
 
+Statut : TERMINE
+
+Commit : `bccbb34` - feat(finance): add payment refunds and cash register
+
 Objectifs :
 
 - normaliser les moyens de paiement ;
@@ -452,3 +456,47 @@ Objectifs :
 - git diff --check valide, hors avertissements LF/CRLF Windows ;
 - commit pousse : `6020c3a`.
 
+### 2026-08-02 - LOT 12
+
+- moyens de paiement normalises avec les valeurs `CASH`, `CARD`, `BANK_TRANSFER`, `CHECK`, `MOBILE_MONEY` et `OTHER` ;
+- statuts de paiement `COMPLETED`, `CANCELLED`, `PARTIALLY_REFUNDED` et `REFUNDED` ajoutes ;
+- statut et montant rembourse ajoutes au modele `Payment` ;
+- dates d annulation et de remboursement ajoutees ;
+- rattachement optionnel des paiements aux sessions de caisse ajoute ;
+- modeles `CashRegister` et `CashMovement` ajoutes ;
+- ouverture et cloture de caisse ajoutees ;
+- calcul du montant attendu et de l ecart de caisse ajoute ;
+- mouvements `OPENING`, `PAYMENT`, `REFUND`, `CASH_IN`, `CASH_OUT` et `CLOSING` ajoutes ;
+- contrainte SQL garantissant une seule caisse ouverte par workspace ajoutee ;
+- paiements en especes bloques lorsqu aucune caisse n est ouverte ;
+- remboursements en especes rattaches a la caisse ouverte ;
+- mouvements manuels d entree et de sortie de caisse ajoutes ;
+- annulation complete d un paiement ajoutee ;
+- remboursements partiels et complets ajoutes ;
+- recalcul transactionnel du montant net paye et du statut de facture ajoute ;
+- paiements annules exclus des montants encaisses ;
+- remboursements deduits des montants encaisses ;
+- echeanciers recalcules apres annulation ou remboursement ;
+- DTO de paiement normalises sur les constantes partagees ;
+- validations UUID incompatibles avec les identifiants Prisma `cuid` retirees ;
+- routes HTTP d annulation et de remboursement ajoutees ;
+- routes HTTP d ouverture, consultation, mouvement et cloture de caisse ajoutees ;
+- rapport journalier adapte au fuseau horaire du workspace ;
+- rapport journalier adapte aux paiements annules et rembourses ;
+- migration `20260802140142_add_payment_cash_register` creee et appliquee ;
+- migration retestee depuis la sauvegarde precedant le LOT 12 ;
+- 5 paiements historiques conserves et initialises avec `COMPLETED` et remboursement nul ;
+- test fonctionnel valide pour ouverture de caisse avec fond initial de 200 ;
+- test fonctionnel valide pour paiement CASH de 100 rattache a la caisse ;
+- test fonctionnel valide pour remboursement partiel de 40 ;
+- test fonctionnel valide pour sortie manuelle de caisse de 10 ;
+- test fonctionnel valide pour cloture avec montant attendu de 250, montant compte de 248 et ecart de -2 ;
+- test fonctionnel valide pour annulation d un paiement `BANK_TRANSFER` de 50 ;
+- test fonctionnel valide pour rapport journalier avec montant net de 60 ;
+- donnees fonctionnelles de test nettoyees apres validation ;
+- schema Prisma valide ;
+- 34 migrations reconnues et base a jour ;
+- build backend valide ;
+- git diff --check valide, hors avertissements LF/CRLF Windows ;
+- depot Git propre apres push ;
+- commit pousse : `bccbb34`.
