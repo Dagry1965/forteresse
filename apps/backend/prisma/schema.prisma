@@ -41,6 +41,7 @@ model Workspace {
   cases            Case[]
   numberSequence   NumberSequence[]
   paymentSchedules PaymentSchedule[] // ← obligatoire
+  auditLogs        AuditLog[]
 }
 
 model User {
@@ -698,18 +699,28 @@ model RefreshToken {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  action     String
-  entity     String
-  entity_id  String
-  old_data   String?
-  new_data   String?
-  created_at DateTime @default(now())
+  id            String   @id @default(cuid())
+  action        String
+  entity        String
+  entity_id     String
+  old_data      String?
+  new_data      String?
+  success       Boolean  @default(true)
+  error_message String?
+  ip_address    String?
+  user_agent    String?
+  created_at    DateTime @default(now())
+
+  workspace_id String?
+  workspace    Workspace? @relation(fields: [workspace_id], references: [id])
 
   user_id String?
   user    User?   @relation(fields: [user_id], references: [id])
 
+  @@index([workspace_id])
+  @@index([user_id])
   @@index([entity, entity_id])
+  @@index([action])
   @@index([created_at])
 }
 

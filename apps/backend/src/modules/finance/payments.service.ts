@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { AuditService } from '../../core/audit/audit.service';
 import {
   CASH_MOVEMENT_TYPE,
   CASH_REGISTER_STATUS,
@@ -37,7 +38,10 @@ const PAYMENT_METHOD_VALUES = Object.values(PAYMENT_METHOD);
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   private normalizePaymentMethod(method: string): string {
     const normalized = method?.trim().toUpperCase();
@@ -298,6 +302,27 @@ export class PaymentsService {
         invoice.id,
       );
 
+    await this.auditService.log(
+      {
+        action: 'PAYMENT_RECORDED',
+        entity: 'Payment',
+        entityId: payment.id,
+        workspaceId,
+        userId: finalUserId,
+        newData: {
+          invoiceId: invoice.id,
+          amount: payment.amount,
+          method: payment.method,
+          status: payment.status,
+          reference: payment.reference,
+          cashRegisterId: payment.cash_register_id,
+          invoiceStatus: invoiceResult.status,
+          remaining: invoiceResult.remaining,
+        },
+      },
+      tx,
+    );
+
     return {
       payment,
       ...invoiceResult,
@@ -418,6 +443,28 @@ export class PaymentsService {
           workspaceId,
           payment.invoice_id,
         );
+
+      await this.auditService.log(
+        {
+          action: 'PAYMENT_CANCELLED',
+          entity: 'Payment',
+          entityId: payment.id,
+          workspaceId,
+          userId: finalUserId,
+          oldData: {
+            status: payment.status,
+            amount: payment.amount,
+            refundedAmount: payment.refunded_amount,
+          },
+          newData: {
+            status: updatedPayment.status,
+            reason: cancellationReason,
+            invoiceStatus: invoiceResult.status,
+            remaining: invoiceResult.remaining,
+          },
+        },
+        tx,
+      );
 
       return {
         payment: updatedPayment,
@@ -540,13 +587,39 @@ export class PaymentsService {
           payment.invoice_id,
         );
 
+      const refundableRemaining = Math.max(
+        Number(payment.amount) - newRefundedAmount,
+        0,
+      );
+
+      await this.auditService.log(
+        {
+          action: 'PAYMENT_REFUNDED',
+          entity: 'Payment',
+          entityId: payment.id,
+          workspaceId,
+          userId: finalUserId,
+          oldData: {
+            status: payment.status,
+            refundedAmount: payment.refunded_amount,
+          },
+          newData: {
+            status: updatedPayment.status,
+            refundedNow: amount,
+            refundedAmount: newRefundedAmount,
+            refundableRemaining,
+            reason: refundReason,
+            invoiceStatus: invoiceResult.status,
+            remaining: invoiceResult.remaining,
+          },
+        },
+        tx,
+      );
+
       return {
         payment: updatedPayment,
         refunded_now: amount,
-        refundable_remaining: Math.max(
-          Number(payment.amount) - newRefundedAmount,
-          0,
-        ),
+        refundable_remaining: refundableRemaining,
         ...invoiceResult,
       };
     });

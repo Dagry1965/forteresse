@@ -8,9 +8,14 @@ export interface AuditLogInput {
   action: string;
   entity: string;
   entityId: string;
+  workspaceId?: string | null;
   userId?: string | null;
   oldData?: unknown;
   newData?: unknown;
+  success?: boolean;
+  errorMessage?: string | null;
+  ipAddress?: string | null;
+  userAgent?: string | null;
 }
 
 @Injectable()
@@ -26,7 +31,12 @@ export class AuditService {
         action: data.action,
         entity: data.entity,
         entity_id: data.entityId,
+        workspace_id: data.workspaceId ?? null,
         user_id: data.userId ?? null,
+        success: data.success ?? true,
+        error_message: data.errorMessage ?? null,
+        ip_address: data.ipAddress ?? null,
+        user_agent: data.userAgent ?? null,
         old_data:
           data.oldData === undefined
             ? null

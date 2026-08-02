@@ -4,15 +4,23 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as argon2 from 'argon2';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
-  async create(workspaceId: string, dto: CreateUserDto) {
+  async create(
+    workspaceId: string,
+    dto: CreateUserDto,
+    actorUserId: string,
+  ) {
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
@@ -48,6 +56,22 @@ export class UsersService {
           role: dto.role,
         },
       });
+
+      await this.auditService.log(
+        {
+          action: 'USER_CREATED',
+          entity: 'User',
+          entityId: user.id,
+          workspaceId,
+          userId: actorUserId,
+          newData: {
+            email: user.email,
+            name: user.name,
+            role: dto.role,
+          },
+        },
+        tx,
+      );
 
       return {
         id: user.id,
@@ -119,6 +143,7 @@ export class UsersService {
     workspaceId: string,
     id: string,
     dto: UpdateUserDto,
+    actorUserId: string,
   ) {
     const data: Record<string, unknown> = {};
 
@@ -143,6 +168,13 @@ export class UsersService {
         },
         select: {
           id: true,
+          role: true,
+          user: {
+            select: {
+              email: true,
+              name: true,
+            },
+          },
         },
       });
 
@@ -166,7 +198,7 @@ export class UsersService {
         });
       }
 
-      return tx.user.findUnique({
+      const updatedUser = await tx.user.findUnique({
         where: { id },
         select: {
           id: true,
@@ -187,6 +219,32 @@ export class UsersService {
           },
         },
       });
+
+      await this.auditService.log(
+        {
+          action: dto.role !== undefined
+            ? 'USER_ROLE_UPDATED'
+            : 'USER_UPDATED',
+          entity: 'User',
+          entityId: id,
+          workspaceId,
+          userId: actorUserId,
+          oldData: {
+            email: membership.user.email,
+            name: membership.user.name,
+            role: membership.role,
+          },
+          newData: {
+            email: updatedUser?.email,
+            name: updatedUser?.name,
+            role: updatedUser?.workspaceMembers[0]?.role,
+            passwordChanged: Boolean(dto.password),
+          },
+        },
+        tx,
+      );
+
+      return updatedUser;
     });
 
     if (!result) {
@@ -198,7 +256,11 @@ export class UsersService {
     return result;
   }
 
-  async restore(workspaceId: string, id: string) {
+  async restore(
+    workspaceId: string,
+    id: string,
+    actorUserId: string,
+  ) {
     const result = await this.prisma.user.updateMany({
       where: {
         id,
@@ -215,10 +277,29 @@ export class UsersService {
       );
     }
 
-    return this.findOne(id, workspaceId);
+    const restoredUser = await this.findOne(id, workspaceId);
+
+    await this.auditService.log({
+      action: 'USER_RESTORED',
+      entity: 'User',
+      entityId: id,
+      workspaceId,
+      userId: actorUserId,
+      newData: {
+        email: restoredUser.email,
+        name: restoredUser.name,
+        deletedAt: restoredUser.deleted_at,
+      },
+    });
+
+    return restoredUser;
   }
 
-  async remove(workspaceId: string, id: string) {
+  async remove(
+    workspaceId: string,
+    id: string,
+    actorUserId: string,
+  ) {
     const result = await this.prisma.user.updateMany({
       where: {
         id,
@@ -235,6 +316,21 @@ export class UsersService {
       );
     }
 
-    return this.findOne(id, workspaceId);
+    const removedUser = await this.findOne(id, workspaceId);
+
+    await this.auditService.log({
+      action: 'USER_REMOVED',
+      entity: 'User',
+      entityId: id,
+      workspaceId,
+      userId: actorUserId,
+      newData: {
+        email: removedUser.email,
+        name: removedUser.name,
+        deletedAt: removedUser.deleted_at,
+      },
+    });
+
+    return removedUser;
   }
 }

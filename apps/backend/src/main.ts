@@ -15,9 +15,27 @@ async function bootstrap() {
   // Intercepteur Multi-tenant
   app.useGlobalInterceptors(new WorkspaceInterceptor());
 
-  // CORS
+  // CORS limite aux origines explicitement autorisees.
+  const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (allowedOrigins.length === 0) {
+    throw new Error(
+      'CORS_ORIGINS doit contenir au moins une origine autorisee.',
+    );
+  }
+
   app.enableCors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error('Origine CORS non autorisee.'));
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

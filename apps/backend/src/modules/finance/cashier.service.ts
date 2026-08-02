@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { AuditService } from '../../core/audit/audit.service';
 import { SchedulingService } from '../shared/scheduling.service';
 import {
   CASH_MOVEMENT_TYPE,
@@ -22,6 +23,7 @@ export class CashierService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly schedulingService: SchedulingService,
+    private readonly auditService: AuditService,
   ) {}
 
   private async resolveUserId(
@@ -151,6 +153,22 @@ export class CashierService {
         },
       });
 
+      await this.auditService.log(
+        {
+          action: 'CASH_REGISTER_OPENED',
+          entity: 'CashRegister',
+          entityId: register.id,
+          workspaceId,
+          userId: finalUserId,
+          newData: {
+            openingAmount,
+            notes: notes?.trim() || null,
+            status: register.status,
+          },
+        },
+        tx,
+      );
+
       return tx.cashRegister.findUnique({
         where: { id: register.id },
         include: {
@@ -260,7 +278,7 @@ export class CashierService {
         userId,
       );
 
-      return tx.cashMovement.create({
+      const movement = await tx.cashMovement.create({
         data: {
           workspace_id: workspaceId,
           cash_register_id: register.id,
@@ -272,6 +290,27 @@ export class CashierService {
           notes: movementNotes,
         },
       });
+
+      await this.auditService.log(
+        {
+          action: 'CASH_MOVEMENT_CREATED',
+          entity: 'CashMovement',
+          entityId: movement.id,
+          workspaceId,
+          userId: finalUserId,
+          newData: {
+            cashRegisterId: register.id,
+            type: movement.type,
+            amount: movement.amount,
+            method: movement.method,
+            reference: movement.reference,
+            notes: movement.notes,
+          },
+        },
+        tx,
+      );
+
+      return movement;
     });
   }
 
@@ -334,7 +373,7 @@ export class CashierService {
         },
       });
 
-      return tx.cashRegister.update({
+      const closedRegister = await tx.cashRegister.update({
         where: { id: register.id },
         data: {
           status: CASH_REGISTER_STATUS.CLOSED,
@@ -357,6 +396,29 @@ export class CashierService {
           },
         },
       });
+
+      await this.auditService.log(
+        {
+          action: 'CASH_REGISTER_CLOSED',
+          entity: 'CashRegister',
+          entityId: register.id,
+          workspaceId,
+          userId: finalUserId,
+          oldData: {
+            status: register.status,
+            expectedAmount,
+          },
+          newData: {
+            status: closedRegister.status,
+            closingAmount,
+            difference,
+            notes: notes?.trim() || null,
+          },
+        },
+        tx,
+      );
+
+      return closedRegister;
     });
   }
 
