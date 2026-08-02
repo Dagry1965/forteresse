@@ -71,7 +71,7 @@ export class CashierService {
     openingAmount: number,
     movements: Array<{
       type: string;
-      amount: number;
+      amount: Prisma.Decimal | number;
       method: string;
     }>,
   ): number {

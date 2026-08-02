@@ -237,7 +237,7 @@ export default function ProformaPrintPage() {
                       <td className="py-4 text-center text-xs">{part.quantity}</td>
                       <td className="py-4 text-right text-xs font-medium">{Number(part.price_snapshot).toLocaleString('fr-FR')} €</td>
                       <td className="py-4 text-right text-xs font-black text-slate-900">
-                        {(part.price_snapshot * part.quantity).toLocaleString('fr-FR')} €
+                        {(Number(part.price_snapshot) * part.quantity).toLocaleString('fr-FR')} €
                       </td>
                     </tr>
                   ))}
@@ -251,15 +251,15 @@ export default function ProformaPrintPage() {
             <div className="w-64 space-y-1.5">
               <div className="flex justify-between text-[11px] font-bold text-slate-500 uppercase">
                 <span>Total HT</span>
-                <span className="text-slate-900">{(data.total / 1.2).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
+                <span className="text-slate-900">{(Number(data.total) / 1.2).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between text-[11px] font-bold text-slate-500 uppercase">
                 <span>TVA (20%)</span>
-                <span className="text-slate-900">{(data.total - (data.total / 1.2)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
+                <span className="text-slate-900">{(Number(data.total) - (Number(data.total) / 1.2)).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} €</span>
               </div>
               <div className="flex justify-between items-center border-t-4 border-blue-600 pt-4 mt-4">
                 <span className="font-black uppercase text-xs tracking-widest text-blue-600">Total TTC</span>
-                <span className="font-black text-3xl text-blue-600">{data.total.toLocaleString('fr-FR')} €</span>
+                <span className="font-black text-3xl text-blue-600">{Number(data.total).toLocaleString('fr-FR')} €</span>
               </div>
             </div>
           </div>

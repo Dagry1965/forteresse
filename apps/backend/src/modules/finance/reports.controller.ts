@@ -79,7 +79,8 @@ export class ReportsController {
     });
 
     const totalRevenue = invoices.reduce(
-      (sum, inv) => sum + inv.payments.reduce((s, p) => s + p.amount, 0),
+      (sum, inv) =>
+        sum + inv.payments.reduce((s, p) => s + Number(p.amount), 0),
       0,
     );
 

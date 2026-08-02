@@ -56,8 +56,8 @@ export class PaymentsService {
   }
 
   private getNetPaymentAmount(payment: {
-    amount: number;
-    refunded_amount: number;
+    amount: Prisma.Decimal | number;
+    refunded_amount: Prisma.Decimal | number;
     status: string;
     deleted_at: Date | null;
   }): number {
@@ -786,7 +786,7 @@ export class PaymentsService {
         workspaceId,
         {
           invoice_id: schedule.invoice_id,
-          amount: schedule.amount,
+          amount: Number(schedule.amount),
           method: dto.method,
           user_id: dto.user_id,
           reference: dto.reference,

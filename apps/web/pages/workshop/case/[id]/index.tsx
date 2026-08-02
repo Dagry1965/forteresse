@@ -229,7 +229,7 @@ export default function CaseDetailPage() {
   const totalHT = dossier.interventions?.reduce((acc: number, phase: any) => {
     const phaseSum =
       phase.InterventionPart?.reduce(
-        (s: number, p: any) => s + p.price_snapshot * p.quantity,
+        (s: number, p: any) => s + Number(p.price_snapshot) * p.quantity,
         0
       ) || 0;
 
@@ -437,7 +437,7 @@ export default function CaseDetailPage() {
                                       </span>
 
                                       <span className="text-blue-600 font-black text-sm">
-                                        {item.price_sell} €
+                                        {Number(item.price_sell).toLocaleString('fr-FR')} €
                                       </span>
                                     </div>
                                   ))}
@@ -470,7 +470,7 @@ export default function CaseDetailPage() {
 
                                 <div className="flex items-center gap-4">
                                   <span className="font-mono font-bold text-slate-900">
-                                    {p.price_snapshot} €
+                                    {Number(p.price_snapshot).toLocaleString('fr-FR')} €
                                   </span>
 
                                   <button

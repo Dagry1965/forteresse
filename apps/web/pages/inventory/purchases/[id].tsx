@@ -69,7 +69,7 @@ export default function PurchaseOrderDetail() {
   }
 
   // Calcul du total HT (si non présent dans l'objet order)
-  const totalHT = order.items?.reduce((acc: number, item: any) => acc + (item.quantity * item.price_buy), 0) || 0;
+  const totalHT = order.items?.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.price_buy)), 0) || 0;
 
   return (
     <div className="max-w-5xl mx-auto p-6 print:p-0">
@@ -155,9 +155,9 @@ export default function PurchaseOrderDetail() {
                   <p className="text-[10px] text-slate-400 font-mono">{item.item?.reference}</p>
                 </td>
                 <td className="py-4 px-4 text-center font-medium">{item.quantity}</td>
-                <td className="py-4 px-4 text-right font-medium">{item.price_buy.toLocaleString()} €</td>
+                <td className="py-4 px-4 text-right font-medium">{Number(item.price_buy).toLocaleString()} €</td>
                 <td className="py-4 px-4 text-right font-black text-slate-900">
-                  {(item.quantity * item.price_buy).toLocaleString()} €
+                  {(item.quantity * Number(item.price_buy)).toLocaleString()} €
                 </td>
               </tr>
             ))}

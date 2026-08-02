@@ -109,8 +109,8 @@ model Client {
   vat_number          String?
   address             String?
   billing_address     String?
-  payment_terms_days  Int     @default(0)
-  credit_limit        Float?
+  payment_terms_days  Int      @default(0)
+  credit_limit        Decimal?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -264,7 +264,7 @@ model Appointment {
 model Proforma {
   id         String    @id @default(cuid())
   reference  String
-  total      Float
+  total      Decimal
   status     String    @default("DRAFT")
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -298,7 +298,7 @@ model Proforma {
 model Invoice {
   id         String    @id @default(cuid())
   reference  String
-  total      Float
+  total      Decimal
   status     String    @default("DRAFT")
   type       String    @default("PROFORMA")
   created_at DateTime  @default(now())
@@ -353,8 +353,8 @@ model Invoice {
 
 model Payment {
   id              String    @id @default(cuid())
-  amount          Float
-  refunded_amount Float     @default(0)
+  amount          Decimal
+  refunded_amount Decimal   @default(0)
   method          String
   status          String    @default("COMPLETED")
   paid_at         DateTime  @default(now())
@@ -394,10 +394,10 @@ model Payment {
 model CashRegister {
   id              String    @id @default(cuid())
   status          String    @default("OPEN")
-  opening_amount  Float
-  expected_amount Float?
-  closing_amount  Float?
-  difference      Float?
+  opening_amount  Decimal
+  expected_amount Decimal?
+  closing_amount  Decimal?
+  difference      Decimal?
   opened_at       DateTime  @default(now())
   closed_at       DateTime?
   opening_notes   String?
@@ -427,7 +427,7 @@ model CashRegister {
 model CashMovement {
   id         String   @id @default(cuid())
   type       String
-  amount     Float
+  amount     Decimal
   method     String
   reference  String?
   notes      String?
@@ -517,8 +517,8 @@ model StockItem {
   description  String?
   category_id  String?
   supplier_id  String?
-  price_buy    Float
-  price_sell   Float
+  price_buy    Decimal
+  price_sell   Decimal
   quantity     Int       @default(0)
   workspace_id String
   deleted_at   DateTime?
@@ -590,12 +590,12 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderItem {
-  id                String @id @default(cuid())
+  id                String  @id @default(cuid())
   purchase_order_id String
   item_id           String
   quantity          Int
-  received_quantity Int    @default(0) //
-  price_buy         Float
+  received_quantity Int     @default(0) //
+  price_buy         Decimal
 
   purchaseOrder PurchaseOrder @relation(fields: [purchase_order_id], references: [id])
   item          StockItem     @relation(fields: [item_id], references: [id])
@@ -668,7 +668,7 @@ model InterventionPart {
   intervention_id String
   item_id         String
   quantity        Int
-  price_snapshot  Float
+  price_snapshot  Decimal
   deleted_at      DateTime?
 
   intervention Intervention @relation(fields: [intervention_id], references: [id])
@@ -851,7 +851,7 @@ model NumberSequence {
 model PaymentSchedule {
   id         String   @id @default(cuid())
   invoice_id String
-  amount     Float // Montant attendu pour cette tranche
+  amount     Decimal // Montant attendu pour cette tranche
   due_date   DateTime // Date limite de paiement pour cette tranche
   status     String   @default("PENDING") // PENDING, PAID, OVERDUE
 
