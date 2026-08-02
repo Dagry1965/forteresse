@@ -260,13 +260,34 @@ Resume des roles :
 
 ### LOT 14 - Securite technique
 
-Objectifs :
+Statut : termine.
 
-- limiter CORS ;
-- renforcer la connexion ;
-- integrer les refresh tokens ;
-- journaliser les operations sensibles ;
-- separer administrateur garage et administrateur systeme.
+Realise :
+
+- CORS limite aux origines configurees via `CORS_ORIGINS` ;
+- secret JWT obligatoire et durees des jetons configurables ;
+- jetons d'acces courts et refresh tokens rotatifs ;
+- refresh tokens stockes uniquement sous forme de hash Argon2 ;
+- routes publiques `login`, `refresh` et `logout` ;
+- revocation du refresh token lors de la deconnexion ;
+- controle de l'appartenance active au workspace lors du refresh ;
+- enrichissement de `AuditLog` avec workspace, utilisateur, succes, erreur, IP et user-agent ;
+- journalisation des connexions reussies et echouees ;
+- journalisation des refresh et deconnexions ;
+- journalisation des creations, modifications de role, suppressions et restaurations d'utilisateurs ;
+- journalisation des encaissements, annulations et remboursements ;
+- journalisation des ouvertures, fermetures et mouvements manuels de caisse ;
+- migration Prisma `20260802165738_enrich_audit_log_security` appliquee ;
+- build backend valide ;
+- tests fonctionnels valides pour login, rotation refresh, logout, audit utilisateurs, caisse, encaissement et remboursement.
+
+Commit technique :
+
+- `6eb4b0c feat(security): add refresh tokens and audit sensitive actions`
+
+Reste reporte :
+
+- separation entre administrateur garage et administrateur systeme, a traiter dans un lot d'architecture dedie.
 
 ### LOT 15 - Decimal financier
 
