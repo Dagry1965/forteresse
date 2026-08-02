@@ -141,6 +141,10 @@ Objectifs :
 
 ### LOT 10 - Rendez-vous et creneaux
 
+Statut : TERMINE
+
+Commit : `fbd8b6e` - feat(scheduling): unify time slots and secure capacity
+
 Objectifs :
 
 - unifier le systeme de creneaux ;
@@ -379,3 +383,32 @@ Objectifs :
 - git diff --check valide ;
 - depot Git propre apres push ;
 - commit pousse : `63b4689`.
+
+### 2026-08-02 - LOT 10
+
+- systeme de creneaux unifie autour d un creneau unique par workspace, debut et fin ;
+- contrainte unique ajoutee sur `TimeSlot(workspace_id, start, end)` ;
+- doublons existants fusionnes avant application de la contrainte ;
+- occupations de tous les creneaux recalculees depuis les rendez-vous actifs ;
+- capacite controlee depuis le nombre reel de rendez-vous `PENDING`, `CONFIRMED` et `IN_PROGRESS` ;
+- increments et decrements manuels de `occupancy` remplaces par un recalcul transactionnel ;
+- creation dynamique adaptee pour reutiliser un creneau existant au lieu de creer un doublon ;
+- suppression, restauration, annulation et changement de creneau securises ;
+- fermeture ou annulation d un creneau occupee interdite ;
+- suppression d un creneau lie a des rendez-vous interdite ;
+- routes de restauration et de changement de creneau ajoutees aux rendez-vous ;
+- routes distinctes d annulation, suppression et restauration ajoutees aux creneaux ;
+- fuseau horaire configurable ajoute a `BusinessSettings` avec valeur par defaut `UTC` ;
+- generation des disponibilites et limites journalieres rendues compatibles avec les fuseaux IANA ;
+- dependance `date-fns-tz` ajoutee sans convertir le lockfile pnpm existant ;
+- migration `20260802123357_unify_time_slots_and_add_timezone` creee et appliquee ;
+- controle en base valide : aucun groupe de creneaux en double ;
+- controle en base valide : aucune occupation incoherente ;
+- controle en base valide : aucun fuseau horaire vide ou invalide ;
+- schema Prisma valide ;
+- 31 migrations reconnues et base a jour ;
+- build backend valide ;
+- git diff --check valide, hors avertissements LF/CRLF Windows ;
+- depot Git propre apres push ;
+- commit pousse : `fbd8b6e`.
+
