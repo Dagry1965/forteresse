@@ -8,5 +8,5 @@ export class RefreshTokenDto {
   @IsNotEmpty({
     message: 'Le jeton de rafra\u00eechissement est obligatoire.',
   })
-  refresh_token: string;
+  refresh_token!: string;
 }

@@ -51,6 +51,7 @@
     "uuid": "^14.0.1"
   },
   "devDependencies": {
+    "@nestjs/testing": "10.4.22",
     "@types/bcryptjs": "^3.0.0",
     "@types/better-sqlite3": "^7.6.13",
     "@types/express": "^5.0.6",
