@@ -4,14 +4,14 @@
 
 - Date de derniere mise a jour : 2026-08-02
 - Branche active : `feature/shadcn-v2-development`
-- Commit de reference : 243c30c - feat(billing): lock invoices and add credit notes
+- Commit de reference : 713a0fc - feat(inventory): trace stock movements and secure returns
 - Branche production protegee : `rollback-shadcn-v1`
 - Build backend : OK
 - Build frontend : OK
 - Schema Prisma : valide
 - Sauvegarde locale : `apps/backend/prisma/dev.before-consolidation-20260731.db`
 - Taille de la sauvegarde : 630784 octets
-- Migrations existantes : 27
+- Migrations existantes : 29
 
 ## Regles d execution
 
@@ -114,6 +114,10 @@ Objectifs :
 
 ### LOT 7 - Retours et tracabilite du stock
 
+Statut : TERMINE
+
+Commit : `713a0fc` - feat(inventory): trace stock movements and secure returns
+
 Objectifs :
 
 - securiser les consommations et retours atelier ;
@@ -200,8 +204,8 @@ Objectifs :
 2. auteur reel absent dans certains flux ;
 3. transitions de statut non controlees ;
 4. suppressions physiques de donnees comptables ;
-5. stock potentiellement desynchronise ;
-6. facturation concurrente et doublons ;
+5. stock potentiellement desynchronise dans les flux non encore couverts ;
+6. facturation concurrente et doublons dans les futurs flux ;
 7. montants financiers en Float ;
 8. permissions trop larges ;
 9. systemes de creneaux concurrents ;
@@ -302,3 +306,25 @@ Objectifs :
 - build frontend valide sur 52 pages ;
 - git diff --check valide ;
 - commit pousse : `243c30c`.
+
+### 2026-08-02 - LOT 7
+
+- utilisateur authentifie et actif rendu obligatoire pour les consommations et retours atelier ;
+- mouvements `OUT_WORKSHOP` relies a leur `InterventionPart` et a leur auteur ;
+- mouvements `IN_RETURN` utilises pour les retours de pieces atelier ;
+- suppression physique des pieces remplacee par un soft delete avec `deleted_at` ;
+- double retour d une meme piece bloque par le filtre `deleted_at: null` ;
+- pieces retournees exclues des listes actives, details dossier et calculs de proforma ;
+- mouvements `IN_PURCHASE` relies a leur `PurchaseReceipt` et a leur auteur ;
+- relations `StockMovement.intervention_part_id` et `StockMovement.purchase_receipt_id` ajoutees ;
+- migration `20260802073713_add_stock_movement_sources` creee et appliquee ;
+- migration `20260802074409_add_intervention_part_soft_delete` creee et appliquee ;
+- seed atelier et fournisseur adapte aux nouvelles relations de tracabilite ;
+- nettoyage du seed adapte aux avoirs lies par `original_invoice_id` ;
+- seed garage valide avec 109 interventions, 20 commandes fournisseurs et 25 articles ;
+- controle en base valide : 220 mouvements `OUT_WORKSHOP` tous relies aux pieces et auteurs ;
+- controle en base valide : 20 mouvements `IN_PURCHASE` tous relies aux receptions et auteurs ;
+- schema Prisma synchronise avec 29 migrations ;
+- build backend valide ;
+- depot Git propre apres push ;
+- commit pousse : `713a0fc`.
