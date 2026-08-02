@@ -203,6 +203,61 @@ Commit :
 
 - 994004a feat(auth): add workspace roles and permissions
 
+Matrice des roles et permissions :
+
+| Domaine / Action | ADMIN | RECEPTION | WORKSHOP | MECHANIC | STOCK | CASHIER | ACCOUNTING | READ_ONLY | MEMBER |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| Gestion des utilisateurs | Oui | Non | Non | Non | Non | Non | Non | Non | Non |
+| Consulter les clients | Oui | Oui | Lecture | Lecture | Non | Non | Lecture | Lecture | Non |
+| Modifier les clients et contacts | Oui | Oui | Non | Non | Non | Non | Non | Non | Non |
+| Consulter les vehicules | Oui | Oui | Lecture | Lecture | Non | Non | Non | Lecture | Non |
+| Modifier les vehicules | Oui | Oui | Non | Non | Non | Non | Non | Non | Non |
+| Consulter les rendez-vous | Oui | Oui | Lecture | Lecture | Non | Non | Non | Lecture | Non |
+| Gerer les rendez-vous | Oui | Oui | Non | Non | Non | Non | Non | Non | Non |
+| Demarrer le travail atelier | Oui | Oui | Oui | Non | Non | Non | Non | Non | Non |
+| Consulter les creneaux | Oui | Oui | Lecture | Lecture | Non | Non | Non | Lecture | Non |
+| Gerer les creneaux | Oui | Oui | Non | Non | Non | Non | Non | Non | Non |
+| Consulter les interventions | Oui | Oui | Oui | Oui | Non | Non | Non | Lecture | Non |
+| Creer ou modifier une intervention | Oui | Non | Oui | Oui | Non | Non | Non | Non | Non |
+| Supprimer une intervention | Oui | Non | Oui | Non | Non | Non | Non | Non | Non |
+| Changer le statut atelier | Oui | Non | Oui | Oui | Non | Non | Non | Non | Non |
+| Ajouter ou retirer des pieces | Oui | Non | Oui | Oui | Oui | Non | Non | Non | Non |
+| Creer une phase atelier | Oui | Non | Oui | Non | Non | Non | Non | Non | Non |
+| Generer un proforma depuis l'atelier | Oui | Oui | Oui | Non | Non | Non | Non | Non | Non |
+| Consulter les proformas | Oui | Oui | Non | Non | Non | Non | Oui | Lecture | Non |
+| Modifier ou accepter un proforma | Oui | Oui | Non | Non | Non | Non | Oui | Non | Non |
+| Transformer un proforma en facture | Oui | Oui | Non | Non | Non | Non | Oui | Non | Non |
+| Consulter les factures | Oui | Oui | Non | Non | Non | Oui | Oui | Lecture | Non |
+| Creer une facture groupee | Oui | Oui | Non | Non | Non | Non | Oui | Non | Non |
+| Annuler une facture ou creer un avoir | Oui | Non | Non | Non | Non | Non | Oui | Non | Non |
+| Enregistrer, annuler ou rembourser un paiement | Oui | Non | Non | Non | Non | Oui | Oui | Non | Non |
+| Gerer les echeanciers | Oui | Non | Non | Non | Non | Oui | Oui | Non | Non |
+| Gerer la caisse | Oui | Non | Non | Non | Non | Oui | Oui | Non | Non |
+| Consulter les rapports financiers | Oui | Non | Non | Non | Non | Non | Oui | Lecture | Non |
+| Consulter les produits et receptions | Oui | Non | Lecture | Lecture | Oui | Non | Non | Lecture | Non |
+| Generer une commande automatique | Oui | Non | Non | Non | Oui | Non | Non | Non | Non |
+| Enregistrer une reception fournisseur | Oui | Non | Non | Non | Oui | Non | Non | Non | Non |
+| Consulter les commandes fournisseurs | Oui | Non | Non | Non | Oui | Non | Lecture | Lecture | Non |
+| Gerer les commandes fournisseurs | Oui | Non | Non | Non | Oui | Non | Non | Non | Non |
+| Consulter les mouvements de stock | Oui | Non | Lecture | Lecture | Oui | Non | Lecture | Lecture | Non |
+| Consulter les alertes et la valeur du stock | Oui | Non | Non | Non | Oui | Non | Lecture | Lecture | Non |
+| Consulter les fournisseurs | Oui | Non | Non | Non | Oui | Non | Lecture | Lecture | Non |
+| Gerer les fournisseurs | Oui | Non | Non | Non | Oui | Non | Non | Non | Non |
+
+Resume des roles :
+
+| Role | Fonction principale |
+|---|---|
+| ADMIN | Administration complete du garage et gestion des utilisateurs |
+| RECEPTION | Clients, vehicules, rendez-vous, proformas et facturation |
+| WORKSHOP | Supervision et gestion des interventions atelier |
+| MECHANIC | Execution des interventions et utilisation des pieces |
+| STOCK | Produits, fournisseurs, commandes, receptions et mouvements de stock |
+| CASHIER | Encaissements, remboursements et gestion de la caisse |
+| ACCOUNTING | Factures, paiements, avoirs, caisse et rapports financiers |
+| READ_ONLY | Consultation des domaines explicitement autorises |
+| MEMBER | Ancien role conserve pour compatibilite, sans permission metier dediee |
+
 ### LOT 14 - Securite technique
 
 Objectifs :
