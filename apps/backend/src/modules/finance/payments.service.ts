@@ -6,8 +6,12 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import {
+  CASH_MOVEMENT_TYPE,
+  CASH_REGISTER_STATUS,
   INVOICE_STATUS,
+  PAYMENT_METHOD,
   PAYMENT_SCHEDULE_STATUS,
+  PAYMENT_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 type RecordInvoicePaymentInput = {
@@ -29,9 +33,42 @@ type RecordSchedulePaymentInput = {
   paid_at?: Date;
 };
 
+const PAYMENT_METHOD_VALUES = Object.values(PAYMENT_METHOD);
+
 @Injectable()
 export class PaymentsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private normalizePaymentMethod(method: string): string {
+    const normalized = method?.trim().toUpperCase();
+
+    if (!PAYMENT_METHOD_VALUES.includes(normalized as never)) {
+      throw new BadRequestException(
+        'Le moyen de paiement est invalide.',
+      );
+    }
+
+    return normalized;
+  }
+
+  private getNetPaymentAmount(payment: {
+    amount: number;
+    refunded_amount: number;
+    status: string;
+    deleted_at: Date | null;
+  }): number {
+    if (
+      payment.deleted_at
+      || payment.status === PAYMENT_STATUS.CANCELLED
+    ) {
+      return 0;
+    }
+
+    return Math.max(
+      Number(payment.amount) - Number(payment.refunded_amount),
+      0,
+    );
+  }
 
   private async resolveUserId(
     tx: Prisma.TransactionClient,
@@ -56,21 +93,32 @@ export class PaymentsService {
     return requestedUser.id;
   }
 
-  private async createPaymentInTransaction(
+  private async getOpenCashRegister(
     tx: Prisma.TransactionClient,
     workspaceId: string,
-    input: RecordInvoicePaymentInput,
+  ) {
+    return tx.cashRegister.findFirst({
+      where: {
+        workspace_id: workspaceId,
+        status: CASH_REGISTER_STATUS.OPEN,
+      },
+      orderBy: { opened_at: 'desc' },
+    });
+  }
+
+  private async recalculateInvoiceInTransaction(
+    tx: Prisma.TransactionClient,
+    workspaceId: string,
+    invoiceId: string,
   ) {
     const invoice = await tx.invoice.findFirst({
       where: {
-        id: input.invoice_id,
+        id: invoiceId,
         workspace_id: workspaceId,
         deleted_at: null,
       },
       include: {
-        payments: {
-          where: { deleted_at: null },
-        },
+        payments: true,
       },
     });
 
@@ -78,68 +126,20 @@ export class PaymentsService {
       throw new NotFoundException('Facture introuvable.');
     }
 
-    if (!invoice.client_id) {
-      throw new BadRequestException(
-        'La facture ne possède aucun client.',
-      );
-    }
-
-    const amount = Number(input.amount);
-
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new BadRequestException(
-        'Le montant doit être strictement supérieur à zéro.',
-      );
-    }
+    const paidTotal = invoice.payments.reduce(
+      (sum, payment) => sum + this.getNetPaymentAmount(payment),
+      0,
+    );
 
     const invoiceTotal = Number(invoice.total);
-    const alreadyPaid = invoice.payments.reduce(
-      (sum, payment) => sum + Number(payment.amount),
-      0,
-    );
-    const remainingBeforePayment = Math.max(
-      invoiceTotal - alreadyPaid,
-      0,
-    );
-
-    if (remainingBeforePayment <= 0) {
-      throw new BadRequestException(
-        'Cette facture est déjà entièrement payée.',
-      );
-    }
-
-    if (amount > remainingBeforePayment + 0.000001) {
-      throw new BadRequestException(
-        `Le montant dépasse le solde restant de ${remainingBeforePayment.toFixed(2)}.`,
-      );
-    }
-
-    const finalUserId = await this.resolveUserId(
-      tx,
-      workspaceId,
-      input.user_id,
-    );
-
-    const payment = await tx.payment.create({
-      data: {
-        workspace_id: workspaceId,
-        invoice_id: invoice.id,
-        client_id: invoice.client_id,
-        user_id: finalUserId,
-        amount,
-        method: input.method?.trim() || 'especes',
-        paid_at: input.paid_at ?? new Date(),
-        reference: input.reference?.trim() || null,
-        notes: input.notes?.trim() || null,
-      },
-    });
-
-    const paidTotal = alreadyPaid + amount;
     const remaining = Math.max(invoiceTotal - paidTotal, 0);
+
     const status =
-      remaining <= 0.000001
-        ? INVOICE_STATUS.PAID
-        : INVOICE_STATUS.PARTIALLY_PAID;
+      paidTotal <= 0.000001
+        ? INVOICE_STATUS.UNPAID
+        : remaining <= 0.000001
+          ? INVOICE_STATUS.PAID
+          : INVOICE_STATUS.PARTIALLY_PAID;
 
     await tx.invoice.update({
       where: { id: invoice.id },
@@ -160,15 +160,147 @@ export class PaymentsService {
           status: PAYMENT_SCHEDULE_STATUS.PAID,
         },
       });
+    } else {
+      await tx.paymentSchedule.updateMany({
+        where: {
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+          status: PAYMENT_SCHEDULE_STATUS.PAID,
+        },
+        data: {
+          status: PAYMENT_SCHEDULE_STATUS.PENDING,
+        },
+      });
     }
 
     return {
-      payment,
       invoice_id: invoice.id,
       invoice_total: invoiceTotal,
       paid_total: paidTotal,
       remaining,
       status,
+    };
+  }
+
+  private async createPaymentInTransaction(
+    tx: Prisma.TransactionClient,
+    workspaceId: string,
+    input: RecordInvoicePaymentInput,
+  ) {
+    const invoice = await tx.invoice.findFirst({
+      where: {
+        id: input.invoice_id,
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      include: {
+        payments: true,
+      },
+    });
+
+    if (!invoice) {
+      throw new NotFoundException('Facture introuvable.');
+    }
+
+    if (!invoice.client_id) {
+      throw new BadRequestException(
+        'La facture ne possede aucun client.',
+      );
+    }
+
+    const amount = Number(input.amount);
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new BadRequestException(
+        'Le montant doit etre strictement superieur a zero.',
+      );
+    }
+
+    const method = this.normalizePaymentMethod(input.method);
+
+    const alreadyPaid = invoice.payments.reduce(
+      (sum, payment) => sum + this.getNetPaymentAmount(payment),
+      0,
+    );
+
+    const invoiceTotal = Number(invoice.total);
+    const remainingBeforePayment = Math.max(
+      invoiceTotal - alreadyPaid,
+      0,
+    );
+
+    if (remainingBeforePayment <= 0.000001) {
+      throw new BadRequestException(
+        'Cette facture est deja entierement payee.',
+      );
+    }
+
+    if (amount > remainingBeforePayment + 0.000001) {
+      throw new BadRequestException(
+        `Le montant depasse le solde restant de ${remainingBeforePayment.toFixed(2)}.`,
+      );
+    }
+
+    const finalUserId = await this.resolveUserId(
+      tx,
+      workspaceId,
+      input.user_id,
+    );
+
+    const cashRegister =
+      method === PAYMENT_METHOD.CASH
+        ? await this.getOpenCashRegister(tx, workspaceId)
+        : null;
+
+    if (method === PAYMENT_METHOD.CASH && !cashRegister) {
+      throw new BadRequestException(
+        'Une caisse doit etre ouverte pour enregistrer un paiement en especes.',
+      );
+    }
+
+    const payment = await tx.payment.create({
+      data: {
+        workspace_id: workspaceId,
+        invoice_id: invoice.id,
+        client_id: invoice.client_id,
+        user_id: finalUserId,
+        cash_register_id: cashRegister?.id ?? null,
+        amount,
+        refunded_amount: 0,
+        method,
+        status: PAYMENT_STATUS.COMPLETED,
+        paid_at: input.paid_at ?? new Date(),
+        reference: input.reference?.trim() || null,
+        notes: input.notes?.trim() || null,
+      },
+    });
+
+    if (cashRegister) {
+      await tx.cashMovement.create({
+        data: {
+          workspace_id: workspaceId,
+          cash_register_id: cashRegister.id,
+          payment_id: payment.id,
+          user_id: finalUserId,
+          type: CASH_MOVEMENT_TYPE.PAYMENT,
+          method,
+          amount,
+          reference: payment.reference,
+          notes: payment.notes,
+        },
+      });
+    }
+
+    const invoiceResult =
+      await this.recalculateInvoiceInTransaction(
+        tx,
+        workspaceId,
+        invoice.id,
+      );
+
+    return {
+      payment,
+      ...invoiceResult,
     };
   }
 
@@ -191,6 +323,235 @@ export class PaymentsService {
     );
   }
 
+  async cancelPayment(
+    workspaceId: string,
+    paymentId: string,
+    userId: string,
+    reason: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findFirst({
+        where: {
+          id: paymentId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!payment) {
+        throw new NotFoundException('Paiement introuvable.');
+      }
+
+      if (payment.status === PAYMENT_STATUS.CANCELLED) {
+        throw new BadRequestException(
+          'Ce paiement est deja annule.',
+        );
+      }
+
+      if (Number(payment.refunded_amount) > 0) {
+        throw new BadRequestException(
+          'Un paiement deja rembourse ne peut pas etre annule.',
+        );
+      }
+
+      const finalUserId = await this.resolveUserId(
+        tx,
+        workspaceId,
+        userId,
+      );
+
+      const cancellationReason = reason?.trim();
+
+      if (!cancellationReason) {
+        throw new BadRequestException(
+          'Le motif d annulation est obligatoire.',
+        );
+      }
+
+      const updatedPayment = await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: PAYMENT_STATUS.CANCELLED,
+          cancelled_at: new Date(),
+          notes: payment.notes
+            ? `${payment.notes}\nANNULATION: ${cancellationReason}`
+            : `ANNULATION: ${cancellationReason}`,
+        },
+      });
+
+      if (
+        payment.method === PAYMENT_METHOD.CASH
+        && payment.cash_register_id
+      ) {
+        const register = await tx.cashRegister.findFirst({
+          where: {
+            id: payment.cash_register_id,
+            workspace_id: workspaceId,
+            status: CASH_REGISTER_STATUS.OPEN,
+          },
+        });
+
+        if (!register) {
+          throw new BadRequestException(
+            'La caisse associee est fermee. Utilisez un remboursement.',
+          );
+        }
+
+        await tx.cashMovement.create({
+          data: {
+            workspace_id: workspaceId,
+            cash_register_id: register.id,
+            payment_id: payment.id,
+            user_id: finalUserId,
+            type: CASH_MOVEMENT_TYPE.REFUND,
+            method: PAYMENT_METHOD.CASH,
+            amount: Number(payment.amount),
+            reference: payment.reference,
+            notes: `Annulation: ${cancellationReason}`,
+          },
+        });
+      }
+
+      const invoiceResult =
+        await this.recalculateInvoiceInTransaction(
+          tx,
+          workspaceId,
+          payment.invoice_id,
+        );
+
+      return {
+        payment: updatedPayment,
+        ...invoiceResult,
+      };
+    });
+  }
+
+  async refundPayment(
+    workspaceId: string,
+    paymentId: string,
+    userId: string,
+    amountInput: number,
+    reason: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const payment = await tx.payment.findFirst({
+        where: {
+          id: paymentId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!payment) {
+        throw new NotFoundException('Paiement introuvable.');
+      }
+
+      if (payment.status === PAYMENT_STATUS.CANCELLED) {
+        throw new BadRequestException(
+          'Un paiement annule ne peut pas etre rembourse.',
+        );
+      }
+
+      const amount = Number(amountInput);
+      const refundable =
+        Number(payment.amount) - Number(payment.refunded_amount);
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new BadRequestException(
+          'Le montant du remboursement est invalide.',
+        );
+      }
+
+      if (amount > refundable + 0.000001) {
+        throw new BadRequestException(
+          `Le remboursement depasse le montant disponible de ${refundable.toFixed(2)}.`,
+        );
+      }
+
+      const refundReason = reason?.trim();
+
+      if (!refundReason) {
+        throw new BadRequestException(
+          'Le motif du remboursement est obligatoire.',
+        );
+      }
+
+      const finalUserId = await this.resolveUserId(
+        tx,
+        workspaceId,
+        userId,
+      );
+
+      const newRefundedAmount =
+        Number(payment.refunded_amount) + amount;
+
+      const fullyRefunded =
+        newRefundedAmount >= Number(payment.amount) - 0.000001;
+
+      let cashRegisterId: string | null = null;
+
+      if (payment.method === PAYMENT_METHOD.CASH) {
+        const openRegister =
+          await this.getOpenCashRegister(tx, workspaceId);
+
+        if (!openRegister) {
+          throw new BadRequestException(
+            'Une caisse doit etre ouverte pour rembourser un paiement en especes.',
+          );
+        }
+
+        cashRegisterId = openRegister.id;
+      }
+
+      const updatedPayment = await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          refunded_amount: newRefundedAmount,
+          refunded_at: new Date(),
+          status: fullyRefunded
+            ? PAYMENT_STATUS.REFUNDED
+            : PAYMENT_STATUS.PARTIALLY_REFUNDED,
+          notes: payment.notes
+            ? `${payment.notes}\nREMBOURSEMENT ${amount.toFixed(2)}: ${refundReason}`
+            : `REMBOURSEMENT ${amount.toFixed(2)}: ${refundReason}`,
+        },
+      });
+
+      if (cashRegisterId) {
+        await tx.cashMovement.create({
+          data: {
+            workspace_id: workspaceId,
+            cash_register_id: cashRegisterId,
+            payment_id: payment.id,
+            user_id: finalUserId,
+            type: CASH_MOVEMENT_TYPE.REFUND,
+            method: PAYMENT_METHOD.CASH,
+            amount,
+            reference: payment.reference,
+            notes: refundReason,
+          },
+        });
+      }
+
+      const invoiceResult =
+        await this.recalculateInvoiceInTransaction(
+          tx,
+          workspaceId,
+          payment.invoice_id,
+        );
+
+      return {
+        payment: updatedPayment,
+        refunded_now: amount,
+        refundable_remaining: Math.max(
+          Number(payment.amount) - newRefundedAmount,
+          0,
+        ),
+        ...invoiceResult,
+      };
+    });
+  }
+
   async createPaymentSchedule(
     workspaceId: string,
     dto: {
@@ -202,21 +563,15 @@ export class PaymentsService {
     const installments = Number(dto.installments);
     const intervalDays = Number(dto.interval_days);
 
-    if (
-      !Number.isInteger(installments)
-      || installments <= 0
-    ) {
+    if (!Number.isInteger(installments) || installments <= 0) {
       throw new BadRequestException(
-        'Le nombre d’échéances doit être un entier positif.',
+        'Le nombre d echeances doit etre un entier positif.',
       );
     }
 
-    if (
-      !Number.isInteger(intervalDays)
-      || intervalDays < 0
-    ) {
+    if (!Number.isInteger(intervalDays) || intervalDays < 0) {
       throw new BadRequestException(
-        'L’intervalle entre les échéances est invalide.',
+        'L intervalle entre les echeances est invalide.',
       );
     }
 
@@ -228,43 +583,41 @@ export class PaymentsService {
           deleted_at: null,
         },
         include: {
-          payments: {
-            where: { deleted_at: null },
-          },
+          payments: true,
           paymentSchedules: true,
         },
       });
 
       if (!invoice) {
-        throw new NotFoundException(
-          'Facture introuvable.',
-        );
+        throw new NotFoundException('Facture introuvable.');
       }
 
       if (invoice.paymentSchedules.length > 0) {
         throw new BadRequestException(
-          'Un échéancier existe déjà pour cette facture.',
+          'Un echeancier existe deja pour cette facture.',
         );
       }
 
       const alreadyPaid = invoice.payments.reduce(
-        (sum, payment) => sum + Number(payment.amount),
+        (sum, payment) => sum + this.getNetPaymentAmount(payment),
         0,
       );
+
       const remaining = Math.max(
         Number(invoice.total) - alreadyPaid,
         0,
       );
 
-      if (remaining <= 0) {
+      if (remaining <= 0.000001) {
         throw new BadRequestException(
-          'Cette facture est déjà payée.',
+          'Cette facture est deja payee.',
         );
       }
 
       const baseAmount = Number(
         (remaining / installments).toFixed(2),
       );
+
       const schedules = [];
       let allocated = 0;
 
@@ -341,22 +694,17 @@ export class PaymentsService {
             deleted_at: null,
           },
         },
-        include: {
-          invoice: true,
-        },
       });
 
       if (!schedule) {
         throw new NotFoundException(
-          'Échéance introuvable.',
+          'Echeance introuvable.',
         );
       }
 
-      if (
-        schedule.status === PAYMENT_SCHEDULE_STATUS.PAID
-      ) {
+      if (schedule.status === PAYMENT_SCHEDULE_STATUS.PAID) {
         throw new BadRequestException(
-          'Cette échéance est déjà payée.',
+          'Cette echeance est deja payee.',
         );
       }
 

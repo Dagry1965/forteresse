@@ -1,52 +1,34 @@
 import {
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   Min,
 } from 'class-validator';
-
-export enum PaymentMethod {
-  CARTE = 'carte',
-  ESPECES = 'espèces',
-  VIREMENT = 'virement',
-}
+import {
+  PAYMENT_METHOD,
+} from '../../../../../../shared/constants/status.constants';
 
 export class CreatePaymentDto {
-  @IsUUID('4', {
-    message:
-      'L’identifiant de l’espace de travail est invalide.',
-  })
+  @IsString()
   @IsNotEmpty({
-    message: 'Le workspaceId est obligatoire.',
-  })
-  workspaceId: string;
-
-  @IsUUID('4', {
-    message: 'La facture sélectionnée est invalide.',
-  })
-  @IsNotEmpty({
-    message:
-      'L’identifiant de la facture est obligatoire.',
+    message: 'L\u2019identifiant de la facture est obligatoire.',
   })
   invoice_id: string;
 
   @IsNumber({}, {
-    message: 'Le montant doit être un nombre valide.',
+    message: 'Le montant doit \u00eatre un nombre valide.',
   })
   @Min(0.01, {
-    message:
-      'Le montant du paiement doit être au moins de 0.01.',
+    message: 'Le montant du paiement doit \u00eatre au moins de 0.01.',
   })
   amount: number;
 
-  @IsEnum(PaymentMethod, {
-    message:
-      'La méthode de paiement doit être carte, espèces ou virement.',
+  @IsIn(Object.values(PAYMENT_METHOD), {
+    message: 'Le moyen de paiement est invalide.',
   })
-  method: PaymentMethod;
+  method: string;
 
   @IsOptional()
   @IsString()

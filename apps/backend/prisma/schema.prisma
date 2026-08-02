@@ -29,6 +29,8 @@ model Workspace {
   proformas        Proforma[]
   invoices         Invoice[]
   payments         Payment[]
+  cashRegisters    CashRegister[]
+  cashMovements    CashMovement[]
   timeslots        TimeSlot[]
   refreshTokens    RefreshToken[]
   interventions    Intervention[]
@@ -61,12 +63,15 @@ model User {
   createdPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
   assignedInterventions Intervention[]  @relation("InterventionMechanic")
 
-  RefreshTokens    RefreshToken[]
-  Appointments     Appointment[]
-  Invoices         Invoice[]
-  Payments         Payment[]
-  workspaceMembers WorkspaceMember[]
-  AuditLogs        AuditLog[]
+  RefreshTokens       RefreshToken[]
+  Appointments        Appointment[]
+  Invoices            Invoice[]
+  Payments            Payment[]
+  openedCashRegisters CashRegister[]    @relation("CashRegisterOpenedBy")
+  closedCashRegisters CashRegister[]    @relation("CashRegisterClosedBy")
+  cashMovements       CashMovement[]
+  workspaceMembers    WorkspaceMember[]
+  AuditLogs           AuditLog[]
 
   @@index([workspace_id])
   @@index([email])
@@ -346,15 +351,19 @@ model Invoice {
 }
 
 model Payment {
-  id         String    @id @default(cuid())
-  amount     Float
-  method     String
-  paid_at    DateTime  @default(now())
-  reference  String?
-  notes      String?
-  created_at DateTime  @default(now())
-  updated_at DateTime  @updatedAt
-  deleted_at DateTime?
+  id              String    @id @default(cuid())
+  amount          Float
+  refunded_amount Float     @default(0)
+  method          String
+  status          String    @default("COMPLETED")
+  paid_at         DateTime  @default(now())
+  cancelled_at    DateTime?
+  refunded_at     DateTime?
+  reference       String?
+  notes           String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
 
   workspace_id String
   workspace    Workspace @relation(fields: [workspace_id], references: [id])
@@ -368,10 +377,78 @@ model Payment {
   user_id String
   user    User   @relation(fields: [user_id], references: [id])
 
+  cash_register_id String?
+  cashRegister     CashRegister? @relation(fields: [cash_register_id], references: [id])
+
+  cashMovements CashMovement[]
+
   @@index([workspace_id])
+  @@index([workspace_id, status])
   @@index([invoice_id])
   @@index([client_id])
+  @@index([cash_register_id])
   @@index([paid_at])
+}
+
+model CashRegister {
+  id              String    @id @default(cuid())
+  status          String    @default("OPEN")
+  opening_amount  Float
+  expected_amount Float?
+  closing_amount  Float?
+  difference      Float?
+  opened_at       DateTime  @default(now())
+  closed_at       DateTime?
+  opening_notes   String?
+  closing_notes   String?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+
+  workspace_id String
+  workspace    Workspace @relation(fields: [workspace_id], references: [id])
+
+  opened_by String
+  openedBy  User   @relation("CashRegisterOpenedBy", fields: [opened_by], references: [id])
+
+  closed_by String?
+  closedBy  User?   @relation("CashRegisterClosedBy", fields: [closed_by], references: [id])
+
+  payments  Payment[]
+  movements CashMovement[]
+
+  @@index([workspace_id])
+  @@index([workspace_id, status])
+  @@index([opened_by])
+  @@index([closed_by])
+  @@index([opened_at])
+}
+
+model CashMovement {
+  id         String   @id @default(cuid())
+  type       String
+  amount     Float
+  method     String
+  reference  String?
+  notes      String?
+  created_at DateTime @default(now())
+
+  workspace_id String
+  workspace    Workspace @relation(fields: [workspace_id], references: [id])
+
+  cash_register_id String
+  cashRegister     CashRegister @relation(fields: [cash_register_id], references: [id])
+
+  payment_id String?
+  payment    Payment? @relation(fields: [payment_id], references: [id])
+
+  user_id String
+  user    User   @relation(fields: [user_id], references: [id])
+
+  @@index([workspace_id])
+  @@index([cash_register_id])
+  @@index([payment_id])
+  @@index([user_id])
+  @@index([created_at])
 }
 
 model Intervention {

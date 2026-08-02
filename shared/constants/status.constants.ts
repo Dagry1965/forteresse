@@ -138,6 +138,38 @@ export const INVOICE_TYPE = {
   CREDIT_NOTE: 'CREDIT_NOTE',
 } as const;
 
+// ====================== PAYMENT ======================
+export const PAYMENT_METHOD = {
+  CASH: 'CASH',
+  CARD: 'CARD',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  CHECK: 'CHECK',
+  MOBILE_MONEY: 'MOBILE_MONEY',
+  OTHER: 'OTHER',
+} as const;
+
+export const PAYMENT_STATUS = {
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+  PARTIALLY_REFUNDED: 'PARTIALLY_REFUNDED',
+  REFUNDED: 'REFUNDED',
+} as const;
+
+// ====================== CASH REGISTER ======================
+export const CASH_REGISTER_STATUS = {
+  OPEN: 'OPEN',
+  CLOSED: 'CLOSED',
+} as const;
+
+export const CASH_MOVEMENT_TYPE = {
+  OPENING: 'OPENING',
+  PAYMENT: 'PAYMENT',
+  REFUND: 'REFUND',
+  CASH_IN: 'CASH_IN',
+  CASH_OUT: 'CASH_OUT',
+  CLOSING: 'CLOSING',
+} as const;
+
 // ====================== PAYMENT SCHEDULE ======================
 export const PAYMENT_SCHEDULE_STATUS = {
   PENDING: 'PENDING',

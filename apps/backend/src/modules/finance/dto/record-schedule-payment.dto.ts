@@ -1,16 +1,21 @@
 import {
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';
+import {
+  PAYMENT_METHOD,
+} from '../../../../../../shared/constants/status.constants';
 
 export class RecordSchedulePaymentDto {
   @IsString()
   @IsNotEmpty()
   schedule_id: string;
 
-  @IsString()
-  @IsNotEmpty()
+  @IsIn(Object.values(PAYMENT_METHOD), {
+    message: 'Le moyen de paiement est invalide.',
+  })
   method: string;
 
   @IsOptional()

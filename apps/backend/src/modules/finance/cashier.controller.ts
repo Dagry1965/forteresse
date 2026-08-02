@@ -1,23 +1,89 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
+  Post,
   Query,
+  Req,
+  UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
 import { CashierService } from './cashier.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { OpenCashRegisterDto } from './dto/open-cash-register.dto';
+import { CloseCashRegisterDto } from './dto/close-cash-register.dto';
+import { CreateCashMovementDto } from './dto/create-cash-movement.dto';
 
 @Controller('finance/cashier')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class CashierController {
   constructor(private readonly cashierService: CashierService) {}
 
-  /**
-   * Endpoint pour obtenir le journal de caisse
-   * Exemple : /api/finance/cashier/report?date=2024-05-15
-   */
+  private getAuthenticatedUserId(req: any): string {
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Utilisateur authentifie introuvable.',
+      );
+    }
+
+    return userId;
+  }
+
+  @Get('active')
+  async getActiveRegister(
+    @Headers('x-workspace-id') workspaceId: string,
+  ) {
+    return this.cashierService.getActiveRegister(workspaceId);
+  }
+
+  @Post('open')
+  async openRegister(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: OpenCashRegisterDto,
+    @Req() req: any,
+  ) {
+    return this.cashierService.openRegister(
+      workspaceId,
+      this.getAuthenticatedUserId(req),
+      dto.opening_amount,
+      dto.notes,
+    );
+  }
+
+  @Post('movement')
+  async createMovement(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: CreateCashMovementDto,
+    @Req() req: any,
+  ) {
+    return this.cashierService.createManualMovement(
+      workspaceId,
+      this.getAuthenticatedUserId(req),
+      dto.type,
+      dto.amount,
+      dto.notes,
+      dto.reference,
+    );
+  }
+
+  @Post('close')
+  async closeRegister(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Body() dto: CloseCashRegisterDto,
+    @Req() req: any,
+  ) {
+    return this.cashierService.closeRegister(
+      workspaceId,
+      this.getAuthenticatedUserId(req),
+      dto.closing_amount,
+      dto.notes,
+    );
+  }
+
   @Get('report')
   async getReport(
     @Headers('x-workspace-id') workspaceId: string,
