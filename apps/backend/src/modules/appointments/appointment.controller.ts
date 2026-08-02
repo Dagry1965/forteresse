@@ -15,12 +15,22 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ChangeTimeSlotDto } from './dto/change-time-slot.dto';
 
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.WORKSHOP,
+  USER_ROLE.MECHANIC,
+  USER_ROLE.READ_ONLY,
+)
 @Controller('appointments')
 export class AppointmentController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
@@ -43,6 +53,11 @@ export class AppointmentController {
     return this.appointmentsService.getAvailableSlots(workspaceId, date);
   }
   @Post(':id/start-workshop')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+    USER_ROLE.WORKSHOP,
+  )
   startWorkshop(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -59,6 +74,10 @@ export class AppointmentController {
   }
 
    @Post()
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   create(
     @Headers('x-workspace-id') headerWorkspaceId: string,
     @Body() dto: CreateAppointmentDto,
@@ -87,6 +106,10 @@ export class AppointmentController {
   }
 
   @Patch(':id/cancel')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   cancel(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -95,6 +118,10 @@ export class AppointmentController {
   }
 
   @Patch(':id/change-time-slot')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   changeTimeSlot(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -108,6 +135,10 @@ export class AppointmentController {
   }
 
   @Patch(':id/restore')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   restore(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -116,6 +147,10 @@ export class AppointmentController {
   }
 
   @Patch(':id')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   update(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -125,6 +160,10 @@ export class AppointmentController {
   }
 
   @Delete(':id')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   remove(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,

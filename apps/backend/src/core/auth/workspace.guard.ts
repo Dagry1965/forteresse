@@ -1,44 +1,75 @@
 import {
-  Injectable,
   CanActivate,
   ExecutionContext,
+  ForbiddenException,
+  Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class WorkspaceGuard implements CanActivate {
-  canActivate(context: ExecutionContext): boolean {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const workspaceId = request.headers['x-workspace-id'];
+    const workspaceHeader = request.headers['x-workspace-id'];
 
-    if (!user) {
+    if (!user?.userId && !user?.id) {
       throw new UnauthorizedException(
-        'Utilisateur non authentifié.',
+        'Utilisateur non authentifi\u00e9.',
       );
     }
+
+    const workspaceId = Array.isArray(workspaceHeader)
+      ? workspaceHeader[0]
+      : workspaceHeader;
 
     if (
       !workspaceId
       || workspaceId === 'null'
       || workspaceId === 'undefined'
-      || workspaceId === ''
     ) {
       throw new UnauthorizedException(
-        'Aucun garage identifié.',
+        'Aucun garage identifi\u00e9.',
       );
     }
 
-    if (
-      !user.workspaceId
-      || String(workspaceId) !== String(user.workspaceId)
-    ) {
-      throw new UnauthorizedException(
-        'Accès refusé : ce garage ne vous appartient pas.',
+    const userId = String(user.userId ?? user.id);
+
+    const membership = await this.prisma.workspaceMember.findFirst({
+      where: {
+        user_id: userId,
+        workspace_id: String(workspaceId),
+        deleted_at: null,
+        user: {
+          deleted_at: null,
+        },
+      },
+      select: {
+        id: true,
+        role: true,
+        workspace_id: true,
+      },
+    });
+
+    if (!membership) {
+      throw new ForbiddenException(
+        'Acc\u00e8s refus\u00e9 : vous ne faites pas partie de ce garage.',
       );
     }
 
-    request.workspaceId = workspaceId;
+    request.workspaceId = membership.workspace_id;
+    request.membership = membership;
+    request.user = {
+      ...user,
+      id: userId,
+      userId,
+      workspaceId: membership.workspace_id,
+      role: membership.role,
+      membershipId: membership.id,
+    };
 
     return true;
   }

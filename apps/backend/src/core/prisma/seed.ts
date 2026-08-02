@@ -297,7 +297,9 @@ async function main(): Promise<void> {
           ? USER_ROLE.ADMIN
           : index <= 7
             ? USER_ROLE.MECHANIC
-            : USER_ROLE.MEMBER,
+            : index === 8
+              ? USER_ROLE.WORKSHOP
+              : USER_ROLE.STOCK,
     })),
   });
 

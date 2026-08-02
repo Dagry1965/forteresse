@@ -19,9 +19,19 @@ import { InventoryFilterDto } from './dto/inventory-filter.dto';
 import { CreatePurchaseReceiptDto } from './dto/create-purchase-receipt.dto';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('inventory')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.STOCK,
+  USER_ROLE.WORKSHOP,
+  USER_ROLE.MECHANIC,
+  USER_ROLE.READ_ONLY,
+)
 export class InventoryController {
   constructor(
     private readonly purchaseOrderService: PurchaseOrderService,
@@ -48,6 +58,10 @@ export class InventoryController {
    * Générer automatiquement une commande depuis une alerte de stock.
    */
   @Post('products/:itemId/auto-purchase')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.STOCK,
+)
   async autoGeneratePurchase(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('itemId') itemId: string,
@@ -62,6 +76,10 @@ export class InventoryController {
    * Enregistrer une réception fournisseur.
    */
   @Post('receipts')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.STOCK,
+)
   async createReceipt(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() data: CreatePurchaseReceiptDto,
@@ -87,6 +105,10 @@ export class InventoryController {
   }
 
 @Post('purchases/auto-generate')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.STOCK,
+)
 async autoGeneratePurchaseFromAlert(
   @Headers('x-workspace-id') workspaceId: string,
   @Body('itemId') itemId: string,

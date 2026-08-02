@@ -13,9 +13,19 @@ import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('vehicles')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.WORKSHOP,
+  USER_ROLE.MECHANIC,
+  USER_ROLE.READ_ONLY,
+)
 export class VehiclesController {
   constructor(private readonly vehiclesService: VehiclesService) {}
 
@@ -33,6 +43,10 @@ export class VehiclesController {
   }
 
   @Post()
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   create(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateVehicleDto,
@@ -41,6 +55,10 @@ export class VehiclesController {
   }
 
   @Patch(':id')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   update(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -51,6 +69,10 @@ export class VehiclesController {
 
   // Soft Delete
   @Patch(':id/soft-delete')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   softDelete(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -60,6 +82,10 @@ export class VehiclesController {
 
   // Restore
   @Patch(':id/restore')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   restore(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,

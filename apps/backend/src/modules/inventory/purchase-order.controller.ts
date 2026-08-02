@@ -14,15 +14,28 @@ import {
 import { PurchaseOrderService } from './purchase-order.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
 
 @Controller('purchase-orders')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.STOCK,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 @UsePipes(new ValidationPipe({ whitelist: true, transform: true })) // ← Important
 export class PurchaseOrderController {
   constructor(private readonly poService: PurchaseOrderService) {}
 
   @Post()
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.STOCK,
+  )
   create(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreatePurchaseOrderDto,
@@ -47,6 +60,10 @@ export class PurchaseOrderController {
   }
 
   @Patch(':id/status')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.STOCK,
+  )
   updateStatus(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,

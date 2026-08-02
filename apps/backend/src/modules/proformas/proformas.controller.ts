@@ -15,11 +15,20 @@ import {
 import { ProformasService } from './proformas.service';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { CreateProformaLineDto } from './dto/create-proforma-line.dto';
 import { UpdateProformaLineDto } from './dto/update-proforma-line.dto';
 
 @Controller('proformas')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 export class ProformasController {
   constructor(private readonly proformasService: ProformasService) {}
 
@@ -39,6 +48,11 @@ export class ProformasController {
   }
 
   @Post(':id/lines')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+)
   addLine(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -52,6 +66,11 @@ export class ProformasController {
   }
 
   @Patch(':id/lines/:lineId')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+)
   updateLine(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -67,6 +86,11 @@ export class ProformasController {
   }
 
   @Delete(':id/lines/:lineId')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+)
   removeLine(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -81,6 +105,11 @@ export class ProformasController {
 
   // Route pour transformer le devis en facture
   @Post(':id/accept')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+)
   acceptProforma(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string
@@ -89,6 +118,11 @@ export class ProformasController {
   }
 
   @Post(':id/invoice')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+)
   convertToInvoice(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,

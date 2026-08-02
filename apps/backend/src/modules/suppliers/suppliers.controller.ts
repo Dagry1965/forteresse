@@ -14,13 +14,26 @@ import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('suppliers')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.STOCK,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}
 
   @Post()
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.STOCK,
+  )
   create(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateSupplierDto,
@@ -44,6 +57,10 @@ export class SuppliersController {
   }
 
   @Patch(':id')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.STOCK,
+  )
   update(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -53,6 +70,10 @@ export class SuppliersController {
   }
 
   @Delete(':id')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.STOCK,
+  )
   remove(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,

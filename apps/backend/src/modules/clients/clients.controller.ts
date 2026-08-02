@@ -16,9 +16,20 @@ import { CreateClientContactDto } from './dto/create-client-contact.dto';
 import { UpdateClientContactDto } from './dto/update-client-contact.dto';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('clients')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.WORKSHOP,
+  USER_ROLE.MECHANIC,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 export class ClientsController {
   constructor(private readonly clientsService: ClientsService) {}
 
@@ -38,6 +49,10 @@ export class ClientsController {
   }
 
   @Post()
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   create(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateClientDto,
@@ -46,6 +61,10 @@ export class ClientsController {
   }
 
   @Patch(':id')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   update(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -56,6 +75,10 @@ export class ClientsController {
 
 
   @Post(':clientId/contacts')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   createContact(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('clientId') clientId: string,
@@ -69,6 +92,10 @@ export class ClientsController {
   }
 
   @Patch(':clientId/contacts/:contactId')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   updateContact(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('clientId') clientId: string,
@@ -84,6 +111,10 @@ export class ClientsController {
   }
 
   @Delete(':clientId/contacts/:contactId')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   softDeleteContact(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('clientId') clientId: string,
@@ -98,6 +129,10 @@ export class ClientsController {
 
   // === SOFT DELETE (accessible à tous) ===
   @Patch(':id/soft-delete')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   softDelete(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
@@ -106,6 +141,10 @@ export class ClientsController {
   }
 
   @Patch(':id/restore')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+  )
   restore(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,

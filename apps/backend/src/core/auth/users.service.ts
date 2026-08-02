@@ -120,49 +120,82 @@ export class UsersService {
     id: string,
     dto: UpdateUserDto,
   ) {
-    const data: Record<string, unknown> = { ...dto };
+    const data: Record<string, unknown> = {};
+
+    if (dto.email !== undefined) {
+      data.email = dto.email;
+    }
+
+    if (dto.name !== undefined) {
+      data.name = dto.name;
+    }
 
     if (dto.password) {
       data.password = await argon2.hash(dto.password);
     }
 
-    delete data.role;
-    delete data.workspace_id;
+    const result = await this.prisma.$transaction(async (tx) => {
+      const membership = await tx.workspaceMember.findFirst({
+        where: {
+          user_id: id,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        select: {
+          id: true,
+        },
+      });
 
-    const result = await this.prisma.user.updateMany({
-      where: {
-        id,
-        workspace_id: workspaceId,
-      },
-      data,
+      if (!membership) {
+        throw new NotFoundException(
+          'Utilisateur introuvable dans ce workspace.',
+        );
+      }
+
+      if (Object.keys(data).length > 0) {
+        await tx.user.update({
+          where: { id },
+          data,
+        });
+      }
+
+      if (dto.role !== undefined) {
+        await tx.workspaceMember.update({
+          where: { id: membership.id },
+          data: { role: dto.role },
+        });
+      }
+
+      return tx.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          workspace_id: true,
+          updated_at: true,
+          workspaceMembers: {
+            where: {
+              workspace_id: workspaceId,
+              deleted_at: null,
+            },
+            select: {
+              id: true,
+              role: true,
+              workspace_id: true,
+            },
+          },
+        },
+      });
     });
 
-    if (result.count === 0) {
+    if (!result) {
       throw new NotFoundException(
         'Utilisateur introuvable dans ce workspace.',
       );
     }
 
-    const user = await this.prisma.user.findFirst({
-      where: {
-        id,
-        workspace_id: workspaceId,
-      },
-    });
-
-    if (!user) {
-      throw new NotFoundException(
-        'Utilisateur introuvable dans ce workspace.',
-      );
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      workspace_id: user.workspace_id,
-      updated_at: user.updated_at,
-    };
+    return result;
   }
 
   async restore(workspaceId: string, id: string) {

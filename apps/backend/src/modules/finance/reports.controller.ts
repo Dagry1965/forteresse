@@ -9,9 +9,17 @@ import { PrismaService } from '../../core/prisma/prisma.service';
 import { ReportsService } from './reports.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('finance/reports')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 export class ReportsController {
    constructor(
     private readonly reportsService: ReportsService,

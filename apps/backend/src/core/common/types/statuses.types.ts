@@ -5,6 +5,7 @@ import {
   INTERVENTION_STATUS,
   PROFORMA_STATUS,
   INVOICE_STATUS,
+  USER_ROLE,
 } from '../../../../../../shared/constants/status.constants';
 
 export type AppointmentStatus = (typeof APPOINTMENT_STATUS)[keyof typeof APPOINTMENT_STATUS];
@@ -13,3 +14,4 @@ export type VehicleStatus = (typeof VEHICLE_STATUS)[keyof typeof VEHICLE_STATUS]
 export type InterventionStatus = (typeof INTERVENTION_STATUS)[keyof typeof INTERVENTION_STATUS];
 export type ProformaStatus = (typeof PROFORMA_STATUS)[keyof typeof PROFORMA_STATUS];
 export type InvoiceStatus = (typeof INVOICE_STATUS)[keyof typeof INVOICE_STATUS];
+export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];

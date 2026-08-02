@@ -13,9 +13,18 @@ import {
 import { FinanceService } from './finance.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 
 @Controller('finance')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}
 
@@ -28,6 +37,11 @@ export class FinanceController {
   }
 
   @Post('proforma/:id/generate-invoice')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.RECEPTION,
+    USER_ROLE.ACCOUNTING,
+  )
   generateInvoice(
     @Param('id') id: string,
     @Headers('x-workspace-id') workspaceId: string,
@@ -57,6 +71,11 @@ export class FinanceController {
   }
 
   @Post('invoice/:id/pay')
+  @Roles(
+    USER_ROLE.ADMIN,
+    USER_ROLE.CASHIER,
+    USER_ROLE.ACCOUNTING,
+  )
   payInvoice(
     @Param('id') id: string,
     @Headers('x-workspace-id') workspaceId: string,

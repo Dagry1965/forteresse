@@ -200,7 +200,13 @@ export const TIME_SLOT_STATUS_TRANSITIONS: Record<string, readonly string[]> = {
 export const USER_ROLE = {
   ADMIN: 'ADMIN',
   MEMBER: 'MEMBER',
+  RECEPTION: 'RECEPTION',
+  WORKSHOP: 'WORKSHOP',
   MECHANIC: 'MECHANIC',
+  STOCK: 'STOCK',
+  CASHIER: 'CASHIER',
+  ACCOUNTING: 'ACCOUNTING',
+  READ_ONLY: 'READ_ONLY',
 } as const;
 
 export const INTERVENTION_PRIORITY = {

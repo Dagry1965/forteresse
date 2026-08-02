@@ -10,6 +10,7 @@ import { getJwtSecret } from './jwt-secret';
 
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { WorkspaceGuard } from './workspace.guard';
+import { RolesGuard } from './roles.guard';
 
 import { PrismaModule } from '../../core/prisma/prisma.module';
 
@@ -28,13 +29,15 @@ import { PrismaModule } from '../../core/prisma/prisma.module';
     UsersService,
     JwtStrategy,
     JwtAuthGuard,      // 🔥 indispensable
-    WorkspaceGuard,    // 🔥 indispensable
+    WorkspaceGuard,
+    RolesGuard,    // 🔥 indispensable
   ],
   exports: [
     AuthService,
     JwtModule,         // 🔥 indispensable pour injecter JwtService dans AppointmentsModule
     JwtAuthGuard,      // 🔥 indispensable pour @UseGuards(JwtAuthGuard)
-    WorkspaceGuard,    // 🔥 indispensable pour @UseGuards(WorkspaceGuard)
+    WorkspaceGuard,
+    RolesGuard,    // 🔥 indispensable pour @UseGuards(WorkspaceGuard)
   ],
 })
 export class AuthModule {}

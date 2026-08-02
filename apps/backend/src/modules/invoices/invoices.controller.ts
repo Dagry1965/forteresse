@@ -11,10 +11,20 @@ import {
 } from '@nestjs/common'; 
 import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../../core/auth/workspace.guard'; // Utilisez InvoicesService au lieu de FinanceService
+import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { RolesGuard } from '../../core/auth/roles.guard';
+import { Roles } from '../../core/auth/roles.decorator';
+import { USER_ROLE } from '../../../../../shared/constants/status.constants'; // Utilisez InvoicesService au lieu de FinanceService
 
 @Controller('invoices')
-@UseGuards(JwtAuthGuard, WorkspaceGuard)
+@UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.CASHIER,
+  USER_ROLE.ACCOUNTING,
+  USER_ROLE.READ_ONLY,
+)
 export class InvoicesController {
   // Injectez le bon service qui contient la méthode findUnpaidInvoices
   constructor(private readonly invoicesService: InvoicesService) {}
@@ -32,6 +42,11 @@ export class InvoicesController {
 
 
 @Post('fleet')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.RECEPTION,
+  USER_ROLE.ACCOUNTING,
+)
 async createFleetInvoice(
   @Headers('x-workspace-id') workspaceId: string,
   @Body() dto: { client_id: string, appointment_ids: string[] },
@@ -54,6 +69,10 @@ async createFleetInvoice(
 
 
 @Post(':id/credit-note')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.ACCOUNTING,
+)
 async createCreditNote(
   @Param('id') id: string,
   @Headers('x-workspace-id') workspaceId: string,
@@ -78,6 +97,10 @@ async createCreditNote(
 
 
 @Post(':id/cancel')
+@Roles(
+  USER_ROLE.ADMIN,
+  USER_ROLE.ACCOUNTING,
+)
 async cancelInvoice(
   @Param('id') id: string,
   @Headers('x-workspace-id') workspaceId: string,
