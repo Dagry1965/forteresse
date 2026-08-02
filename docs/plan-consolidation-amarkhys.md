@@ -291,11 +291,25 @@ Reste reporte :
 
 ### LOT 15 - Decimal financier
 
-Objectifs :
+Statut : termine.
 
-- remplacer progressivement les Float financiers par Decimal ;
-- adapter services, DTO, migrations et frontend ;
-- tester arrondis et TVA.
+Realise :
+
+- remplacement des 15 champs financiers Prisma de `Float` vers `Decimal` ;
+- migration Prisma `20260802222130_convert_financial_fields_to_decimal` creee et appliquee ;
+- conservation verifiee des donnees et totaux financiers avant et apres migration ;
+- adaptation de `CashierService`, `PaymentsService` et `ReportsController` a `Prisma.Decimal` ;
+- adaptation des calculs et affichages frontend des proformas, commandes fournisseurs et dossiers atelier ;
+- conversions explicites vers `number` limitees aux calculs et affichages frontend ;
+- test exact de `0.1 + 0.2 = 0.3` avec `Prisma.Decimal` ;
+- tests d arrondi TVA, total TTC et remboursement net valides ;
+- build backend valide ;
+- build frontend valide ;
+- `git diff --check` valide, hors avertissement LF/CRLF Windows.
+
+Commit technique :
+
+- `66e83b1 feat(finance): migrate financial fields to decimal`
 
 ### LOT 16 - Nettoyage et tests complets
 
@@ -596,3 +610,16 @@ Objectifs :
 - git diff --check valide, hors avertissements LF/CRLF Windows ;
 - depot Git propre apres push ;
 - commit pousse : `bccbb34`.
+
+### 2026-08-03 - LOT 15
+
+- 15 champs financiers Prisma convertis de Float vers Decimal ;
+- sauvegarde locale de la base creee avant migration ;
+- migration `20260802222130_convert_financial_fields_to_decimal` appliquee ;
+- totaux financiers verifies identiques avant et apres migration ;
+- services de caisse, paiements et rapports adaptes a Prisma.Decimal ;
+- pages proforma, commande fournisseur et dossier atelier adaptees ;
+- tests Decimal, arrondis, TVA et remboursement valides ;
+- build backend valide ;
+- build frontend valide ;
+- commit pousse : `66e83b1`.
