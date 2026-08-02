@@ -2,16 +2,16 @@
 
 ## Point de depart
 
-- Date : 2026-07-31
+- Date de derniere mise a jour : 2026-08-02
 - Branche active : `feature/shadcn-v2-development`
-- Commit de reference : 9acde0b - docs: add AMARKHYS tester user guide
+- Commit de reference : ede8d92 - feat(billing): unify invoice creation flows
 - Branche production protegee : `rollback-shadcn-v1`
 - Build backend : OK
 - Build frontend : OK
 - Schema Prisma : valide
 - Sauvegarde locale : `apps/backend/prisma/dev.before-consolidation-20260731.db`
 - Taille de la sauvegarde : 630784 octets
-- Migrations existantes : 24
+- Migrations existantes : 26
 
 ## Regles d execution
 
@@ -67,6 +67,10 @@ Objectifs :
 
 ### LOT 3 - Gouvernance des statuts
 
+Statut : TERMINE
+
+Commit : `59b83e2` - feat(workflow): govern and centralize status transitions
+
 Objectifs :
 
 - centraliser les transitions autorisees ;
@@ -74,6 +78,10 @@ Objectifs :
 - synchroniser rendez-vous, dossiers, interventions, devis et factures.
 
 ### LOT 4 - Numerotation centralisee
+
+Statut : TERMINE
+
+Commit : `da4dd5e` - feat(numbering): centralize document references
 
 Objectifs :
 
@@ -83,6 +91,10 @@ Objectifs :
 - ajouter les contraintes d unicite necessaires.
 
 ### LOT 5 - Facturation unifiee
+
+Statut : TERMINE
+
+Commit : `ede8d92` - feat(billing): unify invoice creation flows
 
 Objectifs :
 
@@ -231,4 +243,39 @@ Objectifs :
 - echeances liees a une facture archivee exclues des encaissements et relances ;
 - rapports de consommation limites aux interventions actives ;
 - build backend valide apres modifications.
+
+### 2026-08-01 - LOT 3
+
+- transitions de statuts centralisees et gouvernees ;
+- statuts arbitraires refuses dans les flux metier ;
+- rendez-vous, dossiers, interventions, devis et factures alignes sur les constantes metier ;
+- build backend et frontend valides ;
+- commit pousse : `59b83e2`.
+
+### 2026-08-01 - LOT 4
+
+- numerotation documentaire centralisee dans SequencingService ;
+- prefixes harmonises : FAC, DEV, CMD, DOS, REC, INV et AV ;
+- anciennes generations aleatoires ou basees sur Date.now() retirees des flux traites ;
+- contraintes d unicite documentaires conservees ou ajoutees ;
+- build backend et frontend valides ;
+- commit pousse : `da4dd5e`.
+
+### 2026-08-02 - LOT 5
+
+- AuditService remplace par une ecriture reelle dans AuditLog ;
+- utilisateur authentifie obligatoire lors de la conversion devis vers facture ;
+- facture creee avec user_id, created_by et updated_by ;
+- lignes de devis, snapshots client et echeancier recopies dans la facture ;
+- trace d audit creee dans la meme transaction que la facture ;
+- ancienne route Finance conservee par delegation vers ProformasService ;
+- ancienne logique de facture flotte inutilisee supprimee ;
+- factures flotte groupees completees avec auteurs et audit transactionnel ;
+- contrainte unique ajoutee sur Invoice(workspace_id, proforma_id) ;
+- migration `20260802061645_unique_invoice_per_proforma` creee et appliquee ;
+- schema Prisma synchronise avec 26 migrations ;
+- build backend valide ;
+- build frontend valide ;
+- git diff --check valide, hors avertissement LF/CRLF Windows ;
+- commit pousse : `ede8d92`.
 
