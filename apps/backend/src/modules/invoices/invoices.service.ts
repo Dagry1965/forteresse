@@ -363,67 +363,273 @@ export class InvoicesService {
   // ---------------------------------------------------------
   // MÉTHODES DE COMPATIBILITÉ (Gardées pour ne rien casser)
   // ---------------------------------------------------------
+  // ---------------------------------------------------------
+  // CANCEL INVOICE
+  // ---------------------------------------------------------
+  async cancelInvoice(
+    workspaceId: string,
+    invoiceId: string,
+    userId: string,
+    reason?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where: {
+          id: invoiceId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        include: {
+          payments: {
+            where: { deleted_at: null },
+            select: { id: true, amount: true },
+          },
+        },
+      });
+
+      if (!invoice) {
+        throw new NotFoundException(
+          'Facture introuvable dans ce workspace.',
+        );
+      }
+
+      const user = await tx.user.findFirst({
+        where: {
+          id: userId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        select: { id: true },
+      });
+
+      if (!user) {
+        throw new BadRequestException(
+          'Utilisateur invalide pour annuler la facture.',
+        );
+      }
+
+      if (invoice.status === INVOICE_STATUS.CANCELLED) {
+        return invoice;
+      }
+
+      if (
+        invoice.status === INVOICE_STATUS.PAID ||
+        invoice.status === INVOICE_STATUS.PARTIALLY_PAID ||
+        invoice.payments.length > 0
+      ) {
+        throw new BadRequestException(
+          'Une facture encaissee ne peut pas etre annulee directement. Un avoir est requis.',
+        );
+      }
+
+      const cancelledInvoice = await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          status: INVOICE_STATUS.CANCELLED,
+          updated_by: user.id,
+          updated_at: new Date(),
+        },
+      });
+
+      await tx.paymentSchedule.updateMany({
+        where: {
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+          status: PAYMENT_SCHEDULE_STATUS.PENDING,
+        },
+        data: {
+          status: PAYMENT_SCHEDULE_STATUS.CANCELLED,
+          updated_at: new Date(),
+        },
+      });
+
+      await this.auditService.log(
+        {
+          action: 'CANCEL_INVOICE',
+          entity: 'Invoice',
+          entityId: invoice.id,
+          userId: user.id,
+          oldData: {
+            status: invoice.status,
+          },
+          newData: {
+            status: cancelledInvoice.status,
+            reason: reason?.trim() || null,
+          },
+        },
+        tx,
+      );
+
+      return cancelledInvoice;
+    });
+  }
+
+  // ---------------------------------------------------------
+  // CREATE CREDIT NOTE
+  // ---------------------------------------------------------
+  async createCreditNote(
+    workspaceId: string,
+    invoiceId: string,
+    userId: string,
+    reason?: string,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.findFirst({
+        where: {
+          id: invoiceId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        include: {
+          lines: {
+            orderBy: { created_at: 'asc' },
+          },
+          creditNotes: {
+            where: { deleted_at: null },
+            select: { id: true, reference: true },
+          },
+        },
+      });
+
+      if (!invoice) {
+        throw new NotFoundException(
+          'Facture introuvable dans ce workspace.',
+        );
+      }
+
+      const user = await tx.user.findFirst({
+        where: {
+          id: userId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        select: { id: true },
+      });
+
+      if (!user) {
+        throw new BadRequestException(
+          'Utilisateur invalide pour creer un avoir.',
+        );
+      }
+
+      if (invoice.type === INVOICE_TYPE.CREDIT_NOTE) {
+        throw new BadRequestException(
+          'Un avoir ne peut pas faire l objet d un nouvel avoir.',
+        );
+      }
+
+      if (invoice.creditNotes.length > 0) {
+        throw new BadRequestException(
+          `Un avoir existe deja pour cette facture : ${invoice.creditNotes[0].reference}.`,
+        );
+      }
+
+      if (
+        invoice.status !== INVOICE_STATUS.PAID &&
+        invoice.status !== INVOICE_STATUS.PARTIALLY_PAID
+      ) {
+        throw new BadRequestException(
+          'Un avoir est reserve aux factures payees ou partiellement payees.',
+        );
+      }
+
+      const reference = await this.sequencingService.generateReference(
+        workspaceId,
+        'CREDIT_NOTE',
+        tx,
+      );
+
+      const creditNote = await tx.invoice.create({
+        data: {
+          reference,
+          total: -Math.abs(Number(invoice.total)),
+          status: INVOICE_STATUS.UNPAID,
+          type: INVOICE_TYPE.CREDIT_NOTE,
+          workspace_id: workspaceId,
+          original_invoice_id: invoice.id,
+          appointment_id: invoice.appointment_id,
+          user_id: user.id,
+          client_id: invoice.client_id,
+          created_by: user.id,
+          updated_by: user.id,
+          customer_name_snapshot: invoice.customer_name_snapshot,
+          customer_address_snapshot: invoice.customer_address_snapshot,
+          customer_billing_address_snapshot:
+            invoice.customer_billing_address_snapshot,
+          customer_registration_number_snapshot:
+            invoice.customer_registration_number_snapshot,
+          customer_vat_number_snapshot:
+            invoice.customer_vat_number_snapshot,
+          customer_email_snapshot: invoice.customer_email_snapshot,
+          customer_phone_snapshot: invoice.customer_phone_snapshot,
+        },
+      });
+
+      for (const line of invoice.lines) {
+        await tx.invoiceLine.create({
+          data: {
+            invoice_id: creditNote.id,
+            type: line.type,
+            label: line.label,
+            description: line.description,
+            quantity: line.quantity.negated(),
+            unit_price: line.unit_price,
+            vat_rate: line.vat_rate,
+            discount: line.discount,
+            total: line.total.negated(),
+          },
+        });
+      }
+
+      await tx.invoice.update({
+        where: { id: invoice.id },
+        data: {
+          status: INVOICE_STATUS.CANCELLED,
+          updated_by: user.id,
+          updated_at: new Date(),
+        },
+      });
+
+      await tx.paymentSchedule.updateMany({
+        where: {
+          invoice_id: invoice.id,
+          workspace_id: workspaceId,
+          status: PAYMENT_SCHEDULE_STATUS.PENDING,
+        },
+        data: {
+          status: PAYMENT_SCHEDULE_STATUS.CANCELLED,
+          updated_at: new Date(),
+        },
+      });
+
+      await this.auditService.log(
+        {
+          action: 'CREATE_CREDIT_NOTE',
+          entity: 'Invoice',
+          entityId: creditNote.id,
+          userId: user.id,
+          oldData: {
+            originalInvoiceId: invoice.id,
+            originalInvoiceReference: invoice.reference,
+            originalInvoiceStatus: invoice.status,
+          },
+          newData: {
+            creditNoteId: creditNote.id,
+            creditNoteReference: creditNote.reference,
+            total: Number(creditNote.total),
+            reason: reason?.trim() || null,
+          },
+        },
+        tx,
+      );
+
+      return creditNote;
+    });
+  }
+
   async createGroupedFleetInvoice(workspaceId: string, userId: string, dto: { client_id: string; appointment_ids: string[] }) {
     // Redirige vers la nouvelle logique détaillée
     return this.createGroupedInvoice(workspaceId, userId, dto);
   }
 
-  // ---------------------------------------------------------
-  // UPDATE & REMOVE
-  // ---------------------------------------------------------
-  async update(workspaceId: string, id: string, dto: any) {
-    const invoice = await this.prisma.invoice.findFirst({
-      where: {
-        id,
-        workspace_id: workspaceId,
-        deleted_at: null,
-      },
-    });
-
-    if (!invoice) {
-      throw new NotFoundException(
-        'Facture introuvable dans ce workspace',
-      );
-    }
-
-    const data: any = { ...dto };
-
-    delete data.workspace_id;
-    delete data.workspaceId;
-    delete data.client_id;
-    delete data.user_id;
-
-    if ('status' in dto) {
-      data.status = this.normalizeStatus(dto.status);
-    }
-
-    if ('type' in dto) {
-      data.type = this.normalizeType(dto.type);
-    }
-
-    return this.prisma.invoice.update({
-      where: { id: invoice.id },
-      data,
-    });
-  }
-
-  async remove(workspaceId: string, id: string) {
-    const invoice = await this.prisma.invoice.findFirst({
-      where: {
-        id,
-        workspace_id: workspaceId,
-        deleted_at: null,
-      },
-    });
-
-    if (!invoice) {
-      throw new NotFoundException(
-        'Facture introuvable dans ce workspace',
-      );
-    }
-
-    return this.prisma.invoice.delete({
-      where: { id: invoice.id },
-    });
-  }
 }

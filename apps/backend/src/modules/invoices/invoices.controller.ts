@@ -53,6 +53,54 @@ async createFleetInvoice(
 }
 
 
+@Post(':id/credit-note')
+async createCreditNote(
+  @Param('id') id: string,
+  @Headers('x-workspace-id') workspaceId: string,
+  @Body() dto: { reason?: string },
+  @Req() req: any,
+) {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new UnauthorizedException(
+      'Utilisateur authentifie introuvable.',
+    );
+  }
+
+  return this.invoicesService.createCreditNote(
+    workspaceId,
+    id,
+    userId,
+    dto.reason,
+  );
+}
+
+
+@Post(':id/cancel')
+async cancelInvoice(
+  @Param('id') id: string,
+  @Headers('x-workspace-id') workspaceId: string,
+  @Body() dto: { reason?: string },
+  @Req() req: any,
+) {
+  const userId = req.user?.id;
+
+  if (!userId) {
+    throw new UnauthorizedException(
+      'Utilisateur authentifie introuvable.',
+    );
+  }
+
+  return this.invoicesService.cancelInvoice(
+    workspaceId,
+    id,
+    userId,
+    dto.reason,
+  );
+}
+
+
 @Get(':id')
 async findOne(
   @Param('id') id: string,

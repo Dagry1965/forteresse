@@ -306,6 +306,10 @@ model Invoice {
   proforma_id String?
   proforma    Proforma? @relation(fields: [proforma_id], references: [id])
 
+  original_invoice_id String?
+  originalInvoice     Invoice?  @relation("InvoiceCreditNotes", fields: [original_invoice_id], references: [id], onDelete: Restrict)
+  creditNotes         Invoice[] @relation("InvoiceCreditNotes")
+
   appointment_id String?
   appointment    Appointment? @relation(fields: [appointment_id], references: [id])
 
@@ -327,6 +331,7 @@ model Invoice {
   @@index([workspace_id])
   @@index([workspace_id, status])
   @@index([client_id])
+  @@index([original_invoice_id])
   @@index([created_at])
 }
 

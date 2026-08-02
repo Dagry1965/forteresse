@@ -127,6 +127,7 @@ export const INVOICE_TYPE = {
   PROFORMA: 'PROFORMA',
   INVOICE: 'INVOICE',
   FLEET: 'FLEET',
+  CREDIT_NOTE: 'CREDIT_NOTE',
 } as const;
 
 // ====================== PAYMENT SCHEDULE ======================
