@@ -328,3 +328,27 @@ Objectifs :
 - build backend valide ;
 - depot Git propre apres push ;
 - commit pousse : `713a0fc`.
+
+### 2026-08-02 - LOT 8
+
+- types de lignes de devis `PART`, `LABOR`, `SERVICE`, `PACKAGE` et `DISCOUNT` ajoutes aux constantes partagees ;
+- DTO de creation et de modification des lignes ajoutes avec validation des quantites, prix, TVA et remises ;
+- routes `POST`, `PATCH` et `DELETE` ajoutees pour gerer les lignes de devis ;
+- calcul des totaux de lignes centralise cote serveur ;
+- remises appliquees avant TVA ;
+- lignes de remise gerees avec un total negatif ;
+- total du devis recalcule automatiquement apres ajout, modification ou suppression d une ligne ;
+- lignes de devis incluses dans les lectures liste et detail ;
+- modification des lignes reservee aux devis en statut `DRAFT` ;
+- acceptation d un devis sans ligne interdite ;
+- total recalcule juste avant l acceptation ;
+- conversion devis vers facture validee avec copie des 5 lignes ;
+- test d ajout valide avec une ligne `SERVICE` ;
+- test de modification valide avec quantite, remise et TVA ;
+- test de suppression valide avec retour au total initial ;
+- test de verrouillage valide apres passage du devis en `ACCEPTED` ;
+- facture `FAC-2026-0011` creee depuis `DEV-2026-00016` avec 5 lignes et un total de 683,65 ;
+- build backend valide ;
+- git diff --check valide ;
+- depot Git propre apres push ;
+- commit pousse : `e58b415`.
