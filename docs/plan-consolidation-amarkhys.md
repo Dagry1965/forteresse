@@ -352,3 +352,30 @@ Objectifs :
 - git diff --check valide ;
 - depot Git propre apres push ;
 - commit pousse : `e58b415`.
+
+### 2026-08-02 - LOT 9
+
+- relation entre `Intervention` et le mecanicien ajoutee via `mechanic_id` ;
+- mecanicien limite a un utilisateur actif du meme workspace avec le role `MECHANIC` ;
+- priorites `LOW`, `NORMAL`, `HIGH` et `URGENT` ajoutees ;
+- statuts de controle qualite `PENDING`, `PASSED`, `FAILED` et `NOT_REQUIRED` ajoutes ;
+- champs diagnostic, temps prevu, temps reel et tarif horaire ajoutes aux interventions ;
+- notes et date de controle qualite ajoutees ;
+- date du controle qualite renseignee automatiquement pour `PASSED` et `FAILED` ;
+- DTO de creation et de modification enrichis avec validations ;
+- creation et modification des interventions adaptees aux nouveaux champs ;
+- mecanicien inclus dans les lectures liste, detail et modification ;
+- seed principal enrichi avec des donnees atelier realistes ;
+- migration `20260802085014_add_intervention_workshop_fields2` creee et appliquee ;
+- validation Prisma reussie ;
+- client Prisma regenere apres arret du backend ;
+- test fonctionnel valide sur l intervention `cmsbibo5s01rgufk38nbf6e2d` ;
+- mecanicien `Arturo Cormier` affecte avec priorite `HIGH` ;
+- temps prevu de 180 minutes et temps reel de 135 minutes enregistres ;
+- tarif horaire de 75 enregistre ;
+- diagnostic et controle qualite `PASSED` persistes ;
+- affectation d un utilisateur sans role `MECHANIC` correctement refusee ;
+- build backend valide ;
+- git diff --check valide ;
+- depot Git propre apres push ;
+- commit pousse : `63b4689`.
