@@ -4,14 +4,14 @@
 
 - Date de derniere mise a jour : 2026-08-02
 - Branche active : `feature/shadcn-v2-development`
-- Commit de reference : ede8d92 - feat(billing): unify invoice creation flows
+- Commit de reference : 243c30c - feat(billing): lock invoices and add credit notes
 - Branche production protegee : `rollback-shadcn-v1`
 - Build backend : OK
 - Build frontend : OK
 - Schema Prisma : valide
 - Sauvegarde locale : `apps/backend/prisma/dev.before-consolidation-20260731.db`
 - Taille de la sauvegarde : 630784 octets
-- Migrations existantes : 26
+- Migrations existantes : 27
 
 ## Regles d execution
 
@@ -103,6 +103,8 @@ Objectifs :
 - creer les lignes, snapshots, echeanciers et traces d audit.
 
 ### LOT 6 - Verrouillage des documents
+
+Statut : TERMINE
 
 Objectifs :
 
@@ -278,4 +280,25 @@ Objectifs :
 - build frontend valide ;
 - git diff --check valide, hors avertissement LF/CRLF Windows ;
 - commit pousse : `ede8d92`.
+### 2026-08-02 - LOT 6
 
+- anciennes methodes generiques de modification et suppression physique des factures retirees ;
+- devis acceptes proteges contre la regeneration et la modification indirecte depuis l atelier ;
+- annulation transactionnelle ajoutee pour les factures non encaissees ;
+- annulation directe interdite pour les factures payees ou partiellement payees ;
+- echeances en attente annulees avec la facture, sans effacer l historique des echeances payees ;
+- type documentaire `CREDIT_NOTE` ajoute aux constantes partagees ;
+- relation reflexive ajoutee entre la facture d origine et ses avoirs ;
+- migration `20260802065938_add_invoice_credit_note_relation` creee et appliquee ;
+- creation transactionnelle d avoir avec reference `AV`, total negatif et lignes negatives ;
+- facture d origine annulee apres creation de l avoir ;
+- second avoir interdit sur une meme facture ;
+- routes `POST /invoices/:id/cancel` et `POST /invoices/:id/credit-note` ajoutees ;
+- traces `CANCEL_INVOICE` et `CREATE_CREDIT_NOTE` validees dans AuditLog ;
+- test d annulation valide sur `FAC-2026-00009` ;
+- test d avoir valide sur `FAC-2026-00010` avec creation de `AV-2026-0001` ;
+- schema Prisma synchronise avec 27 migrations ;
+- build backend valide ;
+- build frontend valide sur 52 pages ;
+- git diff --check valide ;
+- commit pousse : `243c30c`.
