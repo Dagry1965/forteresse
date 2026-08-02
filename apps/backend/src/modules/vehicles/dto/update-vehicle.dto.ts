@@ -3,7 +3,6 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUUID,
   Min,
   MinLength,
 } from 'class-validator';
@@ -11,7 +10,7 @@ import { VEHICLE_STATUS } from '../../../../../../shared/constants/status.consta
 
 export class UpdateVehicleDto {
   @IsOptional()
-  @IsUUID()
+  @IsString()
   clientId?: string;
 
   @IsOptional()

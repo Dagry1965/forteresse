@@ -59,7 +59,7 @@ model User {
   updatedInvoices       Invoice[]       @relation("InvoiceUpdatedBy")
   createdStockMovements StockMovement[] @relation("StockMovementCreatedBy")
   createdPurchaseOrders PurchaseOrder[] @relation("PurchaseOrderCreatedBy")
-  assignedInterventions Intervention[] @relation("InterventionMechanic")
+  assignedInterventions Intervention[]  @relation("InterventionMechanic")
 
   RefreshTokens    RefreshToken[]
   Appointments     Appointment[]
@@ -89,11 +89,13 @@ model WorkspaceMember {
 }
 
 model Client {
-  id    String @id @default(cuid())
-  name  String
-  phone String
-  email String
-  type  String @default("INDIVIDUAL")
+  id               String  @id @default(cuid())
+  name             String
+  phone            String
+  phone_normalized String?
+  email            String
+  email_normalized String?
+  type             String  @default("INDIVIDUAL")
 
   company_name        String?
   trade_name          String?
@@ -118,6 +120,8 @@ model Client {
   invoices     Invoice[]
   payments     Payment[]
 
+  @@unique([workspace_id, email_normalized])
+  @@unique([workspace_id, phone_normalized])
   @@index([workspace_id])
   @@index([workspace_id, type])
   @@index([email])
@@ -154,19 +158,21 @@ model ClientContact {
 }
 
 model Vehicle {
-  id           String @id @default(cuid())
-  registration String
-  brand        String
-  model        String
-  status       String @default("DISPONIBLE")
+  id                      String @id @default(cuid())
+  registration            String
+  registration_normalized String
+  brand                   String
+  model                   String
+  status                  String @default("DISPONIBLE")
 
-  fleet_number String?
-  vin          String?
-  year         Int?
-  mileage      Int?
-  usual_driver String?
-  cost_center  String?
-  service_name String?
+  fleet_number   String?
+  vin            String?
+  vin_normalized String?
+  year           Int?
+  mileage        Int?
+  usual_driver   String?
+  cost_center    String?
+  service_name   String?
 
   created_at DateTime  @default(now())
   updated_at DateTime  @updatedAt
@@ -181,6 +187,8 @@ model Vehicle {
   appointments Appointment[]
   cases        Case[]        @relation("VehicleToCase")
 
+  @@unique([workspace_id, registration_normalized])
+  @@unique([workspace_id, vin_normalized])
   @@index([workspace_id])
   @@index([client_id])
   @@index([workspace_id, registration])
@@ -578,7 +586,7 @@ model InventoryItem {
 }
 
 model InterventionPart {
-  id              String @id @default(cuid())
+  id              String    @id @default(cuid())
   intervention_id String
   item_id         String
   quantity        Int

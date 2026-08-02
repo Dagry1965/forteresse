@@ -7,8 +7,6 @@ import {
   Param,
   Patch,
   Post,
-  Req,
-  ForbiddenException,
   UseGuards,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
@@ -16,7 +14,6 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { CreateClientContactDto } from './dto/create-client-contact.dto';
 import { UpdateClientContactDto } from './dto/update-client-contact.dto';
-import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
@@ -114,26 +111,5 @@ export class ClientsController {
     @Param('id') id: string,
   ) {
     return this.clientsService.restore(workspaceId, id);
-  }
-
-  // === HARD DELETE (uniquement Admin) ===
-  @Delete(':id/hard')
-  hardDelete(
-    @Headers('x-workspace-id') workspaceId: string,
-    @Param('id') id: string,
-    @Req() req: any,
-  ) {
-    // Vérification du rôle
-    const user = req.user;
-
-    const isAdmin =
-      user?.role === USER_ROLE.ADMIN ||
-      user?.roles?.includes(USER_ROLE.ADMIN);
-
-    if (!user || !isAdmin) {
-      throw new ForbiddenException('Accès réservé aux administrateurs');
-    }
-
-    return this.clientsService.hardDelete(workspaceId, id);
   }
 }

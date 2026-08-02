@@ -1,20 +1,16 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Headers,
   Param,
   Patch,
   Post,
-  Req,
   UseGuards,
-  ForbiddenException,
 } from '@nestjs/common';
 import { VehiclesService } from './vehicles.service';
 import { CreateVehicleDto } from './dto/create-vehicle.dto';
 import { UpdateVehicleDto } from './dto/update-vehicle.dto';
-import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 
@@ -69,27 +65,5 @@ export class VehiclesController {
     @Param('id') id: string,
   ) {
     return this.vehiclesService.restore(workspaceId, id);
-  }
-
-  // Suppression définitive réservée aux administrateurs
-  @Delete(':id/hard')
-  hardDelete(
-    @Headers('x-workspace-id') workspaceId: string,
-    @Param('id') id: string,
-    @Req() req: any,
-  ) {
-    const user = req.user;
-
-    const isAdmin =
-      user?.role === USER_ROLE.ADMIN ||
-      user?.roles?.includes(USER_ROLE.ADMIN);
-
-    if (!user || !isAdmin) {
-      throw new ForbiddenException(
-        'Accès réservé aux administrateurs',
-      );
-    }
-
-    return this.vehiclesService.hardDelete(workspaceId, id);
   }
 }
