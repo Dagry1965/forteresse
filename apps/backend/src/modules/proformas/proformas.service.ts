@@ -4,6 +4,7 @@ import {
   BadRequestException 
 } from '@nestjs/common'; // 👈 Imports corrigés ici
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { AuditService } from '../../core/audit/audit.service';
 import { SequencingService } from '../shared/sequencing.service';
 import {
   PROFORMA_STATUS,
@@ -20,6 +21,7 @@ export class ProformasService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sequencingService: SequencingService,
+    private readonly auditService: AuditService,
   ) {}
 
   private assertStatusTransition(currentStatus: string, nextStatus: string) {
@@ -151,7 +153,11 @@ export class ProformasService {
     });
   }
 
-  async convertToInvoice(workspaceId: string, proformaId: string) {
+  async convertToInvoice(
+    workspaceId: string,
+    proformaId: string,
+    userId: string,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const proforma = await tx.proforma.findFirst({
         where: {
@@ -175,11 +181,27 @@ export class ProformasService {
         );
       }
 
+      const user = await tx.user.findFirst({
+        where: {
+          id: userId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        select: { id: true },
+      });
+
+      if (!user) {
+        throw new BadRequestException(
+          'Utilisateur invalide pour generer la facture.',
+        );
+      }
+
       const existingInvoice = await tx.invoice.findFirst({
         where: {
           proforma_id: proforma.id,
-          workspace_id: workspaceId
-        }
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
       });
 
       if (existingInvoice) {
@@ -204,6 +226,9 @@ export class ProformasService {
           proforma_id: proforma.id,
           appointment_id: proforma.appointment_id,
           client_id: proforma.case.customer_id,
+          user_id: user.id,
+          created_by: user.id,
+          updated_by: user.id,
           total: proforma.total,
           status: INVOICE_STATUS.UNPAID,
           type: INVOICE_TYPE.INVOICE,
@@ -269,6 +294,26 @@ export class ProformasService {
           'Dossier introuvable dans ce workspace',
         );
       }
+
+      await this.auditService.log(
+        {
+          action: 'CREATE_INVOICE_FROM_PROFORMA',
+          entity: 'Invoice',
+          entityId: invoice.id,
+          userId: user.id,
+          newData: {
+            invoiceId: invoice.id,
+            reference: invoice.reference,
+            proformaId: proforma.id,
+            caseId: proforma.case_id,
+            clientId: proforma.case.customer_id,
+            total: Number(invoice.total),
+            status: invoice.status,
+            type: invoice.type,
+          },
+        },
+        tx,
+      );
 
       return invoice;
     });

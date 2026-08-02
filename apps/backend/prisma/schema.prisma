@@ -323,6 +323,7 @@ model Invoice {
   paymentSchedules PaymentSchedule[] // <-- AJOUTER CETTE LIGNE
 
   @@unique([workspace_id, reference])
+  @@unique([workspace_id, proforma_id])
   @@index([workspace_id])
   @@index([workspace_id, status])
   @@index([client_id])

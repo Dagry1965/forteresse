@@ -1,11 +1,10 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
-import { SequencingService } from '../shared/sequencing.service';
+import { ProformasService } from '../proformas/proformas.service';
 import { PaymentsService } from './payments.service';
 import {
   APPOINTMENT_STATUS,
   INVOICE_STATUS,
-  INVOICE_TYPE,
   PROFORMA_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
@@ -14,7 +13,7 @@ export class FinanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly paymentsService: PaymentsService,
-    private readonly sequencingService: SequencingService,
+    private readonly proformasService: ProformasService,
   ) {}
 
   // ---------------------------------------------------------
@@ -90,76 +89,16 @@ export class FinanceService {
   // ---------------------------------------------------------
   // GENERATE INVOICE FROM PROFORMA
   // ---------------------------------------------------------
-  async generateInvoiceFromProforma(id: string, workspaceId: string, userId: string) {
-    const proforma = await this.prisma.proforma.findFirst({
-      where: { id, workspace_id: workspaceId, deleted_at: null },
-    });
-
-    if (!proforma) throw new BadRequestException('Proforma introuvable.');
-
-    const user = await this.prisma.user.findFirst({
-      where: {
-        id: userId,
-        workspace_id: workspaceId,
-        deleted_at: null,
-      },
-      select: { id: true },
-    });
-
-    if (!user) {
-      throw new BadRequestException(
-        'Utilisateur invalide pour generer la facture.',
-      );
-    }
-
-    const existingInvoice = await this.prisma.invoice.findFirst({
-      where: { proforma_id: id, workspace_id: workspaceId, deleted_at: null },
-    });
-
-    if (existingInvoice) {
-      throw new BadRequestException('Une facture existe déjà pour ce devis.');
-    }
-
-    const appointment = await this.prisma.appointment.findFirst({
-      where: { id: proforma.appointment_id, workspace_id: workspaceId, deleted_at: null },
-    });
-
-    if (!appointment) {
-      throw new BadRequestException('Rendez-vous lié introuvable.');
-    }
-
-    const reference = await this.sequencingService.generateReference(
+  async generateInvoiceFromProforma(
+    id: string,
+    workspaceId: string,
+    userId: string,
+  ) {
+    return this.proformasService.convertToInvoice(
       workspaceId,
-      'INVOICE',
+      id,
+      userId,
     );
-
-    return this.prisma.invoice.create({
-      data: {
-        reference,
-        total: proforma.total,
-        status: INVOICE_STATUS.UNPAID,
-        type: INVOICE_TYPE.INVOICE,
-        workspace_id: workspaceId,
-        proforma_id: id,
-        appointment_id: proforma.appointment_id,
-        client_id: appointment.client_id,
-        user_id: user.id,
-        customer_name_snapshot:
-          proforma.customer_name_snapshot,
-        customer_address_snapshot:
-          proforma.customer_address_snapshot,
-        customer_billing_address_snapshot:
-          proforma.customer_billing_address_snapshot,
-        customer_registration_number_snapshot:
-          proforma.customer_registration_number_snapshot,
-        customer_vat_number_snapshot:
-          proforma.customer_vat_number_snapshot,
-        customer_email_snapshot:
-          proforma.customer_email_snapshot,
-        customer_phone_snapshot:
-          proforma.customer_phone_snapshot,
-      },
-    });
   }
 
   // ---------------------------------------------------------

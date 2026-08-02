@@ -1,11 +1,13 @@
-import { 
-  Controller, 
-  Get, 
-  Post, // 👈 Import manquant ajouté
-  Param, 
-  Headers, 
-  UseGuards, 
-  NotFoundException 
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Headers,
+  UseGuards,
+  NotFoundException,
+  UnauthorizedException,
+  Req,
 } from '@nestjs/common';
 import { ProformasService } from './proformas.service';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
@@ -43,8 +45,21 @@ export class ProformasController {
   @Post(':id/invoice')
   convertToInvoice(
     @Headers('x-workspace-id') workspaceId: string,
-    @Param('id') id: string
+    @Param('id') id: string,
+    @Req() req: any,
   ) {
-    return this.proformasService.convertToInvoice(workspaceId, id);
+    const userId = req.user?.id;
+
+    if (!userId) {
+      throw new UnauthorizedException(
+        'Utilisateur authentifie introuvable.',
+      );
+    }
+
+    return this.proformasService.convertToInvoice(
+      workspaceId,
+      id,
+      userId,
+    );
   }
 }

@@ -14,9 +14,10 @@ import { CashierService } from './cashier.service';
 import { PrismaModule } from '../../core/prisma/prisma.module';
 import { SharedModule } from '../shared/shared.module';
 import { AuthModule } from '../../core/auth/auth.module';
+import { ProformasModule } from '../proformas/proformas.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, SharedModule],
+  imports: [PrismaModule, AuthModule, SharedModule, ProformasModule],
   controllers: [
     FinanceController,
     ReportsController,

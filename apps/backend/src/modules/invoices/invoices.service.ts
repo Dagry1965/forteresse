@@ -1,9 +1,9 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { AuditService } from '../../core/audit/audit.service';
 import { SequencingService } from '../shared/sequencing.service';
 import {
   APPOINTMENT_STATUS,
-  CASE_STATUS,
   INVOICE_STATUS,
   INVOICE_TYPE,
   PAYMENT_SCHEDULE_STATUS,
@@ -15,6 +15,7 @@ export class InvoicesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly sequencingService: SequencingService,
+    private readonly auditService: AuditService,
   ) {}
 
   // ---------------------------------------------------------
@@ -216,6 +217,8 @@ export class InvoicesService {
           workspace_id: workspaceId,
           client_id: dto.client_id,
           user_id: user.id,
+          created_by: user.id,
+          updated_by: user.id,
           customer_name_snapshot:
             client.company_name || client.name || null,
           customer_address_snapshot:
@@ -280,6 +283,25 @@ export class InvoicesService {
         }
       });
 
+      await this.auditService.log(
+        {
+          action: 'CREATE_GROUPED_FLEET_INVOICE',
+          entity: 'Invoice',
+          entityId: invoice.id,
+          userId: user.id,
+          newData: {
+            invoiceId: invoice.id,
+            reference: invoice.reference,
+            clientId: dto.client_id,
+            appointmentIds: dto.appointment_ids,
+            total: Number(invoice.total),
+            status: invoice.status,
+            type: invoice.type,
+          },
+        },
+        tx,
+      );
+
       return invoice;
     });
   }
@@ -341,65 +363,6 @@ export class InvoicesService {
   // ---------------------------------------------------------
   // MÉTHODES DE COMPATIBILITÉ (Gardées pour ne rien casser)
   // ---------------------------------------------------------
-  async createFleetInvoice(workspaceId: string, userId: string, clientId: string) {
-    // Version simplifiée pour un seul client
-    return this.prisma.$transaction(async (tx) => {
-      const client = await tx.client.findFirst({
-        where: {
-          id: clientId,
-          workspace_id: workspaceId,
-          deleted_at: null,
-        },
-      });
-
-      if (!client) {
-        throw new NotFoundException('Client introuvable.');
-      }
-
-      const pendingCases = await tx.case.findMany({
-        where: { workspace_id: workspaceId, customer_id: clientId, status: CASE_STATUS.COMPLETED },
-        include: {
-          proformas: {
-            where: { deleted_at: null },
-          },
-        },
-      });
-      if (pendingCases.length === 0) throw new Error("Aucun dossier trouvé.");
-      const totalAmount = pendingCases.reduce((sum, c) => sum + (c.proformas[0]?.total || 0), 0);
-      const reference = await this.sequencingService.generateReference(
-        workspaceId,
-        'INVOICE',
-        tx,
-      );
-
-      return tx.invoice.create({
-        data: {
-          reference,
-          total: totalAmount,
-          status: INVOICE_STATUS.UNPAID,
-          type: INVOICE_TYPE.FLEET,
-          workspace_id: workspaceId,
-          client_id: clientId,
-          user_id: userId,
-          customer_name_snapshot:
-            client.company_name || client.name || null,
-          customer_address_snapshot:
-            client.address || null,
-          customer_billing_address_snapshot:
-            client.billing_address || client.address || null,
-          customer_registration_number_snapshot:
-            client.registration_number || null,
-          customer_vat_number_snapshot:
-            client.vat_number || null,
-          customer_email_snapshot:
-            client.email || null,
-          customer_phone_snapshot:
-            client.phone || null,
-        },
-      });
-    });
-  }
-
   async createGroupedFleetInvoice(workspaceId: string, userId: string, dto: { client_id: string; appointment_ids: string[] }) {
     // Redirige vers la nouvelle logique détaillée
     return this.createGroupedInvoice(workspaceId, userId, dto);

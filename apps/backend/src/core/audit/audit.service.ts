@@ -1,32 +1,41 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+type AuditClient = Prisma.TransactionClient | PrismaService | PrismaClient;
+
+export interface AuditLogInput {
+  action: string;
+  entity: string;
+  entityId: string;
+  userId?: string | null;
+  oldData?: unknown;
+  newData?: unknown;
+}
 
 @Injectable()
 export class AuditService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ---------------------------------------------------------
-  // LOG ACTION (placeholder)
-  // ---------------------------------------------------------
-  async log(data: { userId?: string; action: string; metadata?: any }) {
-    // Ton schéma Prisma n'a pas de modèle AuditLog.
-    // Si tu ajoutes plus tard un modèle `Audit`, tu pourras remplacer ce bloc par :
-    //
-    // return this.prisma.audit.create({
-    //   data: {
-    //     user_id: data.userId ?? null,
-    //     action: data.action,
-    //     metadata: data.metadata ? JSON.stringify(data.metadata) : null,
-    //   },
-    // });
-    //
-    // Pour l'instant, on renvoie juste un objet en mémoire pour que le backend compile.
-
-    return {
-      userId: data.userId ?? null,
-      action: data.action,
-      metadata: data.metadata ?? null,
-      created_at: new Date(),
-    };
+  async log(
+    data: AuditLogInput,
+    client: AuditClient = this.prisma,
+  ) {
+    return client.auditLog.create({
+      data: {
+        action: data.action,
+        entity: data.entity,
+        entity_id: data.entityId,
+        user_id: data.userId ?? null,
+        old_data:
+          data.oldData === undefined
+            ? null
+            : JSON.stringify(data.oldData),
+        new_data:
+          data.newData === undefined
+            ? null
+            : JSON.stringify(data.newData),
+      },
+    });
   }
 }
