@@ -178,10 +178,30 @@ Objectifs :
 
 ### LOT 13 - Roles et permissions
 
-Objectifs :
+Statut : termine.
 
-- ajouter les roles reception, atelier, mecanicien, stock, caisse, comptabilite et lecture ;
-- proteger chaque action selon le role.
+Realise :
+
+- ajout des roles ADMIN, MEMBER, RECEPTION, WORKSHOP, MECHANIC, STOCK, CASHIER, ACCOUNTING et READ_ONLY ;
+- validation stricte des roles dans les DTO utilisateurs ;
+- correction du contexte JWT avec id, userId, workspaceId, email et role ;
+- verification en base du membership actif par WorkspaceGuard ;
+- injection du role reel du workspace dans la requete ;
+- securisation de RolesGuard avec refus explicite en 403 ;
+- ajout et export de RolesGuard dans AuthModule ;
+- prise en charge de la mise a jour du role dans UsersService ;
+- protection des routes clients, vehicules, rendez-vous, creneaux, atelier, stock, fournisseurs, proformas, factures, paiements, caisse et rapports ;
+- integration durable des roles WORKSHOP et STOCK dans le seed ;
+- build backend valide ;
+- tests fonctionnels valides :
+  - WORKSHOP : atelier 200, caisse 403 ;
+  - STOCK : inventaire 200, atelier 403 ;
+  - MECHANIC : atelier 200, caisse 403 ;
+  - ADMIN : atelier 200, caisse 200.
+
+Commit :
+
+- 994004a feat(auth): add workspace roles and permissions
 
 ### LOT 14 - Securite technique
 
