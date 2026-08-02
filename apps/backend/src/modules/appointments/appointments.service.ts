@@ -5,35 +5,30 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { SchedulingService } from '../shared/scheduling.service';
 import { SequencingService } from '../shared/sequencing.service';
 import {
   APPOINTMENT_STATUS,
   CASE_STATUS,
   INTERVENTION_STATUS,
-  TIME_SLOT_STATUS,
   APPOINTMENT_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ChangeTimeSlotDto } from './dto/change-time-slot.dto';
 
-const COUNTABLE_APPOINTMENT_STATUSES = [
-  APPOINTMENT_STATUS.PENDING,
-  APPOINTMENT_STATUS.CONFIRMED,
-  APPOINTMENT_STATUS.IN_PROGRESS,
-];
-
 @Injectable()
 export class AppointmentsService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly schedulingService: SchedulingService,
     private readonly sequencingService: SequencingService,
   ) {}
 
   private assertAppointmentStatusTransition(
     currentStatus: string,
     nextStatus: string,
-  ) {
+  ): void {
     if (currentStatus === nextStatus) {
       return;
     }
@@ -51,86 +46,61 @@ export class AppointmentsService {
     }
   }
 
-  // ==================== MÉTHODES PUBLIQUES ====================
-
-  async create(workspaceId: string, userId: string, dto: CreateAppointmentDto) {
+  async create(
+    workspaceId: string,
+    userId: string,
+    dto: CreateAppointmentDto,
+  ) {
     if (!workspaceId) {
       throw new BadRequestException('Workspace ID missing');
     }
 
-
     return this.prisma.$transaction(async (tx) => {
-      await this.validateAppointmentRelations(tx, workspaceId, dto, userId);
+      await this.validateAppointmentRelations(
+        tx,
+        workspaceId,
+        dto,
+        userId,
+      );
 
-      let timeSlotId: string;
-      let finalDate: Date;
+      let timeSlot;
 
-      // === Cas 1 : Créneau dynamique (startTime + endTime) ===
-      const isDynamicSlot =
-        (!dto.timeSlotId || dto.timeSlotId.trim() === '') &&
-        dto.startTime?.trim() &&
-        dto.endTime?.trim();
+      if (
+        (!dto.timeSlotId || dto.timeSlotId.trim() === '')
+        && dto.startTime?.trim()
+        && dto.endTime?.trim()
+      ) {
+        const start = new Date(dto.startTime);
+        const end = new Date(dto.endTime);
 
-      if (isDynamicSlot) {
-        const start = new Date(dto.startTime!);
-        const end = new Date(dto.endTime!);
-
-        // Création d'un nouveau TimeSlot avec occupancy = 1 (ce RDV)
-        const newTimeSlot = await tx.timeSlot.create({
-          data: {
-            workspace_id: workspaceId,
-            start,
-            end,
-            status: TIME_SLOT_STATUS.OPEN,
-            occupancy: 1,
-          },
-        });
-
-        timeSlotId = newTimeSlot.id;
-        finalDate = start;
-      }
-      // === Cas 2 : TimeSlot existant ===
-      else if (dto.timeSlotId && dto.timeSlotId.trim() !== '') {
-        // Vérifie que la capacité n'est pas dépassée (via occupancy)
-        await this.validateTimeSlotAvailability(
+        timeSlot = await this.schedulingService.getOrCreateTimeSlot(
           tx,
           workspaceId,
-          dto.timeSlotId,
+          start,
+          end,
         );
-
-        const timeSlot = await tx.timeSlot.findFirst({
-          where: {
-            id: dto.timeSlotId,
-            workspace_id: workspaceId,
-            deleted_at: null,
-          },
-        });
-        if (!timeSlot) {
-          throw new NotFoundException('TimeSlot not found');
-        }
-
-        const settings = await this.getBusinessSettings(workspaceId);
-        const capacity = settings.maxConcurrent ?? 1;
-
-        if (timeSlot.occupancy >= capacity) {
-          throw new ConflictException(
-            'This time slot capacity is already reached',
+      } else if (dto.timeSlotId?.trim()) {
+        const availability =
+          await this.schedulingService.assertTimeSlotAvailable(
+            tx,
+            workspaceId,
+            dto.timeSlotId,
           );
-        }
 
-        // Incrémenter l'occupancy du TimeSlot existant
-        await tx.timeSlot.update({
-          where: { id: dto.timeSlotId },
-          data: { occupancy: { increment: 1 } },
-        });
-
-        finalDate = dto.date ? new Date(dto.date) : timeSlot.start;
-        timeSlotId = dto.timeSlotId;
+        timeSlot = availability.slot;
       } else {
         throw new BadRequestException(
           'Vous devez fournir soit timeSlotId, soit startTime + endTime',
         );
       }
+
+      await this.schedulingService.assertTimeSlotAvailable(
+        tx,
+        workspaceId,
+        timeSlot.id,
+      );
+
+      const finalDate = timeSlot.start;
 
       await this.validateNoSameDayAppointment(
         tx,
@@ -139,12 +109,12 @@ export class AppointmentsService {
         finalDate,
       );
 
-      return tx.appointment.create({
+      const appointment = await tx.appointment.create({
         data: {
           workspace_id: workspaceId,
           client_id: dto.clientId,
           vehicle_id: dto.vehicleId,
-          time_slot_id: timeSlotId,
+          time_slot_id: timeSlot.id,
           user_id: userId,
           status: APPOINTMENT_STATUS.PENDING,
           date: finalDate,
@@ -155,13 +125,27 @@ export class AppointmentsService {
           time_slot: true,
         },
       });
+
+      await this.schedulingService.recalculateTimeSlotOccupancy(
+        tx,
+        timeSlot.id,
+      );
+
+      return appointment;
     });
   }
 
   async findAll(workspaceId: string) {
     return this.prisma.appointment.findMany({
-      where: { workspace_id: workspaceId, deleted_at: null },
-      include: { client: true, vehicle: true, time_slot: true },
+      where: {
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      include: {
+        client: true,
+        vehicle: true,
+        time_slot: true,
+      },
       orderBy: { date: 'desc' },
     });
   }
@@ -173,321 +157,389 @@ export class AppointmentsService {
         status: APPOINTMENT_STATUS.PENDING,
         deleted_at: null,
       },
-      include: { client: true, vehicle: true, time_slot: true },
+      include: {
+        client: true,
+        vehicle: true,
+        time_slot: true,
+      },
       orderBy: { date: 'asc' },
     });
   }
 
   async findOne(workspaceId: string, id: string) {
     const appointment = await this.prisma.appointment.findFirst({
-      where: { id, workspace_id: workspaceId, deleted_at: null },
-      include: { client: true, vehicle: true, time_slot: true },
+      where: {
+        id,
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      include: {
+        client: true,
+        vehicle: true,
+        time_slot: true,
+      },
     });
-    if (!appointment) throw new NotFoundException('Appointment not found');
+
+    if (!appointment) {
+      throw new NotFoundException('Appointment not found');
+    }
+
     return appointment;
   }
 
-  async update(workspaceId: string, id: string, dto: UpdateAppointmentDto) {
-    const appointment = await this.findOne(workspaceId, id);
-
-    if (dto.status) {
-      this.assertAppointmentStatusTransition(
-        appointment.status,
-        dto.status,
-      );
-    }
-
-    if (dto.date) {
-      await this.validateNoSameDayAppointment(
-        this.prisma,
-        workspaceId,
-        appointment.vehicle_id,
-        new Date(dto.date),
-        id,
-      );
-    }
-
-    return this.prisma.appointment.update({
-      where: { id },
-      data: {
-        status: dto.status,
-        date: dto.date ? new Date(dto.date) : undefined,
-      },
-      include: { client: true, vehicle: true, time_slot: true },
-    });
-  }
-
-  async cancel(workspaceId: string, id: string) {
-    // On gère l'occupancy dans une transaction
+  async update(
+    workspaceId: string,
+    id: string,
+    dto: UpdateAppointmentDto,
+  ) {
     return this.prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.findFirst({
-        where: { id, workspace_id: workspaceId, deleted_at: null },
-        include: { time_slot: true },
+        where: {
+          id,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        include: {
+          time_slot: true,
+        },
       });
 
       if (!appointment) {
         throw new NotFoundException('Appointment not found');
       }
 
-      this.assertAppointmentStatusTransition(
-        appointment.status,
-        APPOINTMENT_STATUS.CANCELLED,
-      );
-
-      // Si ce RDV était compté dans la capacité, décrémenter occupancy
       if (
-        COUNTABLE_APPOINTMENT_STATUSES.includes(
-          appointment.status as any,
-        ) &&
-        appointment.time_slot
+        dto.timeSlotId !== undefined
+        || dto.startTime !== undefined
+        || dto.endTime !== undefined
       ) {
-        await tx.timeSlot.update({
-          where: { id: appointment.time_slot_id },
-          data: { occupancy: { decrement: 1 } },
-        });
-      }
-
-      return tx.appointment.update({
-        where: { id },
-        data: { status: APPOINTMENT_STATUS.CANCELLED },
-        include: { client: true, vehicle: true, time_slot: true },
-      });
-    });
-  }
-
-  async changeTimeSlot(workspaceId: string, id: string, dto: ChangeTimeSlotDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const appointment = await tx.appointment.findFirst({
-        where: { id, workspace_id: workspaceId, deleted_at: null },
-        include: { time_slot: true },
-      });
-      if (!appointment) throw new NotFoundException('Appointment not found');
-
-      const oldTimeSlotId = appointment.time_slot_id;
-
-      // Vérifie que le nouveau créneau est disponible (via occupancy + capacité)
-      await this.validateTimeSlotAvailability(
-        tx,
-        workspaceId,
-        dto.timeSlotId,
-        id,
-      );
-
-      const newTimeSlot = await tx.timeSlot.findFirst({
-        where: { id: dto.timeSlotId, workspace_id: workspaceId, deleted_at: null },
-      });
-      if (!newTimeSlot) throw new NotFoundException('TimeSlot not found');
-
-      const settings = await this.getBusinessSettings(workspaceId);
-      const capacity = settings.maxConcurrent ?? 1;
-
-      if (newTimeSlot.occupancy >= capacity) {
-        throw new ConflictException(
-          'This time slot capacity is already reached',
+        throw new BadRequestException(
+          'Utilisez la route de changement de cr\u00e9neau',
         );
       }
 
-      // 1) Décrémenter l'ancien timeSlot si le RDV était compté
-      if (
-        oldTimeSlotId &&
-        COUNTABLE_APPOINTMENT_STATUSES.includes(
-          appointment.status as any,
-        )
-      ) {
-        await tx.timeSlot.update({
-          where: { id: oldTimeSlotId },
-          data: { occupancy: { decrement: 1 } },
+      if (dto.clientId !== undefined || dto.vehicleId !== undefined) {
+        throw new BadRequestException(
+          'Le client et le v\u00e9hicule ne peuvent pas \u00eatre modifi\u00e9s ici',
+        );
+      }
+
+      if (dto.date !== undefined) {
+        throw new BadRequestException(
+          'La date est pilot\u00e9e par le cr\u00e9neau',
+        );
+      }
+
+      if (dto.status) {
+        this.assertAppointmentStatusTransition(
+          appointment.status,
+          dto.status,
+        );
+
+        const becomesCountable =
+          !this.schedulingService.isCountableAppointmentStatus(
+            appointment.status,
+          )
+          && this.schedulingService.isCountableAppointmentStatus(
+            dto.status,
+          );
+
+        if (becomesCountable) {
+          await this.schedulingService.assertTimeSlotAvailable(
+            tx,
+            workspaceId,
+            appointment.time_slot_id,
+            appointment.id,
+          );
+        }
+      }
+
+      const updated = await tx.appointment.update({
+        where: { id },
+        data: {
+          status: dto.status,
+        },
+        include: {
+          client: true,
+          vehicle: true,
+          time_slot: true,
+        },
+      });
+
+      await this.schedulingService.recalculateTimeSlotOccupancy(
+        tx,
+        appointment.time_slot_id,
+      );
+
+      return updated;
+    });
+  }
+
+  async cancel(workspaceId: string, id: string) {
+    return this.update(workspaceId, id, {
+      status: APPOINTMENT_STATUS.CANCELLED,
+    });
+  }
+
+  async changeTimeSlot(
+    workspaceId: string,
+    id: string,
+    dto: ChangeTimeSlotDto,
+  ) {
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findFirst({
+        where: {
+          id,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!appointment) {
+        throw new NotFoundException('Appointment not found');
+      }
+
+      if (appointment.time_slot_id === dto.timeSlotId) {
+        return tx.appointment.findUnique({
+          where: { id },
+          include: {
+            client: true,
+            vehicle: true,
+            time_slot: true,
+          },
         });
       }
 
-      // 2) Incrémenter le nouveau timeSlot
-      await tx.timeSlot.update({
-        where: { id: dto.timeSlotId },
-        data: { occupancy: { increment: 1 } },
-      });
+      const availability =
+        await this.schedulingService.assertTimeSlotAvailable(
+          tx,
+          workspaceId,
+          dto.timeSlotId,
+          appointment.id,
+        );
 
-      // 3) Mettre à jour le RDV
-      return tx.appointment.update({
+      await this.validateNoSameDayAppointment(
+        tx,
+        workspaceId,
+        appointment.vehicle_id,
+        availability.slot.start,
+        appointment.id,
+      );
+
+      const oldTimeSlotId = appointment.time_slot_id;
+
+      const updated = await tx.appointment.update({
         where: { id },
         data: {
-          time_slot_id: dto.timeSlotId,
-          date: newTimeSlot.start,
-          status: APPOINTMENT_STATUS.PENDING,
+          time_slot_id: availability.slot.id,
+          date: availability.slot.start,
         },
-        include: { client: true, vehicle: true, time_slot: true },
+        include: {
+          client: true,
+          vehicle: true,
+          time_slot: true,
+        },
       });
+
+      await this.schedulingService.recalculateTimeSlotsOccupancy(
+        tx,
+        [oldTimeSlotId, availability.slot.id],
+      );
+
+      return updated;
     });
   }
 
   async remove(workspaceId: string, id: string) {
-    await this.findOne(workspaceId, id);
-    return this.prisma.appointment.update({
-      where: { id },
-      data: { deleted_at: new Date() },
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findFirst({
+        where: {
+          id,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+      });
+
+      if (!appointment) {
+        throw new NotFoundException('Appointment not found');
+      }
+
+      const removed = await tx.appointment.update({
+        where: { id },
+        data: {
+          deleted_at: new Date(),
+        },
+      });
+
+      await this.schedulingService.recalculateTimeSlotOccupancy(
+        tx,
+        appointment.time_slot_id,
+      );
+
+      return removed;
     });
   }
 
   async restore(workspaceId: string, id: string) {
-    const appointment = await this.prisma.appointment.findFirst({
-      where: { id, workspace_id: workspaceId, deleted_at: { not: null } },
-    });
-    if (!appointment)
-      throw new NotFoundException('Appointment not found or not deleted');
+    return this.prisma.$transaction(async (tx) => {
+      const appointment = await tx.appointment.findFirst({
+        where: {
+          id,
+          workspace_id: workspaceId,
+          deleted_at: { not: null },
+        },
+      });
 
-    return this.prisma.appointment.update({
-      where: { id },
-      data: { deleted_at: null },
-      include: { client: true, vehicle: true, time_slot: true },
+      if (!appointment) {
+        throw new NotFoundException(
+          'Appointment not found or not deleted',
+        );
+      }
+
+      if (
+        this.schedulingService.isCountableAppointmentStatus(
+          appointment.status,
+        )
+      ) {
+        await this.schedulingService.assertTimeSlotAvailable(
+          tx,
+          workspaceId,
+          appointment.time_slot_id,
+          appointment.id,
+        );
+
+        await this.validateNoSameDayAppointment(
+          tx,
+          workspaceId,
+          appointment.vehicle_id,
+          appointment.date,
+          appointment.id,
+        );
+      }
+
+      const restored = await tx.appointment.update({
+        where: { id },
+        data: {
+          deleted_at: null,
+        },
+        include: {
+          client: true,
+          vehicle: true,
+          time_slot: true,
+        },
+      });
+
+      await this.schedulingService.recalculateTimeSlotOccupancy(
+        tx,
+        appointment.time_slot_id,
+      );
+
+      return restored;
     });
   }
 
-  // ==================== BUSINESS SETTINGS ====================
-
   async getBusinessSettings(workspaceId: string) {
-    let settings = await this.prisma.businessSettings.findUnique({
-      where: { workspace_id: workspaceId },
-    });
-
-    if (!settings) {
-      settings = await this.prisma.businessSettings.create({
-        data: {
-          workspace_id: workspaceId,
-          openingTime: '08:00',
-          closingTime: '18:00',
-          slotDuration: 30,
-          maxConcurrent: 2,
-          workingDays: '1,2,3,4,5,6',
-        },
-      });
-    }
-
-    return settings;
+    return this.schedulingService.getBusinessSettings(workspaceId);
   }
 
   parseWorkingDays(workingDays: string): number[] {
-    return workingDays
-      .split(',')
-      .map(Number)
-      .filter(Boolean);
+    return this.schedulingService.parseWorkingDays(workingDays);
   }
 
   formatWorkingDays(days: number[]): string {
-    return days.join(',');
+    return this.schedulingService.formatWorkingDays(days);
   }
 
-  // ==================== PHASE 2 : CRÉNEAUX DISPONIBLES ====================
-
   async getAvailableSlots(workspaceId: string, date: string) {
-    const settings = await this.getBusinessSettings(workspaceId);
-    const workingDays = this.parseWorkingDays(settings.workingDays);
+    const settings =
+      await this.schedulingService.getBusinessSettings(workspaceId);
 
-    const targetDate = new Date(date);
-    const dayOfWeek = targetDate.getDay();
+    const targetBounds =
+      this.schedulingService.getZonedDayBounds(
+        date,
+        settings.timezone,
+      );
 
-    // Jour non travaillé → aucun créneau
+    const dayOfWeek =
+      this.schedulingService.getZonedDayOfWeek(
+        targetBounds.start,
+        settings.timezone,
+      );
+
+    const workingDays =
+      this.schedulingService.parseWorkingDays(
+        settings.workingDays,
+      );
+
     if (!workingDays.includes(dayOfWeek)) {
       return [];
     }
 
+    const generatedSlots =
+      this.schedulingService.generateSlotsForDate(
+        date,
+        settings.openingTime,
+        settings.closingTime,
+        settings.slotDuration,
+        settings.timezone,
+      );
+
     const now = new Date();
+    const result = [];
 
-    const allSlots = this.generateSlotsForDay(targetDate, settings).filter(
-      (slot) => slot.start.getTime() > now.getTime(),
-    );
+    for (const generated of generatedSlots) {
+      if (generated.start <= now) {
+        continue;
+      }
 
-    const dayStart = new Date(targetDate);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(targetDate);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    // On charge les RDV existants de la journée avec leurs time_slots
-    const existingAppointments = await this.prisma.appointment.findMany({
-      where: {
-        workspace_id: workspaceId,
-        deleted_at: null,
-        date: { gte: dayStart, lte: dayEnd },
-        status: {
-          in: [
-            APPOINTMENT_STATUS.PENDING,
-            APPOINTMENT_STATUS.CONFIRMED,
-            APPOINTMENT_STATUS.IN_PROGRESS,
-          ],
+      const existing = await this.prisma.timeSlot.findUnique({
+        where: {
+          workspace_id_start_end: {
+            workspace_id: workspaceId,
+            start: generated.start,
+            end: generated.end,
+          },
         },
-      },
-      include: { time_slot: true },
-    });
+      });
 
-    const capacity = settings.maxConcurrent; // ex: 2
+      let booked = 0;
+      let slotId: string | null = null;
+      let status = 'OPEN';
 
-    const result = allSlots.map((slot) => {
-      // Combien de RDV se chevauchent avec ce créneau
-      const overlappingCount = existingAppointments.filter((appt) => {
-        if (!appt.time_slot) return false;
+      if (existing && !existing.deleted_at) {
+        slotId = existing.id;
+        status = existing.status;
+        booked =
+          await this.schedulingService.countSlotOccupancy(
+            this.prisma,
+            existing.id,
+          );
+      }
 
-        const apptStart = new Date(appt.time_slot.start);
-        const apptEnd = new Date(appt.time_slot.end);
+      const available =
+        status === 'OPEN'
+          ? Math.max(0, settings.maxConcurrent - booked)
+          : 0;
 
-        return apptStart < slot.end && apptEnd > slot.start;
-      }).length;
-
-      const booked = overlappingCount;
-      const available = Math.max(0, capacity - booked);
-      const isAvailable = available > 0;
-
-      return {
-        start: slot.start.toISOString(),
-        end: slot.end.toISOString(),
-        label: `${slot.start.toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })} – ${slot.end.toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })}`,
-      booked,
-      available,
-      isAvailable,
-      };
-    });
+      result.push({
+        id: slotId,
+        start: generated.start.toISOString(),
+        end: generated.end.toISOString(),
+        label: this.schedulingService.formatSlotLabel(
+          generated.start,
+          generated.end,
+          settings.timezone,
+        ),
+        booked,
+        capacity: settings.maxConcurrent,
+        available,
+        isAvailable: available > 0,
+        timezone: settings.timezone,
+      });
+    }
 
     return result;
   }
-
-  private generateSlotsForDay(date: Date, settings: any) {
-    const slots: { start: Date; end: Date }[] = [];
-
-    const [openHour, openMinute] = settings.openingTime.split(':').map(Number);
-    const [closeHour, closeMinute] =
-      settings.closingTime.split(':').map(Number);
-
-    if (isNaN(openHour) || isNaN(closeHour)) {
-      throw new Error(
-        'Invalid opening or closing time format in BusinessSettings',
-      );
-    }
-
-    const startTime = new Date(date);
-    startTime.setHours(openHour, openMinute, 0, 0);
-
-    const endTime = new Date(date);
-    endTime.setHours(closeHour, closeMinute, 0, 0);
-
-    let current = new Date(startTime);
-
-    while (current < endTime) {
-      const slotEnd = new Date(
-        current.getTime() + settings.slotDuration * 60000,
-      );
-      if (slotEnd > endTime) break;
-
-      slots.push({ start: new Date(current), end: slotEnd });
-      current = slotEnd;
-    }
-
-    return slots;
-  }
-
-  // ==================== MÉTHODES PRIVÉES DE VALIDATION ====================
 
   private async validateAppointmentRelations(
     tx: any,
@@ -495,39 +547,70 @@ export class AppointmentsService {
     dto: CreateAppointmentDto,
     userId: string,
   ) {
-    const [workspace, user, client, vehicle, timeSlot] = await Promise.all([
-      tx.workspace.findFirst({ where: { id: workspaceId } }),
-      tx.user.findFirst({ where: { id: userId, workspace_id: workspaceId } }),
-      tx.client.findFirst({
-        where: { id: dto.clientId, workspace_id: workspaceId, deleted_at: null },
-      }),
-      tx.vehicle.findFirst({
-        where: {
-          id: dto.vehicleId,
-          workspace_id: workspaceId,
-          client_id: dto.clientId,
-          deleted_at: null,
-        },
-      }),
-      dto.timeSlotId
-        ? tx.timeSlot.findFirst({
-            where: { id: dto.timeSlotId, workspace_id: workspaceId, deleted_at: null },
-          })
-        : Promise.resolve(null),
-    ]);
+    const [workspace, user, client, vehicle, timeSlot] =
+      await Promise.all([
+        tx.workspace.findFirst({
+          where: { id: workspaceId },
+        }),
+        tx.user.findFirst({
+          where: {
+            id: userId,
+            workspace_id: workspaceId,
+          },
+        }),
+        tx.client.findFirst({
+          where: {
+            id: dto.clientId,
+            workspace_id: workspaceId,
+            deleted_at: null,
+          },
+        }),
+        tx.vehicle.findFirst({
+          where: {
+            id: dto.vehicleId,
+            workspace_id: workspaceId,
+            client_id: dto.clientId,
+            deleted_at: null,
+          },
+        }),
+        dto.timeSlotId
+          ? tx.timeSlot.findFirst({
+              where: {
+                id: dto.timeSlotId,
+                workspace_id: workspaceId,
+                deleted_at: null,
+              },
+            })
+          : Promise.resolve(null),
+      ]);
 
-    if (!workspace) throw new NotFoundException('Workspace not found');
-    if (!user)
+    if (!workspace) {
+      throw new NotFoundException('Workspace not found');
+    }
+
+    if (!user) {
       throw new BadRequestException(
         'User not found or does not belong to this workspace',
       );
-    if (!client) throw new NotFoundException('Client not found in this workspace');
-    if (!vehicle)
+    }
+
+    if (!client) {
+      throw new NotFoundException(
+        'Client not found in this workspace',
+      );
+    }
+
+    if (!vehicle) {
       throw new NotFoundException(
         'Vehicle not found or not linked to this client',
       );
-    if (dto.timeSlotId && !timeSlot)
-      throw new NotFoundException('TimeSlot not found in this workspace');
+    }
+
+    if (dto.timeSlotId && !timeSlot) {
+      throw new NotFoundException(
+        'TimeSlot not found in this workspace',
+      );
+    }
 
     const appointmentStart = dto.startTime
       ? new Date(dto.startTime)
@@ -535,43 +618,19 @@ export class AppointmentsService {
         ? new Date(timeSlot.start)
         : null;
 
-    if (!appointmentStart || Number.isNaN(appointmentStart.getTime())) {
+    if (
+      !appointmentStart
+      || Number.isNaN(appointmentStart.getTime())
+    ) {
       throw new BadRequestException(
-        'La date et l’heure du rendez-vous sont invalides',
+        'La date et l\u2019heure du rendez-vous sont invalides',
       );
     }
 
     if (appointmentStart.getTime() <= Date.now()) {
       throw new BadRequestException(
-        'Impossible d’enregistrer un rendez-vous dans le passé',
+        'Impossible d\u2019enregistrer un rendez-vous dans le pass\u00e9',
       );
-    }
-  }
-
-  private async validateTimeSlotAvailability(
-    prisma: any,
-    workspaceId: string,
-    timeSlotId: string,
-    excludeAppointmentId?: string,
-  ) {
-    const timeSlot = await prisma.timeSlot.findFirst({
-      where: { id: timeSlotId, workspace_id: workspaceId, deleted_at: null },
-    });
-    if (!timeSlot) throw new NotFoundException('TimeSlot not found');
-    if (timeSlot.status !== TIME_SLOT_STATUS.OPEN) {
-      throw new ConflictException('This time slot is not available');
-    }
-
-    // Capacité via BusinessSettings
-    const settings = await this.getBusinessSettings(workspaceId);
-    const capacity = settings.maxConcurrent ?? 1;
-
-    // Optionnel : pour vérifier aussi avec le nombre réel de RDV,
-    // un contrôle supplémentaire peut être ajouté ici. Pour l'instant,
-    // on s'appuie sur occupancy, géré dans create/cancel/changeTimeSlot.
-
-    if (timeSlot.occupancy >= capacity) {
-      throw new ConflictException('This time slot capacity is already reached');
     }
   }
 
@@ -582,17 +641,33 @@ export class AppointmentsService {
     date: Date,
     excludeAppointmentId?: string,
   ) {
-    const dayStart = new Date(date);
-    dayStart.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(date);
-    dayEnd.setHours(23, 59, 59, 999);
+    const settings =
+      await this.schedulingService.getBusinessSettings(
+        workspaceId,
+        prisma,
+      );
+
+    const dateKey =
+      this.schedulingService.getZonedDateKey(
+        date,
+        settings.timezone,
+      );
+
+    const bounds =
+      this.schedulingService.getZonedDayBounds(
+        dateKey,
+        settings.timezone,
+      );
 
     const existing = await prisma.appointment.findFirst({
       where: {
         vehicle_id: vehicleId,
         workspace_id: workspaceId,
         deleted_at: null,
-        date: { gte: dayStart, lte: dayEnd },
+        date: {
+          gte: bounds.start,
+          lt: bounds.end,
+        },
         status: {
           in: [
             APPOINTMENT_STATUS.PENDING,
@@ -600,7 +675,9 @@ export class AppointmentsService {
             APPOINTMENT_STATUS.IN_PROGRESS,
           ],
         },
-        ...(excludeAppointmentId && { id: { not: excludeAppointmentId } }),
+        ...(excludeAppointmentId
+          ? { id: { not: excludeAppointmentId } }
+          : {}),
       },
     });
 

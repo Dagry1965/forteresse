@@ -1,26 +1,25 @@
-// src/modules/timeslots/timeslots.controller.ts
-
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
   Headers,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
   UseGuards,
   UsePipes,
   ValidationPipe,
-  HttpCode,
-  HttpStatus,
 } from '@nestjs/common';
-import { TimeSlotsService } from './timeslots.service';
-import { CreateTimeslotDto } from './dto/create-timeslot.dto';
-import { UpdateTimeslotDto } from './dto/update-timeslot.dto';
+
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
+import { CreateTimeslotDto } from './dto/create-timeslot.dto';
+import { TimeSlotsService } from './timeslots.service';
+import { UpdateTimeslotDto } from './dto/update-timeslot.dto';
 
 @Controller('time-slots')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -38,7 +37,9 @@ export class TimeSlotsController {
   }
 
   @Get()
-  findAll(@Headers('x-workspace-id') workspaceId: string) {
+  findAll(
+    @Headers('x-workspace-id') workspaceId: string,
+  ) {
     return this.service.findAll(workspaceId);
   }
 
@@ -58,6 +59,22 @@ export class TimeSlotsController {
     return this.service.findOne(workspaceId, id);
   }
 
+  @Patch(':id/cancel')
+  cancel(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.service.cancel(workspaceId, id);
+  }
+
+  @Patch(':id/restore')
+  restore(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.service.restore(workspaceId, id);
+  }
+
   @Patch(':id')
   update(
     @Headers('x-workspace-id') workspaceId: string,
@@ -69,10 +86,10 @@ export class TimeSlotsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  async cancel(
+  async remove(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
   ) {
-    await this.service.cancel(workspaceId, id);
+    await this.service.remove(workspaceId, id);
   }
 }

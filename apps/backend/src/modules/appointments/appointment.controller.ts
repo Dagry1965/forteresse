@@ -18,6 +18,7 @@ import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
+import { ChangeTimeSlotDto } from './dto/change-time-slot.dto';
 
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 @Controller('appointments')
@@ -91,6 +92,27 @@ export class AppointmentController {
     @Param('id') id: string,
   ) {
     return this.appointmentsService.cancel(workspaceId, id);
+  }
+
+  @Patch(':id/change-time-slot')
+  changeTimeSlot(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+    @Body() dto: ChangeTimeSlotDto,
+  ) {
+    return this.appointmentsService.changeTimeSlot(
+      workspaceId,
+      id,
+      dto,
+    );
+  }
+
+  @Patch(':id/restore')
+  restore(
+    @Headers('x-workspace-id') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    return this.appointmentsService.restore(workspaceId, id);
   }
 
   @Patch(':id')

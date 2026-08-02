@@ -202,6 +202,7 @@ model TimeSlot {
 
   appointments Appointment[]
 
+  @@unique([workspace_id, start, end])
   @@index([workspace_id])
   @@index([workspace_id, start])
 }
@@ -633,6 +634,7 @@ model BusinessSettings {
   closingTime   String @default("18:00")
   slotDuration  Int    @default(30)
   maxConcurrent Int    @default(2)
+  timezone      String @default("UTC")
 
   // Stocké en string (ex: "1,2,3,4,5,6") car SQLite ne supporte pas les tableaux
   workingDays String @default("1,2,3,4,5,6")
