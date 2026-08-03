@@ -23,7 +23,7 @@ type SlotInterval = {
   end: Date;
 };
 
-const COUNTABLE_APPOINTMENT_STATUSES = [
+const COUNTABLE_APPOINTMENT_STATUSES: string[] = [
   APPOINTMENT_STATUS.PENDING,
   APPOINTMENT_STATUS.CONFIRMED,
   APPOINTMENT_STATUS.IN_PROGRESS,
@@ -34,7 +34,7 @@ export class SchedulingService {
   constructor(private readonly prisma: PrismaService) {}
 
   isCountableAppointmentStatus(status: string): boolean {
-    return COUNTABLE_APPOINTMENT_STATUSES.includes(status as any);
+    return COUNTABLE_APPOINTMENT_STATUSES.includes(status);
   }
 
   async getBusinessSettings(
