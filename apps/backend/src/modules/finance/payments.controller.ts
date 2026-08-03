@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
@@ -20,6 +21,12 @@ import { RecordSchedulePaymentDto } from './dto/record-schedule-payment.dto';
 import { CancelPaymentDto } from './dto/cancel-payment.dto';
 import { RefundPaymentDto } from './dto/refund-payment.dto';
 
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+  };
+};
+
 @Controller('finance/payments')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
 @Roles(
@@ -30,7 +37,7 @@ import { RefundPaymentDto } from './dto/refund-payment.dto';
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
 
-  private getAuthenticatedUserId(req: any): string {
+  private getAuthenticatedUserId(req: AuthenticatedRequest): string {
     const userId = req.user?.id;
 
     if (!userId) {
@@ -64,7 +71,7 @@ export class PaymentsController {
   async record(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: RecordSchedulePaymentDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.recordPayment(
       workspaceId,
@@ -80,7 +87,7 @@ export class PaymentsController {
     @Headers('x-workspace-id') workspaceId: string,
     @Param('paymentId') paymentId: string,
     @Body() dto: CancelPaymentDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.cancelPayment(
       workspaceId,
@@ -95,7 +102,7 @@ export class PaymentsController {
     @Headers('x-workspace-id') workspaceId: string,
     @Param('paymentId') paymentId: string,
     @Body() dto: RefundPaymentDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.paymentsService.refundPayment(
       workspaceId,
