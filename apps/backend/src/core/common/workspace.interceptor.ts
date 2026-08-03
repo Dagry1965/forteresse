@@ -5,15 +5,20 @@ import {
   CallHandler,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { Observable } from 'rxjs';
+
+type WorkspaceRequest = Request & {
+  workspaceId?: string;
+};
 
 @Injectable()
 export class WorkspaceInterceptor implements NestInterceptor {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<any> {
-    const request = context.switchToHttp().getRequest();
+  ): Observable<unknown> {
+    const request = context.switchToHttp().getRequest<WorkspaceRequest>();
 
     if (
       request.url.includes('/auth/')
@@ -22,13 +27,16 @@ export class WorkspaceInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    const workspaceId = request.headers['x-workspace-id'];
+    const workspaceHeader = request.headers['x-workspace-id'];
+    const workspaceId =
+      typeof workspaceHeader === 'string'
+        ? workspaceHeader
+        : undefined;
 
     const isInvalid =
       !workspaceId
       || workspaceId === 'undefined'
-      || workspaceId === 'null'
-      || workspaceId === '';
+      || workspaceId === 'null';
 
     if (isInvalid) {
       throw new UnauthorizedException(
