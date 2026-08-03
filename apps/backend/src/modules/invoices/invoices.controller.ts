@@ -8,13 +8,20 @@ import {
   Req,
   UnauthorizedException,
   UseGuards,
-} from '@nestjs/common'; 
+} from '@nestjs/common';
+import type { Request } from 'express';
 import { InvoicesService } from './invoices.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { RolesGuard } from '../../core/auth/roles.guard';
 import { Roles } from '../../core/auth/roles.decorator';
-import { USER_ROLE } from '../../../../../shared/constants/status.constants'; // Utilisez InvoicesService au lieu de FinanceService
+import { USER_ROLE } from '../../../../../shared/constants/status.constants';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+  };
+};
 
 @Controller('invoices')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
@@ -50,7 +57,7 @@ export class InvoicesController {
 async createFleetInvoice(
   @Headers('x-workspace-id') workspaceId: string,
   @Body() dto: { client_id: string, appointment_ids: string[] },
-  @Req() req: any,
+  @Req() req: AuthenticatedRequest,
 ) {
   const userId = req.user?.id;
 
@@ -77,7 +84,7 @@ async createCreditNote(
   @Param('id') id: string,
   @Headers('x-workspace-id') workspaceId: string,
   @Body() dto: { reason?: string },
-  @Req() req: any,
+  @Req() req: AuthenticatedRequest,
 ) {
   const userId = req.user?.id;
 
@@ -105,7 +112,7 @@ async cancelInvoice(
   @Param('id') id: string,
   @Headers('x-workspace-id') workspaceId: string,
   @Body() dto: { reason?: string },
-  @Req() req: any,
+  @Req() req: AuthenticatedRequest,
 ) {
   const userId = req.user?.id;
 
