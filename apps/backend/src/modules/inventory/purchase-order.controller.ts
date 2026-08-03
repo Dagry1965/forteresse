@@ -11,6 +11,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { PurchaseOrderService } from './purchase-order.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
@@ -18,6 +19,13 @@ import { RolesGuard } from '../../core/auth/roles.guard';
 import { Roles } from '../../core/auth/roles.decorator';
 import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+    sub?: string;
+  };
+};
 
 @Controller('purchase-orders')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
@@ -39,7 +47,7 @@ export class PurchaseOrderController {
   create(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreatePurchaseOrderDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const userId = req.user?.id || req.user?.sub || null;
 
