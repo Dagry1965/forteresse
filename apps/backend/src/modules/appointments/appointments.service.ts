@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SchedulingService } from '../shared/scheduling.service';
 import { SequencingService } from '../shared/sequencing.service';
@@ -16,6 +17,8 @@ import {
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ChangeTimeSlotDto } from './dto/change-time-slot.dto';
+
+type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
 @Injectable()
 export class AppointmentsService {
@@ -542,7 +545,7 @@ export class AppointmentsService {
   }
 
   private async validateAppointmentRelations(
-    tx: any,
+    tx: PrismaClientLike,
     workspaceId: string,
     dto: CreateAppointmentDto,
     userId: string,
@@ -635,7 +638,7 @@ export class AppointmentsService {
   }
 
   private async validateNoSameDayAppointment(
-    prisma: any,
+    prisma: PrismaClientLike,
     workspaceId: string,
     vehicleId: string,
     date: Date,
