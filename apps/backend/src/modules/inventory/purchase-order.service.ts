@@ -6,6 +6,10 @@ import {
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SequencingService } from '../shared/sequencing.service';
 import {
+  CreatePurchaseOrderDto,
+  CreatePurchaseOrderItemDto,
+} from './dto/create-purchase-order.dto';
+import {
   PURCHASE_ORDER_STATUS,
   PURCHASE_ORDER_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
@@ -22,8 +26,10 @@ export class PurchaseOrderService {
       return;
     }
 
-    const allowedStatuses = Object.values(PURCHASE_ORDER_STATUS);
-    if (!allowedStatuses.includes(nextStatus as any)) {
+    const allowedStatuses: readonly string[] = Object.values(
+      PURCHASE_ORDER_STATUS,
+    );
+    if (!allowedStatuses.includes(nextStatus)) {
       throw new BadRequestException(
         'Statut de commande fournisseur invalide : ' + nextStatus,
       );
@@ -45,7 +51,11 @@ export class PurchaseOrderService {
   /**
    * Création d'une commande fournisseur
    */
-  async createOrder(workspaceId: string, userId: string | null, data: any) {
+  async createOrder(
+    workspaceId: string,
+    userId: string | null,
+    data: CreatePurchaseOrderDto,
+  ) {
 
     if (!workspaceId) {
       throw new BadRequestException('Workspace manquant');
@@ -74,7 +84,9 @@ export class PurchaseOrderService {
     }
 
     // 2. Préparer et valider les IDs des articles
-    const itemIds = data.items.map((item: any) => item.stock_item_id).filter(Boolean);
+    const itemIds = data.items
+      .map((item: CreatePurchaseOrderItemDto) => item.stock_item_id)
+      .filter(Boolean);
 
     if (itemIds.length !== data.items.length) {
       throw new BadRequestException('Une ou plusieurs lignes n’ont pas d’article');
@@ -115,7 +127,7 @@ export class PurchaseOrderService {
         // On lie l'utilisateur qui a créé la commande
         ...(userId ? { created_by: userId } : {}),
         items: {
-          create: data.items.map((item: any) => ({
+          create: data.items.map((item: CreatePurchaseOrderItemDto) => ({
             item_id: item.stock_item_id, // Mapping vers le schéma
             quantity: Number(item.quantity),
             price_buy: Number(item.unit_cost), // Mapping vers le schéma
