@@ -23,6 +23,7 @@
   },
   "clearMocks": true,
   "testMatch": [
-    "<rootDir>/test/auth.e2e-spec.ts"
+    "<rootDir>/test/auth.e2e-spec.ts",
+    "<rootDir>/test/e2e/purchase.e2e-spec.ts"
   ]
 }

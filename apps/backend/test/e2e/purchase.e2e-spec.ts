@@ -1,69 +1,191 @@
-import { PrismaClient } from '@prisma/client';
+import { PurchaseReceiptService } from '../../src/modules/inventory/purchase-receipt.service';
+import { PrismaService } from '../../src/core/prisma/prisma.service';
+import { SequencingService } from '../../src/modules/shared/sequencing.service';
+import {
+  PURCHASE_ORDER_STATUS,
+  STOCK_MOVEMENT_TYPE,
+} from '../../../../shared/constants/status.constants';
 
-const p = new PrismaClient();
+describe('PurchaseReceiptService', () => {
+  it('enregistre une reception partielle et augmente le stock', async () => {
+    const workspaceId = 'workspace-test';
+    const purchaseOrderId = 'purchase-order-1';
+    const orderItemId = 'purchase-order-item-1';
+    const stockItemId = 'stock-item-1';
+    const receiptId = 'receipt-1';
 
-(async () => {
-  try {
-    console.log('E2E test skeleton start');
-    const ws = process.env.NEXT_PUBLIC_WORKSPACE_ID || process.env.WORKSPACE_ID || 'dev-ws';
+    const purchaseOrder = {
+      id: purchaseOrderId,
+      status: PURCHASE_ORDER_STATUS.SENT,
+      supplier: {
+        id: 'supplier-1',
+        name: 'Fournisseur test',
+      },
+      items: [
+        {
+          id: orderItemId,
+          item_id: stockItemId,
+          quantity: 10,
+          received_quantity: 0,
+          item: {
+            id: stockItemId,
+            name: 'Filtre a huile',
+            workspace_id: workspaceId,
+            deleted_at: null,
+          },
+        },
+      ],
+    };
 
-const supplier = await p.supplier.create({ data: { workspaceId: ws, name: 'CI Supplier' }});
-const product = await p.product.create({
-  data: {
-    workspaceId: ws,
-    supplier_id: supplier.id,
-    reference: 'CI-PRD',
-    name: 'CI Product',
-    purchase_price: 1,
-    selling_price: 2
-  }
-});
+    const updatedOrder = {
+      ...purchaseOrder,
+      items: [
+        {
+          ...purchaseOrder.items[0],
+          received_quantity: 4,
+        },
+      ],
+    };
 
-await p.inventory.upsert({
-  where: { product_id: product.id },
-  create: { product_id: product.id, quantity: 0 },
-  update: {}
-});
+    const tx = {
+      purchaseOrder: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValueOnce(purchaseOrder)
+          .mockResolvedValueOnce(updatedOrder),
+        update: jest.fn().mockResolvedValue({
+          ...updatedOrder,
+          status: PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED,
+        }),
+      },
+      purchaseReceipt: {
+        create: jest.fn().mockResolvedValue({
+          id: receiptId,
+          reference: 'REC-TEST-0001',
+          workspace_id: workspaceId,
+          purchase_order_id: purchaseOrderId,
+        }),
+        findUnique: jest.fn().mockResolvedValue({
+          id: receiptId,
+          reference: 'REC-TEST-0001',
+          purchase_order: updatedOrder,
+        }),
+      },
+      purchaseOrderItem: {
+        findFirst: jest.fn().mockResolvedValue(
+          purchaseOrder.items[0],
+        ),
+        update: jest.fn().mockResolvedValue({
+          ...purchaseOrder.items[0],
+          received_quantity: 4,
+        }),
+      },
+      stockItem: {
+        update: jest.fn().mockResolvedValue({
+          ...purchaseOrder.items[0].item,
+          quantity: 4,
+        }),
+      },
+      stockMovement: {
+        create: jest.fn().mockResolvedValue({
+          id: 'movement-1',
+        }),
+      },
+    };
 
-const po = await p.purchaseOrder.create({
-  data: {
-    workspaceId: ws,
-    supplierId: supplier.id,
-    reference: 'CI-PO',
-    status: 'confirmed',
-    totalAmount: 10,
-    lines: { create: [{ productId: product.id, quantity: 5, unit_price: 2 }] }
-  },
-  include: { lines: true }
-});
+    const prisma = {
+      $transaction: jest.fn(
+        async (
+          callback: (
+            transactionClient: typeof tx,
+          ) => Promise<unknown>,
+        ) => callback(tx),
+      ),
+    } as unknown as PrismaService;
 
-const receipt = await p.purchaseReceipt.create({
-  data: { purchaseOrderId: po.id, workspaceId: ws, reference: 'CI-REC', status: 'pending' }
-});
+    const sequencingService = {
+      generateReference: jest
+        .fn()
+        .mockResolvedValue('REC-TEST-0001'),
+    } as unknown as SequencingService;
 
-await p.purchaseReceiptLine.create({
-  data: { purchaseReceiptId: receipt.id, productId: product.id, quantity: 5, unit_price: 2 }
-});
+    const service = new PurchaseReceiptService(
+      prisma,
+      sequencingService,
+    );
 
-await p.$transaction(async (tx) => {
-  await tx.inventory.upsert({
-    where: { product_id: product.id },
-    create: { product_id: product.id, quantity: 5 },
-    update: { quantity: { increment: 5 } }
+    const result = await service.createReceipt(
+      workspaceId,
+      {
+        purchaseOrderId,
+        items: [
+          {
+            item_id: stockItemId,
+            quantity: 4,
+          },
+        ],
+        userId: 'user-1',
+      },
+    );
+
+    expect(
+      sequencingService.generateReference,
+    ).toHaveBeenCalledWith(
+      workspaceId,
+      'RECEIPT',
+    );
+
+    expect(
+      tx.purchaseOrderItem.update,
+    ).toHaveBeenCalledWith({
+      where: {
+        id: orderItemId,
+      },
+      data: {
+        received_quantity: {
+          increment: 4,
+        },
+      },
+    });
+
+    expect(tx.stockItem.update).toHaveBeenCalledWith({
+      where: {
+        id: stockItemId,
+      },
+      data: {
+        quantity: {
+          increment: 4,
+        },
+      },
+    });
+
+    expect(
+      tx.stockMovement.create,
+    ).toHaveBeenCalledWith({
+      data: {
+        workspace_id: workspaceId,
+        item_id: stockItemId,
+        purchase_receipt_id: receiptId,
+        quantity: 4,
+        type: STOCK_MOVEMENT_TYPE.IN_PURCHASE,
+        created_by: 'user-1',
+      },
+    });
+
+    expect(tx.purchaseOrder.update).toHaveBeenCalledWith({
+      where: {
+        id: purchaseOrderId,
+      },
+      data: {
+        status:
+          PURCHASE_ORDER_STATUS.PARTIALLY_RECEIVED,
+      },
+    });
+
+    expect(result).toEqual({
+      id: receiptId,
+      reference: 'REC-TEST-0001',
+      purchase_order: updatedOrder,
+    });
   });
-  await tx.stockMovement.create({
-    data: { workspaceId: ws, product_id: product.id, type: 'purchase_in', quantity: 5, reason: 'ci test' }
-  });
 });
-
-const inv = await p.inventory.findUnique({ where: { product_id: product.id }});
-console.log('CI final inventory for product:', inv ? inv.quantity : null);
-console.log('E2E test skeleton finished');
-process.exit(0);
-  } catch (e) {
-    console.error('E2E skeleton error', e);
-    process.exit(1);
-  } finally {
-    await p.$disconnect();
-  }
-})();
