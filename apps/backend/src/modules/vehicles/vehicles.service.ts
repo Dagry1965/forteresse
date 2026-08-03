@@ -14,6 +14,9 @@ import {
   VEHICLE_STATUS_TRANSITIONS,
 } from '../../../../../shared/constants/status.constants';
 
+const ALLOWED_VEHICLE_STATUSES: string[] =
+  Object.values(VEHICLE_STATUS);
+
 @Injectable()
 export class VehiclesService {
   constructor(
@@ -24,10 +27,10 @@ export class VehiclesService {
   private validateStatus(status?: string) {
     if (
       status &&
-      !Object.values(VEHICLE_STATUS).includes(status as any)
+      !ALLOWED_VEHICLE_STATUSES.includes(status)
     ) {
       throw new BadRequestException(
-        `Statut invalide. Valeurs autorisees : ${Object.values(VEHICLE_STATUS).join(', ')}`,
+        `Statut invalide. Valeurs autorisees : ${ALLOWED_VEHICLE_STATUSES.join(', ')}`,
       );
     }
   }
