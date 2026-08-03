@@ -13,6 +13,7 @@ import {
   BadRequestException,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { RolesGuard } from '../../core/auth/roles.guard';
@@ -22,6 +23,15 @@ import { AppointmentsService } from './appointments.service';
 import { CreateAppointmentDto } from './dto/create-appointment.dto';
 import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 import { ChangeTimeSlotDto } from './dto/change-time-slot.dto';
+
+type AuthenticatedRequest = Request & {
+  workspaceId?: string;
+  user?: {
+    id?: string;
+    workspaceId?: string;
+    workspace_id?: string;
+  };
+};
 
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
 @Roles(
@@ -81,14 +91,13 @@ export class AppointmentController {
   create(
     @Headers('x-workspace-id') headerWorkspaceId: string,
     @Body() dto: CreateAppointmentDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const workspaceId =
       req.workspaceId ||
       req.user?.workspaceId ||
       req.user?.workspace_id ||
-      headerWorkspaceId ||
-      req.headers?.['x-workspace-id'];
+      headerWorkspaceId;
 
     if (!workspaceId) {
       throw new BadRequestException('Workspace ID missing');
