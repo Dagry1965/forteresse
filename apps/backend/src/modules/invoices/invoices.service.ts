@@ -10,6 +10,15 @@ import {
   PROFORMA_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
+type CreateInvoiceInput = {
+  client_id: string;
+  total: number;
+  status?: string | null;
+  type?: string | null;
+  proforma_id?: string | null;
+  appointment_id?: string | null;
+};
+
 @Injectable()
 export class InvoicesService {
   constructor(
@@ -55,7 +64,7 @@ export class InvoicesService {
   async create(
     workspaceId: string,
     userId: string,
-    dto: any,
+    dto: CreateInvoiceInput,
   ) {
     const status = this.normalizeStatus(dto.status);
     const type = this.normalizeType(dto.type);
