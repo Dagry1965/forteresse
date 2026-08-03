@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { SequencingService } from '../shared/sequencing.service';
 import { CreateInterventionDto } from './dto/create-intervention.dto';
@@ -16,6 +17,8 @@ import {
   STOCK_MOVEMENT_TYPE,
   USER_ROLE,
 } from '../../../../../shared/constants/status.constants';
+
+type PrismaClientLike = PrismaService | Prisma.TransactionClient;
 
 type UpdateInterventionPayload = UpdateInterventionDto & {
   description?: string;
@@ -34,7 +37,7 @@ export class InterventionsService {
   private async assertActiveUser(
     workspaceId: string,
     userId: string,
-    client: any = this.prisma,
+    client: PrismaClientLike = this.prisma,
   ) {
     if (!userId) {
       throw new BadRequestException(
@@ -63,7 +66,7 @@ export class InterventionsService {
   private async assertMechanic(
     workspaceId: string,
     mechanicId: string,
-    client: any = this.prisma,
+    client: PrismaClientLike = this.prisma,
   ) {
     const mechanic = await client.user.findFirst({
       where: {
@@ -377,7 +380,9 @@ export class InterventionsService {
       );
     }
 
-    const updateData: any = { updated_at: new Date() };
+    const updateData: Prisma.InterventionUncheckedUpdateInput = {
+      updated_at: new Date(),
+    };
     if (payload.description !== undefined) updateData.description = payload.description.trim();
     if (payload.status !== undefined) {
       this.assertStatusTransition(
