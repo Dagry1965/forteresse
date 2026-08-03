@@ -12,6 +12,7 @@ import {
   UnauthorizedException,
   Req,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { ProformasService } from './proformas.service';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
@@ -20,6 +21,12 @@ import { Roles } from '../../core/auth/roles.decorator';
 import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { CreateProformaLineDto } from './dto/create-proforma-line.dto';
 import { UpdateProformaLineDto } from './dto/update-proforma-line.dto';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+  };
+};
 
 @Controller('proformas')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
@@ -126,7 +133,7 @@ export class ProformasController {
   convertToInvoice(
     @Headers('x-workspace-id') workspaceId: string,
     @Param('id') id: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const userId = req.user?.id;
 
