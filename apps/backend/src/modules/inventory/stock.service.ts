@@ -1,9 +1,11 @@
-import { Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../core/prisma/prisma.service';
 import { PURCHASE_ORDER_STATUS } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
 export class StockService {
+  private readonly logger = new Logger(StockService.name);
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -54,7 +56,10 @@ export class StockService {
       return threshold > 0 && currentQty <= threshold;
     });
   } catch (error) {
-    console.error("Erreur Stock Alerts:", error);
+    this.logger.error(
+      'Impossible de calculer les alertes de stock.',
+      error instanceof Error ? error.stack : String(error),
+    );
     throw new InternalServerErrorException("Impossible de calculer les alertes de stock.");
   }
 }
