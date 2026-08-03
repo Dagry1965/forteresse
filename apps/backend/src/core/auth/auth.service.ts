@@ -4,10 +4,17 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import type { User } from '@prisma/client';
+import type { SignOptions } from 'jsonwebtoken';
 import { randomUUID } from 'crypto';
 import * as argon2 from 'argon2';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+
+type JwtExpiration = Extract<
+  NonNullable<SignOptions['expiresIn']>,
+  string
+>;
 
 type RefreshPayload = {
   sub: string;
@@ -55,12 +62,12 @@ export class AuthService {
     });
   }
 
-  private getAccessExpiration(): string {
-    return process.env.JWT_ACCESS_EXPIRES_IN?.trim() || '15m';
+  private getAccessExpiration(): JwtExpiration {
+    return (process.env.JWT_ACCESS_EXPIRES_IN?.trim() || '15m') as JwtExpiration;
   }
 
-  private getRefreshExpiration(): string {
-    return process.env.JWT_REFRESH_EXPIRES_IN?.trim() || '30d';
+  private getRefreshExpiration(): JwtExpiration {
+    return (process.env.JWT_REFRESH_EXPIRES_IN?.trim() || '30d') as JwtExpiration;
   }
 
   private durationToMilliseconds(value: string): number {
@@ -100,7 +107,7 @@ export class AuthService {
         type: 'access',
       },
       {
-        expiresIn: this.getAccessExpiration() as any,
+        expiresIn: this.getAccessExpiration(),
       },
     );
 
@@ -113,7 +120,7 @@ export class AuthService {
         jti: randomUUID(),
       },
       {
-        expiresIn: refreshExpiration as any,
+        expiresIn: refreshExpiration,
       },
     );
 
@@ -406,7 +413,10 @@ export class AuthService {
     };
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(
+    email: string,
+    password: string,
+  ): Promise<Omit<User, 'password'> | null> {
     const user = await this.prisma.user.findUnique({
       where: {
         email: email.trim().toLowerCase(),
