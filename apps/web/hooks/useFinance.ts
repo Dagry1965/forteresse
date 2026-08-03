@@ -2,8 +2,10 @@
 import { useState, useEffect } from 'react';
 import { financeService } from '@/services/financeService';
 
+type UnpaidInvoice = Record<string, unknown>;
+
 export function useFinance() {
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<UnpaidInvoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUnpaid = async () => {
