@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -15,6 +16,8 @@ import {
 
 @Injectable()
 export class InventoryService {
+  private readonly logger = new Logger(InventoryService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly sequencingService: SequencingService,
@@ -43,7 +46,10 @@ export class InventoryService {
         },
       });
     } catch (error) {
-      console.error('InventoryService.listProducts error:', error);
+      this.logger.error(
+        'Erreur lors de la lecture du stock.',
+        error instanceof Error ? error.stack : String(error),
+      );
 
       throw new InternalServerErrorException(
         'Erreur lors de la lecture du stock.',
@@ -182,9 +188,9 @@ export class InventoryService {
         throw error;
       }
 
-      console.error(
-        'InventoryService.autoGeneratePurchase error:',
-        error,
+      this.logger.error(
+        'Erreur lors de la generation automatique du bon de commande.',
+        error instanceof Error ? error.stack : String(error),
       );
 
       throw new InternalServerErrorException(
