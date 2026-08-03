@@ -9,6 +9,7 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 
 import { InventoryService } from './inventory.service';
 import { PurchaseOrderService } from './purchase-order.service';
@@ -22,6 +23,13 @@ import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { RolesGuard } from '../../core/auth/roles.guard';
 import { Roles } from '../../core/auth/roles.decorator';
 import { USER_ROLE } from '../../../../../shared/constants/status.constants';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+    sub?: string;
+  };
+};
 
 @Controller('inventory')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
@@ -83,7 +91,7 @@ export class InventoryController {
   async createReceipt(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() data: CreatePurchaseReceiptDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.purchaseReceiptService.createReceipt(
       workspaceId,
