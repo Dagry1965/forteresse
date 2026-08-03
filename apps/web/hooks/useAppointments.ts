@@ -1,10 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { appointmentService } from '@/services/appointmentService';
+import { appointmentService, type Appointment } from '@/services/appointmentService';
 
 export function useAppointments() {
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [pending, setPending] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [pending, setPending] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
