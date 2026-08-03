@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 
@@ -28,6 +29,8 @@ type CreateReceiptData = {
 
 @Injectable()
 export class PurchaseReceiptService {
+  private readonly logger = new Logger(PurchaseReceiptService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly sequencingService: SequencingService,
@@ -359,9 +362,9 @@ export class PurchaseReceiptService {
         throw error;
       }
 
-      console.error(
-        'PurchaseReceiptService.createReceipt error:',
-        error,
+      this.logger.error(
+        'Erreur lors de l enregistrement de la reception.',
+        error instanceof Error ? error.stack : String(error),
       );
 
       throw new InternalServerErrorException(
@@ -405,9 +408,9 @@ export class PurchaseReceiptService {
         },
       });
     } catch (error) {
-      console.error(
-        'PurchaseReceiptService.findAll error:',
-        error,
+      this.logger.error(
+        'Erreur lors de la lecture des receptions.',
+        error instanceof Error ? error.stack : String(error),
       );
 
       throw new InternalServerErrorException(
