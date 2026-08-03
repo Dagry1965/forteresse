@@ -10,12 +10,19 @@ import {
   UseGuards,
   UnauthorizedException,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { FinanceService } from './finance.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
 import { RolesGuard } from '../../core/auth/roles.guard';
 import { Roles } from '../../core/auth/roles.decorator';
 import { USER_ROLE } from '../../../../../shared/constants/status.constants';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+  };
+};
 
 @Controller('finance')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
@@ -45,7 +52,7 @@ export class FinanceController {
   generateInvoice(
     @Param('id') id: string,
     @Headers('x-workspace-id') workspaceId: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     const userId = req.user?.id;
 
@@ -81,7 +88,7 @@ export class FinanceController {
     @Headers('x-workspace-id') workspaceId: string,
     @Body('amount') amount: number,
     @Body('method') method: string,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body('reference') reference?: string,
     @Body('notes') notes?: string,
   ) {
