@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import type { Request } from 'express';
 import { CashierService } from './cashier.service';
 import { JwtAuthGuard } from '../../core/auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../core/auth/workspace.guard';
@@ -18,6 +19,12 @@ import { USER_ROLE } from '../../../../../shared/constants/status.constants';
 import { OpenCashRegisterDto } from './dto/open-cash-register.dto';
 import { CloseCashRegisterDto } from './dto/close-cash-register.dto';
 import { CreateCashMovementDto } from './dto/create-cash-movement.dto';
+
+type AuthenticatedRequest = Request & {
+  user?: {
+    id?: string;
+  };
+};
 
 @Controller('finance/cashier')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, RolesGuard)
@@ -29,7 +36,7 @@ import { CreateCashMovementDto } from './dto/create-cash-movement.dto';
 export class CashierController {
   constructor(private readonly cashierService: CashierService) {}
 
-  private getAuthenticatedUserId(req: any): string {
+  private getAuthenticatedUserId(req: AuthenticatedRequest): string {
     const userId = req.user?.id;
 
     if (!userId) {
@@ -52,7 +59,7 @@ export class CashierController {
   async openRegister(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: OpenCashRegisterDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.cashierService.openRegister(
       workspaceId,
@@ -66,7 +73,7 @@ export class CashierController {
   async createMovement(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CreateCashMovementDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.cashierService.createManualMovement(
       workspaceId,
@@ -82,7 +89,7 @@ export class CashierController {
   async closeRegister(
     @Headers('x-workspace-id') workspaceId: string,
     @Body() dto: CloseCashRegisterDto,
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     return this.cashierService.closeRegister(
       workspaceId,
