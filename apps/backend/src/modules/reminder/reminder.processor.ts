@@ -10,8 +10,7 @@ export class ReminderProcessor extends WorkerHost {
     super();
   }
 
-  async process(job: Job<any>): Promise<any> {
-
+  async process(_job: Job<unknown>): ReturnType<ReminderService['processPaymentReminders']> {
     return this.reminderService.processPaymentReminders();
   }
 }
