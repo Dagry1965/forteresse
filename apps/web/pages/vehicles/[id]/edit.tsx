@@ -4,9 +4,13 @@ import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { vehicleService } from '@/services/vehicleService';
 import { clientService } from '@/services/clientService';
+import type { Client } from '@/services/clientService';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
+
+const getErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error ? error.message : fallback;
 
 type VehicleFormData = {
   clientId: string;
@@ -44,7 +48,7 @@ export default function EditVehiclePage() {
 
   const [formData, setFormData] =
     useState<VehicleFormData>(initialFormData);
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -105,10 +109,9 @@ export default function EditVehiclePage() {
       });
 
       setClients(clientsData || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error?.message ||
-          'Erreur lors du chargement',
+        getErrorMessage(error, 'Erreur lors du chargement'),
       );
     } finally {
       setLoading(false);
@@ -222,10 +225,9 @@ export default function EditVehiclePage() {
       );
 
       router.push(`/vehicles/${vehicleId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error?.message ||
-          'Erreur lors de la mise ? jour',
+        getErrorMessage(error, 'Erreur lors de la mise ? jour'),
       );
     } finally {
       setSaving(false);
