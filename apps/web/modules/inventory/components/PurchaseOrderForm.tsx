@@ -203,9 +203,22 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     });
 
     onOrderCreated?.();
-  } catch (error: any) {
-    console.error('❌ Erreur complète :', error);
-    const message = error?.data?.message || error?.message || "Erreur inconnue";
+  } catch (error: unknown) {
+    console.error('Erreur complete :', error);
+
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === 'object' &&
+            error !== null &&
+            'data' in error &&
+            typeof error.data === 'object' &&
+            error.data !== null &&
+            'message' in error.data &&
+            typeof error.data.message === 'string'
+          ? error.data.message
+          : 'Erreur inconnue';
+
     alert(`Erreur : ${message}`);
   } finally {
     setLoading(false);
