@@ -8,15 +8,36 @@ import { Card } from "../components/ui/card";
 import { RefreshCcw } from "lucide-react";
 import { normalizeList } from "@/utils/normalize";
 
+type PaymentMethod = 'carte' | 'espèces' | 'virement';
+
+type CashierInvoice = {
+  id: string;
+  total_paid?: number;
+  proforma?: {
+    total_amount?: number;
+    intervention?: {
+      appointment?: {
+        vehicle?: {
+          make?: string;
+          model?: string;
+          client?: {
+            name?: string;
+          };
+        };
+      };
+    };
+  };
+};
+
 export default function CashierPage() {
   const { token, logout } = useAuth();
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<CashierInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState({ text: "", type: "" });
 
   // Modal
   const [isModalOpen, setModalOpen] = useState(false);
-  const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<CashierInvoice | null>(null);
   const [amountToPay, setAmountToPay] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState<"carte" | "espèces" | "virement">("carte");
 
@@ -26,10 +47,15 @@ export default function CashierPage() {
       const data = await financeService.getUnpaidInvoices();
 
       // 🔥 Correction définitive : normalisation
-      setInvoices(normalizeList(data));
+      setInvoices(normalizeList<CashierInvoice>(data));
     } catch (err) {
       console.error("Erreur chargement factures", err);
-      if ((err as any)?.status === 401) logout();
+      const status =
+        err && typeof err === 'object' && 'status' in err
+          ? (err as { status?: unknown }).status
+          : undefined;
+
+      if (status === 401) logout();
     } finally {
       setLoading(false);
     }
@@ -39,7 +65,7 @@ export default function CashierPage() {
     if (token) loadInvoices();
   }, [token]);
 
-  const openPaymentModal = (invoice: any, remain: number) => {
+  const openPaymentModal = (invoice: CashierInvoice, remain: number) => {
     setSelectedInvoice(invoice);
     setAmountToPay(remain);
     setPaymentMethod("carte");
@@ -158,7 +184,7 @@ export default function CashierPage() {
               <label className="text-sm font-bold">Moyen de paiement</label>
               <select
                 value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value as any)}
+                onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
                 className="w-full mt-1 border rounded-2xl px-4 py-3"
               >
                 <option value="carte">Carte bancaire</option>
