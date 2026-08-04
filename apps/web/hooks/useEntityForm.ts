@@ -7,21 +7,33 @@ interface BaseEntity {
   id: string;
 }
 
-interface UseEntityFormOptions<T extends BaseEntity> {
+interface UseEntityFormOptions<
+  TEntity extends BaseEntity,
+  TForm,
+  TCreateData,
+  TUpdateData,
+  TResult extends BaseEntity,
+> {
   service: {
-    create: (data: any) => Promise<any>;
-    update: (id: string, data: any) => Promise<any>;
+    create: (data: TCreateData) => Promise<TResult>;
+    update: (id: string, data: TUpdateData) => Promise<TResult>;
   };
-  initialData: any;
-  onSuccess?: (result?: any) => void | Promise<void>;
+  initialData: TForm;
+  onSuccess?: (result?: TResult) => void | Promise<void>;
 }
 
-export function useEntityForm<T extends BaseEntity>({
+export function useEntityForm<
+  TEntity extends BaseEntity,
+  TForm,
+  TCreateData,
+  TUpdateData,
+  TResult extends BaseEntity,
+>({
   service,
   initialData,
   onSuccess,
-}: UseEntityFormOptions<T>) {
-  const [formData, setFormData] = useState<any>(initialData);
+}: UseEntityFormOptions<TEntity, TForm, TCreateData, TUpdateData, TResult>) {
+  const [formData, setFormData] = useState<TForm>(initialData);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -32,8 +44,8 @@ export function useEntityForm<T extends BaseEntity>({
     setEditingId(null);
   }, [initialData]);
 
-  const openEdit = useCallback((item: T) => {
-    setFormData({ ...item });
+  const openEdit = useCallback((item: TEntity) => {
+    setFormData({ ...item } as unknown as TForm);
     setIsEditing(true);
     setEditingId(item.id);
   }, []);
@@ -51,10 +63,15 @@ export function useEntityForm<T extends BaseEntity>({
       let result;
 
       if (isEditing && editingId) {
-        result = await service.update(editingId, formData);
+        result = await service.update(
+          editingId,
+          formData as unknown as TUpdateData,
+        );
         toast.success('Modifié avec succès');
       } else {
-        result = await service.create(formData);
+        result = await service.create(
+          formData as unknown as TCreateData,
+        );
         toast.success('Créé avec succès');
       }
 
@@ -63,11 +80,11 @@ export function useEntityForm<T extends BaseEntity>({
 
       resetForm();
       return result;
-    } catch (error: any) {
+    } catch (error: unknown) {
       const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Une erreur est survenue';
+        error instanceof Error
+          ? error.message
+          : 'Une erreur est survenue';
 
       toast.error(message);
       return null;

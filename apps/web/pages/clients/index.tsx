@@ -171,7 +171,10 @@ export default function ClientsListPage() {
           <select
             className="w-full border rounded-2xl px-4 py-3"
             value={formData.type}
-            onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+            onChange={(e) => setFormData({
+              ...formData,
+              type: e.target.value as 'INDIVIDUAL' | 'COMPANY',
+            })}
           >
             <option value="INDIVIDUAL">Particulier</option>
             <option value="COMPANY">Entreprise</option>
