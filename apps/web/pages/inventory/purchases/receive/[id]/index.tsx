@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { purchaseService, PurchaseOrder } from '@/services/purchaseService';
+import { purchaseService, PurchaseOrder, PurchaseOrderItem } from '@/services/purchaseService';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
@@ -25,7 +25,7 @@ export default function ReceiveOrderPage() {
           
           const qtys: Record<string, number> = {};
           if (data.items) {
-            data.items.forEach((item: any) => {
+            data.items.forEach((item: PurchaseOrderItem) => {
               qtys[item.item_id] = item.quantity - item.received_quantity;
             });
           }
@@ -57,16 +57,24 @@ export default function ReceiveOrderPage() {
 
     toast.success("Stock approvisionné !");
     router.push('/purchase-orders');
-  } catch (e: any) {
+  } catch (error: unknown) {
+    const apiError = error as {
+      response?: {
+        data?: {
+          message?: string;
+        };
+      };
+    };
+
     // 🔥 RÉCUPÉRATION DU MESSAGE PRÉCIS DU BACKEND
-    const errorMessage = e.response?.data?.message || "Erreur lors de la réception";
+    const errorMessage = apiError.response?.data?.message || "Erreur lors de la réception";
     
     // On affiche le message détaillé dans le toast
     toast.error(errorMessage, {
       duration: 5000, // On laisse un peu plus de temps pour lire le détail
     });
     
-    console.error("Erreur réception:", e);
+    console.error("Erreur réception:", error);
   } finally {
     setLoading(false);
   }
