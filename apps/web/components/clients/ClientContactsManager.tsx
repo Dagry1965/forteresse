@@ -137,11 +137,12 @@ export function ClientContactsManager({
 
       closeModal();
       await onChanged();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur enregistrement contact', error);
       toast.error(
-        error?.message ||
-          'Erreur lors de l\u2019enregistrement du contact.',
+        error instanceof Error
+          ? error.message
+          : 'Erreur lors de l\u2019enregistrement du contact.',
       );
     } finally {
       setSaving(false);
@@ -160,11 +161,12 @@ export function ClientContactsManager({
       await clientService.deleteContact(clientId, contact.id);
       toast.success('Contact supprim\u00e9 avec succ\u00e8s.');
       await onChanged();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur suppression contact', error);
       toast.error(
-        error?.message ||
-          'Erreur lors de la suppression du contact.',
+        error instanceof Error
+          ? error.message
+          : 'Erreur lors de la suppression du contact.',
       );
     } finally {
       setDeletingId(null);
