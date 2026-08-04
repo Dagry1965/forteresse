@@ -11,8 +11,27 @@ import { FileText, Printer, Search, Filter, Eye } from 'lucide-react';
 import { CASE_STATUS } from '../../../../shared/constants/status.constants';
 
 
+type Proforma = {
+  id: string;
+  reference: string;
+  created_at: string;
+  total: number;
+  status: string;
+  case?: {
+    status?: string;
+    client?: {
+      name?: string;
+    };
+    vehicle?: {
+      registration?: string;
+      brand?: string;
+      model?: string;
+    };
+  };
+};
+
 export default function ProformasListPage() {
-  const [proformas, setProformas] = useState<any[]>([]);
+  const [proformas, setProformas] = useState<Proforma[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const router = useRouter();
@@ -21,7 +40,7 @@ export default function ProformasListPage() {
     try {
       setLoading(true);
       const data = await proformaService.getAll();
-      setProformas(data || []);
+      setProformas(Array.isArray(data) ? (data as Proforma[]) : []);
     } catch (e) {
       toast.error("Erreur lors du chargement des devis");
     } finally {
