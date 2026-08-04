@@ -7,17 +7,52 @@ import { Button } from '@/components/ui/button';
 import { Printer, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type InvoiceLine = {
+  id: string;
+  label?: string;
+  quantity?: number | string;
+  unit_price?: number | string;
+  total?: number | string;
+};
+
+type InvoiceClient = {
+  company_name?: string;
+  name?: string;
+  billing_address?: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  registration_number?: string;
+  vat_number?: string;
+};
+
+type Invoice = {
+  reference?: string;
+  created_at: string;
+  customer_name_snapshot?: string;
+  customer_billing_address_snapshot?: string;
+  customer_address_snapshot?: string;
+  customer_email_snapshot?: string;
+  customer_phone_snapshot?: string;
+  customer_registration_number_snapshot?: string;
+  customer_vat_number_snapshot?: string;
+  type?: string;
+  total: number;
+  client?: InvoiceClient;
+  lines?: InvoiceLine[];
+};
+
 export default function PrintInvoicePage() {
   const router = useRouter();
   const { id } = router.query;
-  const [invoice, setInvoice] = useState<any>(null);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (id) {
       setLoading(true);
       financeService.getInvoiceById(id as string)
-        .then(res => setInvoice(res))
+        .then((res) => setInvoice(res as Invoice))
         .catch(() => toast.error("Impossible de charger la facture"))
         .finally(() => setLoading(false));
     }
@@ -131,7 +166,7 @@ export default function PrintInvoicePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {invoice.lines?.map((line: any) => (
+              {invoice.lines?.map((line: InvoiceLine) => (
                 <tr key={line.id} className="text-[11px]">
                   <td className="py-3 font-medium text-slate-800">{line.label}</td>
                   <td className="py-3 text-center">{line.quantity}</td>
