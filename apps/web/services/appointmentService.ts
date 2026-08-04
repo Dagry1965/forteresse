@@ -5,14 +5,22 @@ export interface Appointment {
   id: string;
   date: string;
   status: string;
+  startTime?: string;
+  endTime?: string;
   client?: { id: string; name: string };
-  vehicle?: { id: string; make: string; model: string; plateNumber: string };
+  vehicle?: {
+    id: string;
+    brand?: string;
+    make?: string;
+    model?: string;
+    registration?: string;
+    plateNumber?: string;
+  };
   time_slot?: { id: string; start: string; end: string };
 }
 
 export interface AvailableTimeSlot {
   id?: string;
-  _id?: string;
   start: string;
   end: string;
   label?: string;

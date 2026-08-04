@@ -11,7 +11,11 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import frLocale from '@fullcalendar/core/locales/fr';
 
-import { appointmentService } from '@/services/appointmentService';
+import {
+  appointmentService,
+  type Appointment,
+  type AvailableTimeSlot,
+} from '@/services/appointmentService';
 import { clientService, Client } from '@/services/clientService';
 import { vehicleService, Vehicle } from '@/services/vehicleService';
 
@@ -27,10 +31,10 @@ import { APPOINTMENT_STATUS } from '../../../../shared/constants/status.constant
 export default function AppointmentsPage() {
   const router = useRouter();
   /* ================= ÉTATS ================= */
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [availableSlots, setAvailableSlots] = useState<any[]>([]);
+  const [availableSlots, setAvailableSlots] = useState<AvailableTimeSlot[]>([]);
 
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -467,11 +471,14 @@ export default function AppointmentsPage() {
                   hour: '2-digit',
                   minute: '2-digit',
                 });
-                const end = new Date(endStr).toLocaleTimeString('fr-FR', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                });
-                return `${start} → ${end}`;
+                const end = endStr
+                  ? new Date(endStr).toLocaleTimeString('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  : '';
+
+                return end ? `${start} → ${end}` : start;
               },
             },
             {
@@ -509,7 +516,7 @@ export default function AppointmentsPage() {
                     <Button
                       size="sm"
                       className="bg-orange-500 hover:bg-orange-600 text-white"
-                      onClick={() => handleStartWorkshop(r.id || r._id)}
+                      onClick={() => handleStartWorkshop(r.id)}
                     >
                       Démarrer Atelier
                     </Button>
@@ -528,7 +535,7 @@ export default function AppointmentsPage() {
                       size="sm"
                       variant="destructive"
                       onClick={() =>
-                        handleCancelClick(r.id || r._id)
+                        handleCancelClick(r.id)
                       }
                     >
                       Annuler
@@ -622,7 +629,7 @@ export default function AppointmentsPage() {
               value={form.startTime}
               onChange={(e) => {
                 const slot = availableSlots.find(
-                  (s: any) => s.start === e.target.value,
+                  (s) => s.start === e.target.value,
                 );
                 if (slot) {
                   setForm({
@@ -637,7 +644,7 @@ export default function AppointmentsPage() {
               <option value="">
                 {loadingSlots ? 'Chargement...' : 'Choisir une heure'}
               </option>
-              {availableSlots.map((s: any, idx: number) => {
+              {availableSlots.map((s, idx) => {
                 const label =
                   s.label ||
                   `${new Date(s.start).toLocaleTimeString('fr-FR', {
