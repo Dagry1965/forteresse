@@ -4,8 +4,60 @@ import { API } from "../../../../lib/api";
 import { CONFIG } from "../../../../lib/config";
 import { INTERVENTION_STATUS } from "../../../../../../shared/constants/status.constants";
 
+type InterventionPart = {
+  label: string;
+  qty: number | string;
+  unitPrice: number | string;
+};
+
+type LaborLine = {
+  label: string;
+  hours: number | string;
+  rate: number | string;
+};
+
+type Vehicle = {
+  make?: string;
+  brand?: string;
+  model?: string;
+  plateNumber?: string;
+  plate_number?: string;
+  client?: {
+    name?: string;
+  };
+};
+
+type Intervention = {
+  id: string;
+  case_id?: string;
+  case?: {
+    id?: string;
+    vehicle?: Vehicle;
+    client?: {
+      name?: string;
+    };
+  };
+  vehicle?: Vehicle;
+  client?: {
+    name?: string;
+  };
+  appointment?: {
+    initialDescription?: string;
+  };
+  description?: string;
+  companyId?: string;
+  status?: string;
+  InterventionPart?: InterventionPart[];
+  parts?: InterventionPart[];
+  labor?: LaborLine[];
+};
+
+type ApiError = {
+  message?: string;
+};
+
 export default function InterventionPage() {
-  const [intervention, setIntervention] = useState<any>(null);
+  const [intervention, setIntervention] = useState<Intervention | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -14,14 +66,14 @@ export default function InterventionPage() {
     typeof router.query.id === "string" ? router.query.id : null;
 
   // Lignes réelles
-  const [parts, setParts] = useState<any[]>([]);
-  const [labor, setLabor] = useState<any[]>([]);
+  const [parts, setParts] = useState<InterventionPart[]>([]);
+  const [labor, setLabor] = useState<LaborLine[]>([]);
 
   async function load() {
     if (!interventionId) return;
 
     try {
-      const data = await API.get(
+      const data = await API.get<Intervention>(
         `/api/workshop/interventions/${interventionId}`
       );
 
@@ -35,10 +87,11 @@ export default function InterventionPage() {
       setIntervention(data);
       setParts(data.InterventionPart || data.parts || []);
       setLabor(data.labor || []);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur chargement intervention', error);
+      const apiError = error as ApiError;
       setMessage(
-        error?.message || 'Impossible de charger l?intervention'
+        apiError.message || 'Impossible de charger l?intervention'
       );
     } finally {
       setLoading(false);
@@ -55,9 +108,13 @@ export default function InterventionPage() {
     setParts([...parts, { label: "", qty: 1, unitPrice: 0 }]);
   }
 
-  function updatePart(i: number, field: string, value: any) {
+  function updatePart(
+    i: number,
+    field: keyof InterventionPart,
+    value: string,
+  ) {
     const updated = [...parts];
-    updated[i][field] = value;
+    updated[i] = { ...updated[i], [field]: value };
     setParts(updated);
   }
 
@@ -65,9 +122,13 @@ export default function InterventionPage() {
     setLabor([...labor, { label: "", hours: 1, rate: 0 }]);
   }
 
-  function updateLabor(i: number, field: string, value: any) {
+  function updateLabor(
+    i: number,
+    field: keyof LaborLine,
+    value: string,
+  ) {
     const updated = [...labor];
-    updated[i][field] = value;
+    updated[i] = { ...updated[i], [field]: value };
     setLabor(updated);
   }
 
@@ -83,8 +144,9 @@ export default function InterventionPage() {
       );
 
       setMessage("Intervention mise à jour !");
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setMessage(apiError.message || 'Impossible de mettre ? jour l?intervention');
     }
   }
 
@@ -99,8 +161,9 @@ export default function InterventionPage() {
       setTimeout(() => {
         window.location.href = `/garage/intervention/${interventionId}/invoice`;
       }, 1000);
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setMessage(apiError.message || 'Impossible de cl?turer l?intervention');
     }
   }
 
@@ -188,7 +251,7 @@ export default function InterventionPage() {
               <input
                 type="number"
                 className="border p-2 rounded w-1/3 bg-gray-100"
-                value={p.qty * p.unitPrice}
+                value={Number(p.qty) * Number(p.unitPrice)}
                 readOnly
               />
             </div>
@@ -234,7 +297,7 @@ export default function InterventionPage() {
               <input
                 type="number"
                 className="border p-2 rounded w-1/3 bg-gray-100"
-                value={l.hours * l.rate}
+                value={Number(l.hours) * Number(l.rate)}
                 readOnly
               />
             </div>
