@@ -5,12 +5,21 @@ import { USER_ROLE } from '../../../shared/constants/status.constants';
 
 type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 
+interface Membership {
+  workspaceId?: string;
+  role?: UserRole;
+  workspace?: {
+    id: string;
+    name?: string;
+  };
+}
+
 interface User {
   id: string;
   email: string;
   name?: string;
   role?: UserRole;
-  memberships?: any[];
+  memberships?: Membership[];
 }
 
 interface AuthContextType {
