@@ -1,11 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { financeService } from '@/services/financeService';
-
-type UnpaidInvoice = Record<string, unknown>;
+import type { FinanceInvoice } from '@/services/financeService';
 
 export function useFinance() {
-  const [invoices, setInvoices] = useState<UnpaidInvoice[]>([]);
+  const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchUnpaid = async () => {

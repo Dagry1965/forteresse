@@ -1,4 +1,6 @@
 import { API } from '@/lib/api';
+import type { Vehicle } from '@/services/vehicleService';
+import type { Appointment } from '@/services/appointmentService';
 
 export interface ClientContact {
   id: string;
@@ -31,6 +33,36 @@ export type UpdateClientContactPayload = Partial<
   Omit<CreateClientContactPayload, 'workspaceId'>
 >;
 
+export interface ClientInvoice {
+  id: string;
+  reference?: string;
+  status?: string;
+  total?: number | string;
+  created_at: string;
+}
+
+export interface ClientCase {
+  id: string;
+  status?: string;
+  title?: string;
+  created_at?: string;
+  vehicle?: {
+    id: string;
+    brand?: string;
+    model?: string;
+    registration?: string;
+    status?: string;
+  };
+  interventions?: Array<{ id: string }>;
+  proformas?: Array<{
+    id: string;
+    reference?: string;
+    created_at: string;
+    total?: number | string;
+    status?: string;
+  }>;
+}
+
 export interface Client {
   id: string;
   _id?: string;
@@ -49,10 +81,10 @@ export interface Client {
   credit_limit?: number | null;
 
   contacts?: ClientContact[];
-  vehicles?: any[];
-  appointments?: any[];
-  invoices?: any[];
-  cases?: any[];
+  vehicles?: Vehicle[];
+  appointments?: Appointment[];
+  invoices?: ClientInvoice[];
+  cases?: ClientCase[];
 
   created_at?: string;
   updated_at?: string;

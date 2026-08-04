@@ -31,6 +31,12 @@ export interface Vehicle {
   deleted_at?: string | null;
 }
 
+export type VehicleInput = Partial<VehiclePayload> & {
+  client_id?: string;
+  plateNumber?: string;
+  make?: string;
+};
+
 export interface VehiclePayload {
   clientId: string;
   registration: string;
@@ -47,9 +53,9 @@ export interface VehiclePayload {
 }
 
 function normalizePayload(
-  data: Partial<VehiclePayload> & Record<string, any>,
+  data: VehicleInput,
 ) {
-  const payload: Record<string, any> = {
+  const payload: Record<string, string | number | undefined> = {
     clientId:
       data.clientId ??
       data.client_id ??
@@ -143,7 +149,7 @@ export const vehicleService = {
   },
 
   async create(
-    data: Partial<VehiclePayload> & Record<string, any>,
+    data: VehicleInput,
   ): Promise<Vehicle> {
     const workspaceId =
       localStorage.getItem('current_workspace_id');
@@ -162,7 +168,7 @@ export const vehicleService = {
 
   async update(
     id: string,
-    data: Partial<VehiclePayload> & Record<string, any>,
+    data: VehicleInput,
   ): Promise<Vehicle> {
     return API.patch<Vehicle>(
       `/api/vehicles/${id}`,

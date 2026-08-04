@@ -1,15 +1,43 @@
 import { API } from '@/lib/api';
 
+export interface FinanceInvoice {
+  id: string;
+  status?: string;
+  total?: number;
+  total_paid?: number;
+  created_at?: string;
+}
+
+export interface PaymentReminder {
+  id: string;
+  due_date?: string;
+  status?: string;
+  amount?: number;
+}
+
+export interface FleetPendingItem {
+  id: string;
+  appointment_id?: string;
+  amount?: number;
+}
+
+export interface CreatePaymentPayload {
+  invoice_id?: string;
+  amount: number;
+  method: string;
+  user_id?: string;
+}
+
 export const financeService = {
   async getUnpaidInvoices(workspaceId?: string) {
     const params = workspaceId
       ? `?workspaceId=${encodeURIComponent(workspaceId)}`
       : '';
 
-    return API.get<any[]>(`/api/invoices/unpaid${params}`);
+    return API.get<FinanceInvoice[]>(`/api/invoices/unpaid${params}`);
   },
 
-  async createPayment(data: any) {
+  async createPayment(data: CreatePaymentPayload) {
     return API.post('/api/finance/payments', data);
   },
 
@@ -18,7 +46,7 @@ export const financeService = {
       ? `?workspaceId=${encodeURIComponent(workspaceId)}`
       : '';
 
-    return API.get<any[]>(
+    return API.get<PaymentReminder[]>(
       `/api/finance/payments/reminders${params}`,
     );
   },
@@ -34,7 +62,7 @@ export const financeService = {
   },
 
   async getPendingFleetItems(clientId: string) {
-    return API.get<any[]>(
+    return API.get<FleetPendingItem[]>(
       `/api/finance/fleet/pending/${clientId}`,
     );
   },
@@ -109,7 +137,7 @@ export const financeService = {
       ? `?workspaceId=${encodeURIComponent(workspaceId)}`
       : '';
 
-    return API.get<any[]>(
+    return API.get<FinanceInvoice[]>(
       `/api/invoices${params}`,
     );
   },
