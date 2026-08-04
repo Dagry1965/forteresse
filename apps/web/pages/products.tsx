@@ -7,9 +7,20 @@ import Section from '../components/section';
 import { Card } from '../components/ui/card';
 import { normalizeList } from '@/utils/normalize';
 
+type Product = {
+  id: string;
+  name: string;
+  reference?: string;
+  purchase_price?: number;
+  selling_price?: number;
+  inventory?: {
+    quantity?: number;
+  };
+};
+
 export default function ProductsPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -20,7 +31,7 @@ export default function ProductsPage() {
       const raw = await stockService.getAll();
 
       // 🔥 Normalisation backend
-      const list = normalizeList(raw);
+      const list = normalizeList<Product>(raw);
 
       setProducts(list);
       setFilteredProducts(list);
@@ -37,7 +48,7 @@ export default function ProductsPage() {
 
   // Filtre en temps réel
   useEffect(() => {
-    const base = normalizeList(products);
+    const base = normalizeList<Product>(products);
 
     const filtered = base.filter((product) =>
       product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -51,7 +62,7 @@ export default function ProductsPage() {
     return <div className="p-10">Chargement du catalogue...</div>;
   }
 
-  const safeFiltered = normalizeList(filteredProducts);
+  const safeFiltered = normalizeList<Product>(filteredProducts);
 
   return (
     <div className="p-10">
