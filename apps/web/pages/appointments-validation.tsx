@@ -1,20 +1,30 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { appointmentService } from "@/services/appointmentService";
+import { appointmentService, type Appointment } from "@/services/appointmentService";
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 
+type PendingAppointment = Appointment & {
+  scheduled_at: string;
+  initial_description?: string;
+  vehicle?: Appointment['vehicle'] & {
+    client?: {
+      name: string;
+    };
+  };
+};
+
 export default function AppointmentsValidationPage() {
-  const [pendingAppointments, setPending] = useState<any[]>([]);
+  const [pendingAppointments, setPending] = useState<PendingAppointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadPending = async () => {
     try {
       setLoading(true);
       const data = await appointmentService.getPending();
-      setPending(data || []);
+      setPending((data || []) as PendingAppointment[]);
     } catch (error) {
       console.error("Erreur chargement:", error);
     } finally {
