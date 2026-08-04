@@ -24,8 +24,12 @@ export default function RendezVousPublic() {
       });
 
       setMessage("Rendez-vous enregistré !");
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (e: unknown) {
+      setMessage(
+        e instanceof Error
+          ? e.message
+          : "Erreur lors de l’enregistrement du rendez-vous",
+      );
     }
   }
 
