@@ -7,9 +7,39 @@ import { Button } from '../components/ui/button';
 import Section from '../components/section';
 import { Card } from '../components/ui/card';
 
+type VehicleClient = {
+  name?: string;
+};
+
+type FinanceVehicle = {
+  plateNumber?: string;
+  registration?: string;
+  client?: VehicleClient;
+};
+
+type FinanceAppointment = {
+  vehicle?: FinanceVehicle;
+};
+
+type FinanceIntervention = {
+  appointment?: FinanceAppointment;
+};
+
+type FinanceProforma = {
+  id: string;
+  total_amount?: number;
+  intervention?: FinanceIntervention;
+};
+
+type FinanceInvoice = {
+  id: string;
+  total_paid?: number;
+  proforma?: FinanceProforma;
+};
+
 export default function ManageFinancePage() {
-  const [invoices, setInvoices] = useState<any[]>([]);
-  const [proformas, setProformas] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<FinanceInvoice[]>([]);
+  const [proformas, setProformas] = useState<FinanceProforma[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'invoices' | 'proformas'>('invoices');
 
@@ -21,8 +51,8 @@ export default function ManageFinancePage() {
         proformaService.getAll(),
       ]);
 
-      setInvoices(unpaidInvoices || []);
-      setProformas(allProformas || []);
+      setInvoices((unpaidInvoices || []) as FinanceInvoice[]);
+      setProformas((allProformas || []) as FinanceProforma[]);
     } catch (error) {
       console.error("Erreur chargement finance", error);
     } finally {
