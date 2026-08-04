@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from "react";
-import { clientService } from "@/services/clientService";
+import { clientService, Client } from "@/services/clientService";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { DataTable, Column } from "@/components/ui/data-table";
@@ -11,15 +11,41 @@ import { EntityFormModal } from "@/components/common/EntityFormModal";
 import { useEntityForm } from "@/hooks/useEntityForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
+function getErrorMessage(error: unknown): string {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'response' in error
+  ) {
+    const response = (error as {
+      response?: {
+        data?: {
+          message?: unknown;
+        };
+      };
+    }).response;
+
+    if (typeof response?.data?.message === 'string') {
+      return response.data.message;
+    }
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  return 'Erreur lors de la suppression';
+}
+
 export default function ClientsListPage() {
   const router = useRouter();
 
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<any | null>(null);
+  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
   const {
     formData,
@@ -85,7 +111,7 @@ export default function ClientsListPage() {
     loadClients();
   }, []);
 
-  const columns: Column<any>[] = [
+  const columns: Column<Client>[] = [
     { key: 'name', header: 'Nom / Raison sociale' },
     { key: 'email', header: 'Email' },
     { key: 'phone', header: 'Téléphone' },
@@ -109,12 +135,12 @@ export default function ClientsListPage() {
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (client: any) => {
+  const handleOpenEdit = (client: Client) => {
     openEdit(client);
     setIsModalOpen(true);
   };
 
-  const handleDelete = (client: any) => {
+  const handleDelete = (client: Client) => {
     setClientToDelete(client);
     setConfirmOpen(true);
   };
@@ -126,12 +152,8 @@ export default function ClientsListPage() {
       await clientService.delete(clientToDelete.id);
       toast.success("Client supprimé avec succès");
       loadClients();
-    } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Erreur lors de la suppression";
-      toast.error(message, { duration: 6000 });
+    } catch (error: unknown) {
+      toast.error(getErrorMessage(error), { duration: 6000 });
     }
 
     setConfirmOpen(false);
