@@ -21,9 +21,14 @@ export default function WorkshopPage() {
       setLoading(true);
       const data = await interventionService.getAll();
       setInterventions(data || []);
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error("Erreur Workshop:", e);
-      if (e.status === 401) {
+      const status =
+        e && typeof e === 'object' && 'status' in e
+          ? (e as { status?: unknown }).status
+          : undefined;
+
+      if (status === 401) {
         toast.error("Session expirée. Veuillez vous reconnecter.");
         router.push('/login');
       } else {
@@ -228,7 +233,7 @@ export default function WorkshopPage() {
             key: 'status',
             header: 'Statut',
             render: (r) => {
-              const colors: any = {
+              const colors: Record<string, string> = {
                 PENDING: 'bg-gray-100 text-gray-600',
                 DIAGNOSIS: 'bg-blue-100 text-blue-700',
                 IN_PROGRESS: 'bg-orange-100 text-orange-700',
