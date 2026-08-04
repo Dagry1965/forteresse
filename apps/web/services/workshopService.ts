@@ -23,6 +23,25 @@ export interface WorkshopIntervention {
   };
 }
 
+export interface CreateWorkshopInterventionPayload {
+  case_id: string;
+  appointment_id?: string;
+  description: string;
+  mechanic_id?: string;
+  priority?: string;
+  diagnostic?: string;
+  planned_minutes?: number;
+  actual_minutes?: number;
+  hourly_rate?: number;
+  quality_control_status?: string;
+  quality_control_notes?: string;
+  parts?: Array<{
+    item_id: string;
+    quantity: number;
+    price_snapshot?: number;
+  }>;
+}
+
 export const workshopService = {
   async getAll() {
     return API.get<WorkshopIntervention[]>(
@@ -36,7 +55,7 @@ export const workshopService = {
     );
   },
 
-  async create(data: any) {
+  async create(data: CreateWorkshopInterventionPayload) {
     return API.post('/api/workshop/interventions', data);
   },
 
