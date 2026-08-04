@@ -54,7 +54,7 @@ export function DataTable<T extends { id?: string | number }>({
     const term = searchTerm.toLowerCase().trim();
     return data.filter((item) =>
       columns.some((col) => {
-        const value = (item as any)[col.key];
+        const value = (item as unknown as Record<string, unknown>)[String(col.key)];
         return value?.toString().toLowerCase().includes(term);
       })
     );
@@ -120,7 +120,7 @@ export function DataTable<T extends { id?: string | number }>({
                 >
                   {columns.map((col, j) => (
                     <td key={j} className={`px-4 py-4 ${col.className || ''}`}>
-                      {col.render ? col.render(item) : String((item as any)[col.key] ?? '')}
+                      {col.render ? col.render(item) : String((item as unknown as Record<string, unknown>)[String(col.key)] ?? '')}
                     </td>
                   ))}
                   {(onEdit || onDelete) && (
