@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { interventionService, Intervention } from '@/services/interventionService';
-import { stockService } from '@/services/stockService';
+import { interventionService, type Case, type Intervention, type InterventionPart } from '@/services/interventionService';
+import { stockService, type StockItem } from '@/services/stockService';
 // ✅ AJOUT DE L'IMPORT DES CONSTANTES
 import {
   CASE_STATUS,
@@ -34,10 +34,10 @@ export default function CaseDetailPage() {
   const id = params?.id as string;
 
   /* ================= ÉTATS DU DOSSIER ================= */
-  const [dossier, setDossier] = useState<any>(null);
+  const [dossier, setDossier] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false); // ✅ État pour sécuriser les clics
-  const [stockItems, setStockItems] = useState<any[]>([]);
+  const [stockItems, setStockItems] = useState<StockItem[]>([]);
 
   // États pour la recherche de pièces
   const [searchPart, setSearchTermPart] = useState('');
@@ -62,7 +62,7 @@ export default function CaseDetailPage() {
 
       const data = await interventionService.getCaseDetails(currentInt.case_id);
       setDossier(data);
-    } catch (e: any) {
+    } catch {
       toast.error("Erreur lors du chargement du dossier");
       router.push('/workshop');
     } finally {
@@ -88,6 +88,8 @@ export default function CaseDetailPage() {
   /* ================= ACTIONS SUR LES PHASES ================= */
 
   const handleAddNewPhase = async () => {
+    if (!dossier) return;
+
     try {
       await interventionService.createNewPhase(
         dossier.id,
@@ -109,7 +111,7 @@ export default function CaseDetailPage() {
     try {
       await interventionService.update(phaseId, {
         description,
-        status: status as any,
+        status: status as Intervention['status'],
       });
 
       toast.success("Mise à jour enregistrée");
@@ -148,6 +150,8 @@ export default function CaseDetailPage() {
   /* ================= GÉNÉRATION PROFORMA ================= */
 
   const handleGenerateProforma = async () => {
+    if (!dossier) return;
+
     try {
       setActionLoading(true);
       const proforma = await interventionService.generateProforma(dossier.id);
@@ -163,6 +167,8 @@ export default function CaseDetailPage() {
   /* ================= VALIDATION ACCORD CLIENT (CORRIGÉ) ================= */
 
   const handleApproveCase = async () => {
+    if (!dossier) return;
+
     try {
       setActionLoading(true);
       // ✅ Appel conforme à votre architecture /case/:id/status
@@ -178,6 +184,8 @@ export default function CaseDetailPage() {
   };
 
   const handleStartRepair = async () => {
+    if (!dossier) return;
+
     try {
       setActionLoading(true);
 
@@ -196,6 +204,8 @@ export default function CaseDetailPage() {
   };
 
   const handleCompleteCase = async () => {
+    if (!dossier) return;
+
     try {
       setActionLoading(true);
 
@@ -226,10 +236,10 @@ export default function CaseDetailPage() {
 
   /* ================= CALCULS FINANCIERS ================= */
 
-  const totalHT = dossier.interventions?.reduce((acc: number, phase: any) => {
+  const totalHT = dossier.interventions?.reduce((acc: number, phase: Intervention) => {
     const phaseSum =
       phase.InterventionPart?.reduce(
-        (s: number, p: any) => s + Number(p.price_snapshot) * p.quantity,
+        (s: number, p: InterventionPart) => s + Number(p.price_snapshot) * p.quantity,
         0
       ) || 0;
 
@@ -304,10 +314,10 @@ export default function CaseDetailPage() {
         {/* COLONNE GAUCHE : TIMELINE DES TRAVAUX */}
         <div className="lg:col-span-3 space-y-12">
 
-          {dossier.interventions.map((phase: any, index: number) => (
+          {(dossier.interventions || []).map((phase: Intervention, index: number) => (
             <div key={phase.id} className="relative">
               {/* Ligne de timeline verticale */}
-              {index < dossier.interventions.length - 1 && (
+              {index < (dossier.interventions?.length || 0) - 1 && (
                 <div className="absolute left-6 top-14 bottom-[-48px] w-1 bg-slate-100 -z-10" />
               )}
 
@@ -449,7 +459,7 @@ export default function CaseDetailPage() {
                         {/* Liste des pièces de la phase */}
                         {phase.InterventionPart && phase.InterventionPart.length > 0 ? (
                           <div className="space-y-2">
-                            {phase.InterventionPart.map((p: any) => (
+                            {phase.InterventionPart.map((p: InterventionPart) => (
                               <div
                                 key={p.id}
                                 className="flex justify-between items-center bg-white p-3 rounded-xl border border-slate-50 group hover:border-slate-200 transition-all"
@@ -534,7 +544,7 @@ export default function CaseDetailPage() {
               <div className="space-y-4 relative z-10">
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-slate-400">
-                    Total HT {dossier.interventions.length} phases
+                    Total HT {dossier.interventions?.length || 0} phases
                   </span>
 
                   <span className="font-mono font-bold">
