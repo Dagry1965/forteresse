@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { API } from '@/lib/api';
+import type { PurchaseOrder, PurchaseOrderItem } from '@/services/purchaseService';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ArrowLeft, Printer, Download, Send, Truck, XCircle, Loader2 } from 'lucide-react';
@@ -11,7 +12,7 @@ import { PURCHASE_ORDER_STATUS } from '../../../../../shared/constants/status.co
 export default function PurchaseOrderDetail() {
   const router = useRouter();
   const { id } = router.query;
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<PurchaseOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
@@ -22,7 +23,7 @@ export default function PurchaseOrderDetail() {
       try {
         setLoading(true);
         // ✅ Correction URL : On utilise la route consolidée /inventory
-        const data = await API.get(`/api/purchase-orders/${id}`)
+        const data = await API.get<PurchaseOrder>(`/api/purchase-orders/${id}`)
 ;
         setOrder(data);
       } catch (error) {
@@ -38,12 +39,14 @@ export default function PurchaseOrderDetail() {
 
   // ✅ ACTION : Changer le statut (DRAFT -> SENT ou CANCELLED)
   const handleUpdateStatus = async (newStatus: string) => {
+    if (!order) return;
+
     try {
       setActionLoading(true);
       await API.patch(`/api/inventory/orders/${order.id}/status`, { status: newStatus });
       toast.success(`Commande passée en : ${newStatus}`);
       // Rechargement des données
-      const updated = await API.get(`/api/purchase-orders/${id}`)
+      const updated = await API.get<PurchaseOrder>(`/api/purchase-orders/${id}`)
 ;
       setOrder(updated);
     } catch (error) {
@@ -69,7 +72,7 @@ export default function PurchaseOrderDetail() {
   }
 
   // Calcul du total HT (si non présent dans l'objet order)
-  const totalHT = order.items?.reduce((acc: number, item: any) => acc + (item.quantity * Number(item.price_buy)), 0) || 0;
+  const totalHT = order.items?.reduce((acc: number, item: PurchaseOrderItem) => acc + (item.quantity * Number(item.price_buy)), 0) || 0;
 
   return (
     <div className="max-w-5xl mx-auto p-6 print:p-0">
@@ -148,7 +151,7 @@ export default function PurchaseOrderDetail() {
             </tr>
           </thead>
           <tbody>
-            {order.items?.map((item: any, index: number) => (
+            {order.items?.map((item: PurchaseOrderItem, index: number) => (
               <tr key={index} className="border-b hover:bg-slate-50/50 transition-colors">
                 <td className="py-4 px-4">
                   <p className="font-bold text-slate-900">{item.item?.name}</p>

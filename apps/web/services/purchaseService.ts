@@ -23,6 +23,7 @@ export interface PurchaseOrder {
   supplier_id: string;
   supplier?: {
     name: string;
+    email?: string | null;
   };
   items: PurchaseOrderItem[];
 }
