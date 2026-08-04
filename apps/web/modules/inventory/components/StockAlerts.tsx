@@ -8,20 +8,36 @@ import { Button } from '@/components/ui/button';
 import axios from 'axios';
 import { useRouter } from 'next/router';
 
+interface StockAlert {
+  id: string;
+  name: string;
+  quantity: number;
+  min_stock: number;
+  unit?: string | null;
+  supplier?: {
+    name?: string | null;
+  } | null;
+}
+
+interface AutoOrderResponse {
+  id: string;
+  reference: string;
+}
+
 export const StockAlerts = () => {
-  const [alerts, setAlerts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    API.get('/api/inventory/alerts')
-      .then(res => setAlerts(res.data || res))
+    API.get<StockAlert[]>('/api/inventory/alerts')
+      .then((res) => setAlerts(res || []))
       .finally(() => setLoading(false));
   }, []);
 
   const handleQuickOrder = async (itemId: string) => {
     try {
-      const { data } = await axios.post(
+      const { data } = await axios.post<AutoOrderResponse>(
         `http://localhost:4000/api/inventory/purchases/auto-generate`,
         { itemId },
         {
