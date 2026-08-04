@@ -29,10 +29,12 @@ export function useClients() {
     try {
       const data = await clientService.getAll(workspaceId);
       setClients(data ?? []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erreur chargement clients:', err);
       setError(
-        err?.message || 'Erreur lors du chargement des clients',
+        err instanceof Error
+          ? err.message
+          : 'Erreur lors du chargement des clients',
       );
     } finally {
       setLoading(false);
