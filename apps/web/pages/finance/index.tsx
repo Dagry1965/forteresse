@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { financeService } from '@/services/financeService';
 import { Card } from '@/components/ui/card';
@@ -22,6 +22,7 @@ type OverdueInvoiceSchedule = {
   due_date: string;
   amount?: number | string;
   invoice?: {
+    id?: string;
     reference?: string;
     client?: {
       name?: string;
@@ -44,6 +45,37 @@ export default function FinanceHubPage() {
       )
       .finally(() => setLoadingOverdue(false));
   }, []);
+
+  const groupedOverdueInvoices = useMemo(() => {
+    const grouped = new Map<string, OverdueInvoiceSchedule>();
+
+    for (const schedule of overdueInvoices) {
+      const key =
+        schedule.invoice?.id ??
+        schedule.invoice?.reference ??
+        schedule.id;
+
+      const existing = grouped.get(key);
+
+      if (!existing) {
+        grouped.set(key, { ...schedule });
+        continue;
+      }
+
+      existing.amount =
+        Number(existing.amount || 0) +
+        Number(schedule.amount || 0);
+
+      if (
+        new Date(schedule.due_date) <
+        new Date(existing.due_date)
+      ) {
+        existing.due_date = schedule.due_date;
+      }
+    }
+
+    return Array.from(grouped.values());
+  }, [overdueInvoices]);
 
   const menuItems = [
     {
@@ -108,7 +140,7 @@ export default function FinanceHubPage() {
           </div>
 
           <span className="rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
-            {overdueInvoices.length}
+            {groupedOverdueInvoices.length}
           </span>
         </div>
 
@@ -117,13 +149,13 @@ export default function FinanceHubPage() {
             <Loader2 className="animate-spin" size={22} />
             Chargement des échéances...
           </div>
-        ) : overdueInvoices.length === 0 ? (
+        ) : groupedOverdueInvoices.length === 0 ? (
           <div className="p-10 text-center font-medium text-slate-400">
             Aucune facture échue.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {overdueInvoices.map((schedule) => (
+            {groupedOverdueInvoices.map((schedule) => (
               <div
                 key={schedule.id}
                 className="flex flex-col gap-4 p-5 hover:bg-red-50/30 md:flex-row md:items-center md:justify-between"
