@@ -28,8 +28,13 @@ export default function WorkshopBoardPage() {
       setLoading(true);
       const data = await interventionService.getAll();
       setInterventions(data || []);
-    } catch (e: any) {
-      if (e.status === 401) router.push('/login');
+    } catch (e: unknown) {
+      const status =
+        e && typeof e === 'object' && 'status' in e
+          ? (e as { status?: unknown }).status
+          : undefined;
+
+      if (status === 401) router.push('/login');
       toast.error("Erreur de chargement de l'atelier");
     } finally {
       setLoading(false);
