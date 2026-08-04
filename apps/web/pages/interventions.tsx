@@ -1,21 +1,35 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { workshopService } from '@/services/workshopService';
+import { workshopService, type WorkshopIntervention } from '@/services/workshopService';
 import { Button } from '../components/ui/button';
 import Section from '../components/section';
 import { Card } from '../components/ui/card';
 import { INTERVENTION_STATUS } from '../../../shared/constants/status.constants';
 
+type InterventionListItem = WorkshopIntervention & {
+  createdAt?: string;
+  created_at?: string;
+  appointment?: {
+    initial_description?: string;
+    vehicle?: {
+      plateNumber?: string;
+      client?: {
+        name?: string;
+      };
+    };
+  };
+};
+
 export default function InterventionsPage() {
-  const [interventions, setInterventions] = useState<any[]>([]);
+  const [interventions, setInterventions] = useState<InterventionListItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadInterventions = async () => {
     try {
       setLoading(true);
       const data = await workshopService.getAll();
-      setInterventions(data || []);
+      setInterventions((data || []) as InterventionListItem[]);
     } catch (error) {
       console.error("Erreur lors du chargement des interventions", error);
     } finally {
@@ -91,7 +105,11 @@ export default function InterventionsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-5 text-center text-[oklch(0.45_0_0)]">
-                    {new Date(intervention.createdAt || intervention.created_at).toLocaleDateString('fr-FR')}
+                    {intervention.createdAt || intervention.created_at
+                      ? new Date(
+                          intervention.createdAt || intervention.created_at || '',
+                        ).toLocaleDateString('fr-FR')
+                      : '\u2014'}
                   </td>
                   <td className="px-6 py-5 text-center">
                     <div className="flex justify-center gap-2">
