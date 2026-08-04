@@ -2,8 +2,35 @@ import { useEffect, useState } from "react";
 import { API } from "../../../../lib/api";
 import { CONFIG } from "../../../../lib/config";
 
+type InvoicePart = {
+  label?: string;
+  qty: number | string;
+  unitPrice: number | string;
+};
+
+type InvoiceLabor = {
+  label?: string;
+  hours: number | string;
+  rate: number | string;
+};
+
+type Invoice = {
+  id: string;
+  createdAt: string;
+  client?: {
+    name?: string;
+  };
+  vehicle: {
+    make?: string;
+    model?: string;
+    plateNumber?: string;
+  };
+  parts?: InvoicePart[];
+  labor?: InvoiceLabor[];
+};
+
 export default function InvoicePage() {
-  const [invoice, setInvoice] = useState<any>(null);
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [loading, setLoading] = useState(true);
 
   const interventionId =
@@ -14,7 +41,7 @@ export default function InvoicePage() {
   async function load() {
     if (!interventionId) return;
 
-    const data = await API.get(
+    const data = await API.get<Invoice>(
       `${CONFIG.API_BASE}/api/invoices/${interventionId}`
     );
 
@@ -30,14 +57,14 @@ export default function InvoicePage() {
   if (!invoice) return <p className="p-10">Aucune facture trouvée.</p>;
 
   const totalParts = invoice.parts?.reduce(
-    (sum: number, p: any) => sum + p.qty * p.unitPrice,
+    (sum: number, p: InvoicePart) => sum + Number(p.qty) * Number(p.unitPrice),
     0
-  );
+  ) ?? 0;
 
   const totalLabor = invoice.labor?.reduce(
-    (sum: number, l: any) => sum + l.hours * l.rate,
+    (sum: number, l: InvoiceLabor) => sum + Number(l.hours) * Number(l.rate),
     0
-  );
+  ) ?? 0;
 
   const total = totalParts + totalLabor;
   const tva = total * 0.077; // TVA Suisse 7.7%
@@ -68,11 +95,11 @@ export default function InvoicePage() {
       {/* Pièces */}
       <h2 className="text-xl font-semibold mb-3">Pièces</h2>
       <div className="space-y-2 mb-6">
-        {invoice.parts?.map((p: any, i: number) => (
+        {invoice.parts?.map((p: InvoicePart, i: number) => (
           <div key={i} className="border p-3 rounded bg-white shadow-sm">
             <p>
               {p.label} — {p.qty} × {p.unitPrice} CHF ={" "}
-              <b>{p.qty * p.unitPrice} CHF</b>
+              <b>{Number(p.qty) * Number(p.unitPrice)} CHF</b>
             </p>
           </div>
         ))}
@@ -81,11 +108,11 @@ export default function InvoicePage() {
       {/* Main d’œuvre */}
       <h2 className="text-xl font-semibold mb-3">Main d’œuvre</h2>
       <div className="space-y-2 mb-6">
-        {invoice.labor?.map((l: any, i: number) => (
+        {invoice.labor?.map((l: InvoiceLabor, i: number) => (
           <div key={i} className="border p-3 rounded bg-white shadow-sm">
             <p>
               {l.label} — {l.hours} h × {l.rate} CHF ={" "}
-              <b>{l.hours * l.rate} CHF</b>
+              <b>{Number(l.hours) * Number(l.rate)} CHF</b>
             </p>
           </div>
         ))}
