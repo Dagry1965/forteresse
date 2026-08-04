@@ -20,11 +20,45 @@ import {
 } from '@/services/vehicleService';
 import { Button } from '@/components/ui/button';
 import { appointmentService } from '@/services/appointmentService';
+import type { Appointment } from '@/services/appointmentService';
 import { Card } from '@/components/ui/card';
 
+type WorkshopIntervention = {
+  id: string;
+  status?: string;
+  created_at?: string;
+};
+
+type RepairCase = {
+  id: string;
+  title?: string;
+  status?: string;
+  created_at?: string;
+  interventions?: WorkshopIntervention[];
+};
+
+type InterventionWithCase = WorkshopIntervention & {
+  repairCase: RepairCase;
+};
+
+type StartWorkshopResult = {
+  intervention?: {
+    id?: string;
+  };
+};
+
+type ApiError = {
+  message?: string;
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 type VehicleDetails = Vehicle & {
-  appointments?: any[];
-  cases?: any[];
+  appointments?: Appointment[];
+  cases?: RepairCase[];
 };
 
 function formatDate(value?: string | Date | null) {
@@ -94,14 +128,14 @@ export default function VehicleDetailPage() {
         await vehicleService.getOne(vehicleId);
 
       setVehicle(data as VehicleDetails);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(
         'Erreur chargement véhicule',
         error,
       );
 
       toast.error(
-        error?.message ||
+        (error as ApiError).message ||
           'Impossible de charger le véhicule',
       );
     } finally {
@@ -120,9 +154,9 @@ export default function VehicleDetailPage() {
 
   const interventions = useMemo(
     () =>
-      cases.flatMap((repairCase: any) =>
+      cases.flatMap((repairCase: RepairCase) =>
         (repairCase.interventions || []).map(
-          (intervention: any) => ({
+          (intervention: WorkshopIntervention): InterventionWithCase => ({
             ...intervention,
             repairCase,
           }),
@@ -135,7 +169,7 @@ export default function VehicleDetailPage() {
     const now = Date.now();
 
     return [...appointments]
-      .filter((appointment: any) => {
+      .filter((appointment: Appointment) => {
         const timestamp = new Date(
           appointment.date,
         ).getTime();
@@ -147,7 +181,7 @@ export default function VehicleDetailPage() {
         );
       })
       .sort(
-        (first: any, second: any) =>
+        (first: Appointment, second: Appointment) =>
           new Date(first.date).getTime() -
           new Date(second.date).getTime(),
       )[0];
@@ -177,7 +211,7 @@ export default function VehicleDetailPage() {
         'Le v\u00e9hicule a \u00e9t\u00e9 envoy\u00e9 \u00e0 l\u2019atelier.',
       );
 
-      const interventionId = result?.intervention?.id;
+      const interventionId = (result as StartWorkshopResult).intervention?.id;
 
       if (interventionId) {
         router.push(`/garage/intervention/${interventionId}`);
@@ -185,10 +219,12 @@ export default function VehicleDetailPage() {
       }
 
       await loadVehicle();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+
       toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
+        apiError.response?.data?.message ||
+          apiError.message ||
           'Impossible de d\u00e9marrer l\u2019intervention.',
       );
     } finally {
@@ -219,9 +255,11 @@ export default function VehicleDetailPage() {
       );
 
       router.push('/vehicles');
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+
       toast.error(
-        error?.message ||
+        apiError.message ||
           'Erreur lors de la suppression',
       );
     } finally {
@@ -523,7 +561,7 @@ export default function VehicleDetailPage() {
 
           <div className="space-y-3">
             {appointments.slice(0, 8).map(
-              (appointment: any) => (
+              (appointment: Appointment) => (
                 <div
                   key={appointment.id}
                   className="p-4 rounded-xl border"
@@ -572,7 +610,7 @@ export default function VehicleDetailPage() {
 
           <div className="space-y-3">
             {cases.slice(0, 8).map(
-              (repairCase: any) => {
+              (repairCase: RepairCase) => {
                 const intervention =
                   repairCase.interventions?.[0];
 
