@@ -1,12 +1,20 @@
 ﻿import { API } from '@/lib/api';
 
+export interface InventoryAlert {
+  id: string;
+  name?: string;
+  reference?: string;
+  quantity?: number;
+  threshold?: number;
+}
+
 export const inventoryService = {
   async getAlerts(workspaceId?: string) {
     const params = workspaceId
       ? `?workspaceId=${encodeURIComponent(workspaceId)}`
       : '';
 
-    return API.get<any[]>(
+    return API.get<InventoryAlert[]>(
       `/api/inventory/alerts${params}`,
     );
   },

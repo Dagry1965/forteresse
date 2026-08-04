@@ -1,7 +1,8 @@
 import { APPOINTMENT_STATUS } from '../../../../shared/constants/status.constants';
+import type { Appointment } from '@/services/appointmentService';
 
 export class AppointmentUiMapper {
-  static toCalendar(appt: any) {
+  static toCalendar(appt: Appointment) {
     if (!appt) return null;
 
     const start = appt.time_slot?.start ? new Date(appt.time_slot.start) : null;
@@ -21,7 +22,7 @@ export class AppointmentUiMapper {
     };
   }
 
-  static toFullCalendar(appt: any) {
+  static toFullCalendar(appt: Appointment) {
     const base = AppointmentUiMapper.toCalendar(appt);
     if (!base) return null;
 
@@ -40,7 +41,7 @@ export class AppointmentUiMapper {
     };
   }
 
-  static buildTitle(appt: any) {
+  static buildTitle(appt: Appointment) {
     const client = appt.client?.name || 'Client';
     const vehicle = `${appt.vehicle?.make || ''} ${appt.vehicle?.model || ''}`.trim();
 
