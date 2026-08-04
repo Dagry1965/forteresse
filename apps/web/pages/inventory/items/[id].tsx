@@ -2,19 +2,34 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 
+type InventoryItem = {
+  name: string;
+  sku: string;
+  quantity: number;
+  price_buy: number | string;
+};
+
+type StockMovement = {
+  id: string;
+  created_at: string;
+  type: string;
+  quantity: number;
+  reference_id?: string;
+};
+
 export default function ItemDetailPage() {
   const router = useRouter();
   const { id } = router.query;
   const [activeTab, setActiveTab] = useState<'details' | 'movements'>('details');
-  const [movements, setMovements] = useState([]);
-  const [item, setItem] = useState<any>(null);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [item, setItem] = useState<InventoryItem | null>(null);
 
   // 1. Charger les infos de l'article
   useEffect(() => {
     if (!id) return;
     axios.get(`http://localhost:4000/api/inventory/items/${id}`, {
       headers: { 'x-workspace-id': 'seed-workspace-1' }
-    }).then(res => setItem(res.data));
+    }).then((res) => setItem(res.data as InventoryItem));
   }, [id]);
 
   // 2. Charger les mouvements si l'onglet est actif
@@ -22,7 +37,7 @@ export default function ItemDetailPage() {
     if (id && activeTab === 'movements') {
       axios.get(`http://localhost:4000/api/inventory/movements/item/${id}`, {
         headers: { 'x-workspace-id': 'seed-workspace-1' }
-      }).then(res => setMovements(res.data));
+      }).then((res) => setMovements(Array.isArray(res.data) ? (res.data as StockMovement[]) : []));
     }
   }, [id, activeTab]);
 
@@ -78,7 +93,7 @@ export default function ItemDetailPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {movements.map((m: any) => (
+              {movements.map((m: StockMovement) => (
                 <tr key={m.id}>
                   <td className="px-6 py-4 text-sm">{new Date(m.created_at).toLocaleDateString()}</td>
                   <td className="px-6 py-4">
