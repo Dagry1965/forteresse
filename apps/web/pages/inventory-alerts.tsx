@@ -2,12 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { stockService } from '@/services/stockService';
+import type { StockItem } from '@/services/stockService';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import Section from '../components/section';
 
+type AlertStockItem = StockItem & {
+  selling_price?: number;
+  inventory?: {
+    quantity?: number;
+  };
+};
+
 export default function InventoryAlertsPage() {
-  const [lowStockItems, setLowStockItems] = useState<any[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<AlertStockItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadLowStock = async () => {
@@ -17,10 +25,10 @@ export default function InventoryAlertsPage() {
 
       // Filtre les produits avec stock faible (ex: moins de 5 unités)
       const alerts = (products || []).filter(
-        (product: any) => (product.inventory?.quantity || 0) < 5
+        (product: AlertStockItem) => (product.inventory?.quantity || 0) < 5
       );
 
-      setLowStockItems(alerts);
+      setLowStockItems(alerts as AlertStockItem[]);
     } catch (error) {
       console.error("Erreur lors du chargement des alertes stock", error);
     } finally {
