@@ -2,9 +2,40 @@ import { useEffect, useState } from "react";
 import { API } from "../../../../lib/api";
 import { CONFIG } from "../../../../lib/config";
 
+type ProformaItem = {
+  label: string;
+  qty: number | string;
+  unitPrice: number | string;
+  total: number;
+};
+
+type Proforma = {
+  id: string;
+  items?: ProformaItem[];
+};
+
+type Intervention = {
+  vehicle: {
+    make?: string;
+    model?: string;
+    plateNumber?: string;
+    client?: {
+      name?: string;
+    };
+  };
+  companyId?: string;
+  appointment: {
+    initialDescription?: string;
+  };
+};
+
+type ApiError = {
+  message?: string;
+};
+
 export default function ProformaPage() {
-  const [intervention, setIntervention] = useState<any>(null);
-  const [proforma, setProforma] = useState<any>(null);
+  const [intervention, setIntervention] = useState<Intervention | null>(null);
+  const [proforma, setProforma] = useState<Proforma | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -14,19 +45,19 @@ export default function ProformaPage() {
       : null;
 
   // Lignes de proforma
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<ProformaItem[]>([]);
 
   async function load() {
     if (!interventionId) return;
 
     // Charger intervention
-    const inter = await API.get(
+    const inter = await API.get<Intervention>(
       `${CONFIG.API_BASE}/api/interventions/${interventionId}`
     );
     setIntervention(inter);
 
     // Charger proforma existante
-    const pf = await API.get(
+    const pf = await API.get<Proforma | null>(
       `${CONFIG.API_BASE}/api/finance/proforma/${interventionId}`
     );
 
@@ -49,9 +80,13 @@ export default function ProformaPage() {
     ]);
   }
 
-  function updateItem(index: number, field: string, value: any) {
+  function updateItem(
+    index: number,
+    field: keyof Omit<ProformaItem, 'total'>,
+    value: string,
+  ) {
     const updated = [...items];
-    updated[index][field] = value;
+    updated[index] = { ...updated[index], [field]: value };
 
     updated[index].total =
       Number(updated[index].qty) * Number(updated[index].unitPrice);
@@ -68,14 +103,14 @@ export default function ProformaPage() {
 
       if (!proforma) {
         // Création
-        const created = await API.post(
+        const created = await API.post<Proforma>(
           `${CONFIG.API_BASE}/api/finance/proforma`,
           payload
         );
         setProforma(created);
       } else {
         // Mise à jour
-        const updated = await API.put(
+        const updated = await API.put<Proforma>(
           `${CONFIG.API_BASE}/api/finance/proforma/${proforma.id}`,
           payload
         );
@@ -83,12 +118,15 @@ export default function ProformaPage() {
       }
 
       setMessage("Proforma enregistrée !");
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setMessage(apiError.message || 'Impossible d’enregistrer la proforma');
     }
   }
 
   async function approveProforma() {
+    if (!proforma) return;
+
     try {
       await API.post(
         `${CONFIG.API_BASE}/api/finance/proforma/${proforma.id}/approve`
@@ -100,12 +138,14 @@ export default function ProformaPage() {
       setTimeout(() => {
         window.location.href = `/garage/intervention/${interventionId}`;
       }, 1000);
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setMessage(apiError.message || 'Impossible de valider la proforma');
     }
   }
 
   if (loading) return <p className="p-10">Chargement...</p>;
+  if (!intervention) return <p className="p-10">Intervention introuvable.</p>;
 
   return (
     <div className="p-10 max-w-4xl mx-auto">
