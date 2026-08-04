@@ -2,9 +2,29 @@ import { useState, useEffect } from "react";
 import { fetchAppointmentsByDate } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 
+type GaragePlanningAppointment = {
+  id: string;
+  status: string;
+  companyId?: string | null;
+  company?: {
+    name?: string;
+  };
+  timeSlot: {
+    startTime: string;
+  };
+  vehicle: {
+    make: string;
+    model: string;
+    plateNumber: string;
+    client?: {
+      name?: string;
+    };
+  };
+};
+
 export default function PlanningGarage() {
   const [date, setDate] = useState("");
-  const [appointments, setAppointments] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<GaragePlanningAppointment[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function load() {
@@ -40,7 +60,7 @@ export default function PlanningGarage() {
       )}
 
       <div className="space-y-4">
-        {appointments.map((a: any) => (
+        {appointments.map((a) => (
           <div key={a.id} className="border p-4 rounded shadow-sm bg-white">
             {/* Heure */}
             <p>
