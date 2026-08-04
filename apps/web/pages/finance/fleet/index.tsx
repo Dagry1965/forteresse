@@ -2,18 +2,35 @@
 
 import React, { useState, useEffect } from 'react';
 import { financeService } from '@/services/financeService';
-import { clientService } from '@/services/clientService';
+import { clientService, Client } from '@/services/clientService';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { ChevronLeft, FileStack, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+type FleetProforma = {
+  total?: number;
+};
+
+type FleetPendingItem = {
+  id: string;
+  date: string;
+  total?: number;
+  vehicle?: {
+    registration?: string;
+    brand?: string;
+  };
+  proformas?: FleetProforma[] & {
+    total?: number;
+  };
+};
+
 export default function FleetInvoicingPage() {
   const router = useRouter();
-  const [clients, setClients] = useState<any[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
   const [selectedClientId, setSelectedClientId] = useState('');
-  const [pendingItems, setPendingItems] = useState<any[]>([]);
+  const [pendingItems, setPendingItems] = useState<FleetPendingItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +45,7 @@ export default function FleetInvoicingPage() {
         const list = res ?? [];
         setClients(
           list.filter(
-            (c: any) => c.type === 'COMPANY' || c.type === 'entreprise'
+            (c) => c.type === 'COMPANY' || String(c.type) === 'entreprise'
           )
         );
       })
@@ -49,7 +66,7 @@ export default function FleetInvoicingPage() {
 
     financeService
       .getPendingFleetItems(selectedClientId)
-      .then((res) => setPendingItems(res || []))
+      .then((res) => setPendingItems(Array.isArray(res) ? (res as FleetPendingItem[]) : []))
       .catch(() => toast.error('Erreur lors du chargement des dossiers'))
       .finally(() => setLoading(false));
   }, [selectedClientId]);
