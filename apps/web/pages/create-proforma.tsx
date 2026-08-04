@@ -5,19 +5,47 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../context/AuthContext';
 import { proformaService } from '@/services/proformaService';
 import { workshopService } from '@/services/workshopService';
+import type { WorkshopIntervention } from '@/services/workshopService';
 import { stockService } from '@/services/stockService';
+import type { StockItem } from '@/services/stockService';
 import { Button } from '../components/ui/button';
 import Section from '../components/section';
+
+type ProformaLine = {
+  product_id: string | null;
+  name: string;
+  quantity: number;
+  price: number;
+};
+
+type ProformaIntervention = WorkshopIntervention & {
+  appointment?: {
+    vehicle?: {
+      plateNumber?: string;
+      registration?: string;
+      client?: {
+        name?: string;
+      };
+    };
+  };
+};
+
+type ProformaProduct = StockItem & {
+  selling_price?: number;
+  inventory?: {
+    quantity?: number;
+  };
+};
 
 export default function CreateProforma() {
   const { token } = useAuth();
   const router = useRouter();
   const queryInterventionId = router.query.interventionId as string;
 
-  const [products, setProducts] = useState<any[]>([]);
-  const [interventions, setInterventions] = useState<any[]>([]);
+  const [products, setProducts] = useState<ProformaProduct[]>([]);
+  const [interventions, setInterventions] = useState<ProformaIntervention[]>([]);
   const [interventionId, setInterventionId] = useState("");
-  const [selectedLines, setSelectedLines] = useState<any[]>([]);
+  const [selectedLines, setSelectedLines] = useState<ProformaLine[]>([]);
   const [laborPrice, setLaborPrice] = useState(0);
   const [message, setMessage] = useState({ text: "", type: "" });
   const [loading, setLoading] = useState(true);
@@ -28,8 +56,8 @@ export default function CreateProforma() {
       const prods = await stockService.getAll();
       const intervs = await workshopService.getAll();
 
-      setProducts(prods || []);
-      setInterventions(intervs || []);
+      setProducts((prods || []) as ProformaProduct[]);
+      setInterventions((intervs || []) as ProformaIntervention[]);
 
       if (queryInterventionId) setInterventionId(queryInterventionId);
     } catch (err) {
@@ -43,7 +71,7 @@ export default function CreateProforma() {
     if (token && router.isReady) loadData();
   }, [token, router.isReady, queryInterventionId]);
 
-  const addLine = (product: any) => {
+  const addLine = (product: ProformaProduct) => {
     setSelectedLines([
       ...selectedLines,
       {
