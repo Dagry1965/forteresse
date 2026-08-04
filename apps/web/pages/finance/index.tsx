@@ -17,16 +17,28 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
+type OverdueInvoiceSchedule = {
+  id: string;
+  due_date: string;
+  amount?: number | string;
+  invoice?: {
+    reference?: string;
+    client?: {
+      name?: string;
+    };
+  };
+};
+
 export default function FinanceHubPage() {
   const router = useRouter();
 
-  const [overdueInvoices, setOverdueInvoices] = useState<any[]>([]);
+  const [overdueInvoices, setOverdueInvoices] = useState<OverdueInvoiceSchedule[]>([]);
   const [loadingOverdue, setLoadingOverdue] = useState(true);
 
   useEffect(() => {
     financeService
       .getOverdueReminders()
-      .then((data) => setOverdueInvoices(data ?? []))
+      .then((data) => setOverdueInvoices(Array.isArray(data) ? (data as OverdueInvoiceSchedule[]) : []))
       .catch(() =>
         toast.error('Erreur lors du chargement des factures ?chues'),
       )
