@@ -21,6 +21,61 @@ import {
 import { toast } from 'sonner';
 import { ClientContactsManager } from '@/components/clients/ClientContactsManager';
 
+type ClientVehicle = {
+  id: string;
+  brand?: string;
+  model?: string;
+  registration?: string;
+  status?: string;
+};
+
+type ClientAppointment = {
+  id: string;
+  date: string;
+  status?: string;
+  vehicle?: ClientVehicle;
+};
+
+type ClientProforma = {
+  id: string;
+  reference?: string;
+  created_at: string;
+  total?: number | string;
+  status?: string;
+};
+
+type ClientRepairCase = {
+  id: string;
+  title?: string;
+  status?: string;
+  vehicle?: ClientVehicle;
+  interventions?: Array<{ id: string }>;
+  proformas?: ClientProforma[];
+};
+
+type ClientInvoice = {
+  id: string;
+  reference?: string;
+  created_at: string;
+  total?: number | string;
+  status?: string;
+};
+
+type ClientPayment = {
+  id: string;
+  method?: string;
+  created_at: string;
+  amount?: number | string;
+};
+
+type ClientDetail = Client & {
+  vehicles?: ClientVehicle[];
+  appointments?: ClientAppointment[];
+  cases?: ClientRepairCase[];
+  invoices?: ClientInvoice[];
+  payments?: ClientPayment[];
+};
+
 type ClientTab =
   | 'summary'
   | 'vehicles'
@@ -35,7 +90,7 @@ export default function ClientDetailPage() {
   const router = useRouter();
   const clientId = router.query.id as string;
 
-  const [client, setClient] = useState<Client | null>(null);
+  const [client, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] =
     useState<ClientTab>('summary');
@@ -46,11 +101,16 @@ export default function ClientDetailPage() {
     try {
       setLoading(true);
       const data = await clientService.getOne(clientId);
-      setClient(data);
-    } catch (error: any) {
+      setClient(data as ClientDetail);
+    } catch (error: unknown) {
       console.error('Erreur chargement client', error);
       toast.error(
-        error?.message || 'Erreur lors du chargement du client',
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof (error as { message?: unknown }).message === 'string'
+          ? (error as { message: string }).message
+          : 'Erreur lors du chargement du client',
       );
     } finally {
       setLoading(false);
@@ -67,13 +127,13 @@ export default function ClientDetailPage() {
   const vehicles = client?.vehicles || [];
   const appointments = client?.appointments || [];
   const invoices = client?.invoices || [];
-  const payments = (client as any)?.payments || [];
+  const payments = client?.payments || [];
   const contacts = client?.contacts || [];
 
   const proformas = useMemo(
     () =>
-      cases.flatMap((repairCase: any) =>
-        (repairCase.proformas || []).map((proforma: any) => ({
+      cases.flatMap((repairCase) =>
+        (repairCase.proformas || []).map((proforma) => ({
           ...proforma,
           case: repairCase,
         })),
@@ -83,13 +143,13 @@ export default function ClientDetailPage() {
 
   const financialSummary = useMemo(() => {
     const totalInvoiced = invoices.reduce(
-      (sum: number, invoice: any) =>
+      (sum, invoice) =>
         sum + Number(invoice.total || 0),
       0,
     );
 
     const totalPaid = payments.reduce(
-      (sum: number, payment: any) =>
+      (sum, payment) =>
         sum + Number(payment.amount || 0),
       0,
     );
@@ -341,7 +401,7 @@ export default function ClientDetailPage() {
               </h2>
 
               <div className="space-y-3">
-                {cases.slice(0, 5).map((repairCase: any) => (
+                {cases.slice(0, 5).map((repairCase) => (
                   <button
                     key={repairCase.id}
                     type="button"
@@ -391,7 +451,7 @@ export default function ClientDetailPage() {
           title="Véhicules"
           emptyText="Aucun véhicule associé."
         >
-          {vehicles.map((vehicle: any) => (
+          {vehicles.map((vehicle) => (
             <button
               key={vehicle.id}
               type="button"
@@ -416,7 +476,7 @@ export default function ClientDetailPage() {
           title="Rendez-vous"
           emptyText="Aucun rendez-vous."
         >
-          {appointments.map((appointment: any) => (
+          {appointments.map((appointment) => (
             <div
               key={appointment.id}
               className="p-4 rounded-xl border"
@@ -443,7 +503,7 @@ export default function ClientDetailPage() {
           title="Dossiers atelier"
           emptyText="Aucun dossier atelier."
         >
-          {cases.map((repairCase: any) => {
+          {cases.map((repairCase) => {
             const interventionId =
               repairCase.interventions?.[0]?.id;
 
@@ -482,7 +542,7 @@ export default function ClientDetailPage() {
           title="Proformas"
           emptyText="Aucune proforma."
         >
-          {proformas.map((proforma: any) => (
+          {proformas.map((proforma) => (
             <button
               key={proforma.id}
               type="button"
@@ -525,7 +585,7 @@ export default function ClientDetailPage() {
           title="Factures"
           emptyText="Aucune facture."
         >
-          {invoices.map((invoice: any) => (
+          {invoices.map((invoice) => (
             <button
               key={invoice.id}
               type="button"
@@ -570,7 +630,7 @@ export default function ClientDetailPage() {
           title="Paiements"
           emptyText="Aucun paiement."
         >
-          {payments.map((payment: any) => (
+          {payments.map((payment) => (
             <div
               key={payment.id}
               className="p-4 rounded-xl border"
