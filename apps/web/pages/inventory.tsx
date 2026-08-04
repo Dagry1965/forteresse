@@ -2,13 +2,21 @@
 
 import React, { useEffect, useState } from 'react';
 import { stockService } from '@/services/stockService';
+import type { StockItem } from '@/services/stockService';
 import { Button } from '../components/ui/button';
 import Section from '../components/section';
 import { Card } from '../components/ui/card';
 
+type InventoryProduct = StockItem & {
+  selling_price?: number;
+  inventory?: {
+    quantity?: number;
+  };
+};
+
 export default function InventoryPage() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [products, setProducts] = useState<InventoryProduct[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<InventoryProduct[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -19,7 +27,7 @@ export default function InventoryPage() {
       const res = await stockService.getAll();
 
       // 🔥 Normalisation ultra-sécurisée
-      const list = res ?? [];
+      const list = (res ?? []) as InventoryProduct[];
 
       setProducts(list);
       setFilteredProducts(list);
