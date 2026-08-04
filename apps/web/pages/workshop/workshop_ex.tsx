@@ -1,16 +1,36 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { workshopService } from '@/services/workshopService';
-import { appointmentService } from '@/services/appointmentService';
+import { workshopService, type WorkshopIntervention } from '@/services/workshopService';
+import { appointmentService, type Appointment } from '@/services/appointmentService';
 import { Button } from '../../components/ui/button';
 import Section from '../../components/section';
 import { normalizeList } from '@/utils/normalize';
 import { INTERVENTION_STATUS } from '../../../../shared/constants/status.constants';
 
+type WorkshopListIntervention = WorkshopIntervention & {
+  appointment?: {
+    initial_description?: string;
+    vehicle?: {
+      plateNumber?: string;
+      client?: {
+        name?: string;
+      };
+    };
+  };
+};
+
+type PendingWorkshopAppointment = Appointment & {
+  vehicle?: Appointment['vehicle'] & {
+    client?: {
+      name?: string;
+    };
+  };
+};
+
 export default function WorkshopPage() {
-  const [interventions, setInterventions] = useState<any[]>([]);
-  const [pendingAppointments, setPendingAppointments] = useState<any[]>([]);
+  const [interventions, setInterventions] = useState<WorkshopListIntervention[]>([]);
+  const [pendingAppointments, setPendingAppointments] = useState<PendingWorkshopAppointment[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
@@ -23,8 +43,8 @@ export default function WorkshopPage() {
       const intervs = normalizeList(intervsRaw);
       const pending = normalizeList(pendingRaw);
 
-      setInterventions(intervs);
-      setPendingAppointments(pending);
+      setInterventions(intervs as WorkshopListIntervention[]);
+      setPendingAppointments(pending as PendingWorkshopAppointment[]);
     } catch (err) {
       console.error("Erreur chargement atelier", err);
     } finally {
