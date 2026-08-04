@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { workshopService } from '@/services/workshopService';
+import { workshopService, WorkshopIntervention } from '@/services/workshopService';
 
 export function useWorkshop() {
-  const [interventions, setInterventions] = useState<any[]>([]);
+  const [interventions, setInterventions] = useState<WorkshopIntervention[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchInterventions = async () => {
