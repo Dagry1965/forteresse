@@ -10,6 +10,17 @@ export interface Appointment {
   time_slot?: { id: string; start: string; end: string };
 }
 
+export interface AvailableTimeSlot {
+  id?: string;
+  _id?: string;
+  start: string;
+  end: string;
+  label?: string;
+  booked?: number;
+  available?: number;
+  isAvailable?: boolean;
+}
+
 export const appointmentService = {
   async getAll(workspaceId?: string) {
     try {
@@ -83,7 +94,7 @@ export const appointmentService = {
       ...(workspaceId ? { workspaceId } : {}),
     });
 
-    return await API.get(
+    return await API.get<AvailableTimeSlot[]>(
       `/api/appointments/available-slots?${params.toString()}`
     );
   } catch (error: any) {
