@@ -16,9 +16,30 @@ import {
 import { useRouter } from 'next/router';
 import { toast } from 'sonner';
 
+type CashierPayment = {
+  id: string;
+  time: string;
+  client?: string;
+  invoiceRef?: string;
+  method?: string;
+  processedBy?: string;
+  amount: number;
+};
+
+type CashierReport = {
+  grandTotal?: number;
+  totals?: {
+    CB?: number;
+    CASH?: number;
+    TRANSFER?: number;
+  };
+  count?: number;
+  payments?: CashierPayment[];
+};
+
 export default function CashierPage() {
   const router = useRouter();
-  const [report, setReport] = useState<any>(null);
+  const [report, setReport] = useState<CashierReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -26,7 +47,7 @@ export default function CashierPage() {
     setLoading(true);
     try {
       const data = await financeService.getDailyReport(selectedDate);
-      setReport(data);
+      setReport(data as CashierReport);
     } catch (error) {
       toast.error("Erreur lors du chargement du rapport de caisse");
     } finally {
@@ -125,7 +146,7 @@ export default function CashierPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {report?.payments?.map((payment: any) => (
+              {report?.payments?.map((payment) => (
                 <tr key={payment.id} className="hover:bg-slate-50/50 transition-colors">
                   <td className="p-5 text-slate-400">
                     <div className="flex items-center gap-2 font-medium">
