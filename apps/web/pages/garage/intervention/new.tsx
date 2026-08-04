@@ -3,8 +3,34 @@ import { API } from "../../../lib/api";
 import { CONFIG } from "../../../lib/config";
 import { INTERVENTION_STATUS } from "../../../../../shared/constants/status.constants";
 
+type Appointment = {
+  vehicleId: string;
+  companyId?: string;
+  initialDescription?: string;
+  timeSlot: {
+    startTime: string;
+  };
+  vehicle: {
+    clientId: string;
+    make?: string;
+    model?: string;
+    plateNumber?: string;
+    client?: {
+      name?: string;
+    };
+  };
+};
+
+type CreatedIntervention = {
+  id: string;
+};
+
+type ApiError = {
+  message?: string;
+};
+
 export default function NewInterventionPage() {
-  const [appointment, setAppointment] = useState<any>(null);
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
@@ -17,7 +43,7 @@ export default function NewInterventionPage() {
   async function loadAppointment() {
     if (!appointmentId) return;
 
-    const data = await API.get(
+    const data = await API.get<Appointment>(
       `${CONFIG.API_BASE}/api/appointments/${appointmentId}`
     );
 
@@ -26,8 +52,10 @@ export default function NewInterventionPage() {
   }
 
   async function createIntervention() {
+    if (!appointment) return;
+
     try {
-      const intervention = await API.post(
+      const intervention = await API.post<CreatedIntervention>(
         `${CONFIG.API_BASE}/api/interventions`,
         {
           appointmentId,
@@ -40,8 +68,9 @@ export default function NewInterventionPage() {
 
       // Redirection vers la page proforma
       window.location.href = `/garage/intervention/${intervention.id}/proforma`;
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+      setMessage(apiError.message || 'Impossible de créer l’intervention');
     }
   }
 
