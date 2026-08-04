@@ -1,15 +1,26 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 
+type StockMovement = {
+  id: string;
+  created_at: string;
+  type: string;
+  quantity: number;
+  reference_id?: string;
+  item?: {
+    name?: string;
+  };
+};
+
 export default function StockMovementsPage() {
-  const [movements, setMovements] = useState([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
 
   useEffect(() => {
     const fetchMovements = async () => {
       const { data } = await axios.get('http://localhost:4000/api/inventory/movements', {
         headers: { 'x-workspace-id': 'seed-workspace-1' }
       });
-      setMovements(data);
+      setMovements(Array.isArray(data) ? (data as StockMovement[]) : []);
     };
     fetchMovements();
   }, []);
@@ -29,7 +40,7 @@ export default function StockMovementsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {movements.map((m: any) => (
+            {movements.map((m: StockMovement) => (
               <tr key={m.id}>
                 <td className="px-6 py-4">{new Date(m.created_at).toLocaleString()}</td>
                 <td className="px-6 py-4 font-medium">{m.item?.name}</td>
