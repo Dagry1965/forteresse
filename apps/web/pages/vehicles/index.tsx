@@ -2,7 +2,9 @@
 
 import React, { useState } from "react";
 import { vehicleService } from "@/services/vehicleService";
+import type { Vehicle } from "@/services/vehicleService";
 import { clientService } from "@/services/clientService";
+import type { Client } from "@/services/clientService";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { DataTable, Column } from "@/components/ui/data-table";
@@ -12,19 +14,30 @@ import { EntityFormModal } from "@/components/common/EntityFormModal";
 import { useEntityForm } from "@/hooks/useEntityForm";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
+type FormErrors = Partial<Record<"clientId" | "registration" | "brand" | "model", string>>;
+
+type ApiError = {
+  message?: string;
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+};
+
 export default function VehiclesListPage() {
   const router = useRouter();
 
-  const [vehicles, setVehicles] = useState<any[]>([]);
-  const [clientsList, setClientsList] = useState<any[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [clientsList, setClientsList] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [vehicleToDelete, setVehicleToDelete] = useState<any | null>(null);
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null);
 
   // 👉 Ajout des erreurs
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
   const {
     formData,
@@ -66,7 +79,7 @@ export default function VehiclesListPage() {
 
   // 👉 Fonction de validation + soumission
  const handleFormSubmit = async () => {
-  const newErrors: any = {};
+  const newErrors: FormErrors = {};
 
   // === RÈGLE 1 : Client obligatoire ===
   if (!formData.clientId) {
@@ -126,7 +139,7 @@ export default function VehiclesListPage() {
     loadClients();
   }, []);
 
-  const columns: Column<any>[] = [
+  const columns: Column<Vehicle>[] = [
     {
       key: 'registration',
       header: 'Immatriculation',
@@ -160,20 +173,18 @@ export default function VehiclesListPage() {
     setIsModalOpen(true);
   };
 
-const handleOpenEdit = (vehicle: any) => {
+const handleOpenEdit = (vehicle: Vehicle) => {
   const normalizedVehicle = {
-    id: vehicle.id || vehicle._id,
+    id: vehicle.id,
     clientId:
       vehicle.client_id ||
       vehicle.clientId ||
       '',
     registration:
       vehicle.registration ||
-      vehicle.plateNumber ||
       '',
     brand:
       vehicle.brand ||
-      vehicle.make ||
       '',
     model: vehicle.model || '',
     status: vehicle.status || 'DISPONIBLE',
@@ -198,7 +209,7 @@ const handleOpenEdit = (vehicle: any) => {
   setIsModalOpen(true);
 };
 
-  const handleDelete = (vehicle: any) => {
+  const handleDelete = (vehicle: Vehicle) => {
     setVehicleToDelete(vehicle);
     setConfirmOpen(true);
   };
@@ -210,10 +221,11 @@ const handleOpenEdit = (vehicle: any) => {
       await vehicleService.delete(vehicleToDelete.id);
       toast.success("Véhicule supprimé avec succès");
       loadVehicles();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
       const message =
-        error?.message ||
-        error?.response?.data?.message ||
+        apiError.message ||
+        apiError.response?.data?.message ||
         "Erreur lors de la suppression";
       toast.error(message, { duration: 6000 });
     }
@@ -281,7 +293,7 @@ const handleOpenEdit = (vehicle: any) => {
                 -- Sélectionner un client --
               </option>
 
-              {clientsList.map((client: any) => (
+              {clientsList.map((client: Client) => (
                 <option
                   key={client.id}
                   value={client.id}
