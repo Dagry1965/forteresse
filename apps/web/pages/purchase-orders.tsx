@@ -18,6 +18,10 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+type PurchaseOrdersResponse = {
+  data?: PurchaseOrder[];
+};
+
 export default function PurchaseOrdersPage() {
   const router = useRouter();
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
@@ -32,10 +36,11 @@ export default function PurchaseOrdersPage() {
       // ✔ Route corrigée : /api/purchase-orders
       const data = await purchaseService.getAll();
 
-      const ordersList = Array.isArray(data)
-        ? data
-        : Array.isArray((data as any)?.data)
-          ? (data as any).data
+      const response = data as PurchaseOrder[] | PurchaseOrdersResponse;
+      const ordersList = Array.isArray(response)
+        ? response
+        : Array.isArray(response.data)
+          ? response.data
           : [];
 
       setOrders(ordersList);
