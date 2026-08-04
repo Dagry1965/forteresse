@@ -77,7 +77,7 @@ export default function DashboardPage() {
       setStats({
         pendingAppointments: Array.isArray(pendingRes) ? pendingRes.length : 0,
         ongoingInterventions: Array.isArray(interventionsRes)
-          ? interventionsRes.filter((i: Intervention) => 
+          ? interventionsRes.filter((i: Intervention) =>
               i.status !== INTERVENTION_STATUS.COMPLETED
             ).length
           : 0,
