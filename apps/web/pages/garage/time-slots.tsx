@@ -2,9 +2,18 @@ import { useState, useEffect } from "react";
 import { API } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 
+type TimeSlot = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  used: number;
+  status: string;
+};
+
 export default function TimeSlotsPage() {
   const [date, setDate] = useState("");
-  const [slots, setSlots] = useState([]);
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Formulaire création plage
@@ -18,7 +27,7 @@ export default function TimeSlotsPage() {
     setLoading(true);
 
     const query = `${CONFIG.API_BASE}/api/time-slots?workspaceId=${CONFIG.WORKSPACE_ID}&date=${date}`;
-    const data = await API.get(query);
+    const data = await API.get<TimeSlot[]>(query);
 
     setSlots(data || []);
     setLoading(false);
@@ -40,8 +49,12 @@ export default function TimeSlotsPage() {
 
       setMessage("Plage créée !");
       load();
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (e: unknown) {
+      setMessage(
+        e instanceof Error
+          ? e.message
+          : "Erreur lors de la création de la plage horaire",
+      );
     }
   }
 
@@ -112,7 +125,7 @@ export default function TimeSlotsPage() {
       {loading && <p>Chargement...</p>}
 
       <div className="space-y-4">
-        {slots.map((s: any) => (
+        {slots.map((s) => (
           <div key={s.id} className="border p-4 rounded bg-white shadow-sm">
             <p>
               <b>Heure :</b>{" "}
