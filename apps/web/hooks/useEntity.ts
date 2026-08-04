@@ -1,6 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 
-export function useEntity<T>(service: any, workspaceId?: string) {
+interface EntityService<T> {
+  getAll: (workspaceId: string) => Promise<T[]>;
+}
+
+export function useEntity<T>(
+  service: EntityService<T>,
+  workspaceId?: string,
+) {
   const [items, setItems] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
