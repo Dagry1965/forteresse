@@ -6,6 +6,19 @@ import { clientService } from '@/services/clientService';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+function getErrorMessage(error: unknown): string | undefined {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return undefined;
+}
+
 export default function CreateClientPage() {
   const router = useRouter();
 
@@ -105,9 +118,9 @@ export default function CreateClientPage() {
 
       toast.success('Client créé avec succès');
       router.push(`/clients/${created.id}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error?.message || 'Erreur lors de la création du client',
+        getErrorMessage(error) || 'Erreur lors de la création du client',
       );
     } finally {
       setLoading(false);
