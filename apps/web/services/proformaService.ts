@@ -53,6 +53,8 @@ export const proformaService = {
   },
 
   async convertToInvoice(id: string) {
-    return API.post(`/api/proformas/${id}/invoice`);
+    return API.post<{ id: string; reference: string }>(
+      `/api/proformas/${id}/invoice`,
+    );
   },
 };

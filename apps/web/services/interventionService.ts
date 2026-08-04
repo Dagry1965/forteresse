@@ -126,7 +126,7 @@ export const interventionService = {
    * Générer la proforma globale du dossier
    */
   async generateProforma(caseId: string) {
-    return API.post(
+    return API.post<{ id: string; reference: string }>(
       `/api/workshop/interventions/case/${caseId}/proforma`,
     );
   },

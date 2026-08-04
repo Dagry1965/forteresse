@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext';
 
 import { appointmentService } from '@/services/appointmentService';
 import { interventionService } from '@/services/interventionService';
+import type { Intervention } from '@/services/interventionService';
 import { financeService } from '@/services/financeService';
 import { inventoryService } from '@/services/inventoryService';
 
@@ -42,7 +43,7 @@ export default function DashboardPage() {
     overdueCount: 0,
   });
 
-  const [chartData, setChartData] = useState([]);   // ← Données du graphique
+  const [chartData, setChartData] = useState<Array<{ name: string; total: number }>>([]);   // ← Données du graphique
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,7 +77,7 @@ export default function DashboardPage() {
       setStats({
         pendingAppointments: Array.isArray(pendingRes) ? pendingRes.length : 0,
         ongoingInterventions: Array.isArray(interventionsRes)
-          ? interventionsRes.filter((i: any) => 
+          ? interventionsRes.filter((i: Intervention) => 
               i.status !== INTERVENTION_STATUS.COMPLETED
             ).length
           : 0,
@@ -91,9 +92,14 @@ export default function DashboardPage() {
       // Mise à jour des données du graphique
       setChartData(statsRes.turnover || []);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.status === 401) router.push('/login');
+      if (
+        err &&
+        typeof err === 'object' &&
+        'status' in err &&
+        err.status === 401
+      ) router.push('/login');
       else toast.error("Erreur lors du chargement du dashboard");
     } finally {
       setLoading(false);

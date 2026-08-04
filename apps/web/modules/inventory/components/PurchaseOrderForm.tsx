@@ -32,6 +32,9 @@ type PurchaseOrderFormProps = {
   onOrderCreated?: () => void;
 };
 
+type SuppliersResponse = Supplier[] | { data?: Supplier[] };
+type StockItemsResponse = StockItem[] | { data?: StockItem[] };
+
 export const PurchaseOrderForm = ({ onOrderCreated }: PurchaseOrderFormProps) => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
@@ -56,8 +59,8 @@ export const PurchaseOrderForm = ({ onOrderCreated }: PurchaseOrderFormProps) =>
         setInitialLoading(true);
 
         const [suppliersRes, stockRes] = await Promise.all([
-          API.get('/api/suppliers'),
-          API.get('/api/inventory/products'),
+          API.get<SuppliersResponse>('/api/suppliers'),
+          API.get<StockItemsResponse>('/api/inventory/products'),
         ]);
 
         const suppliersData = Array.isArray(suppliersRes)
@@ -185,7 +188,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
   try {
     setLoading(true);
 
-    const response = await API.post('/api/purchase-orders', payload);
+    const response = await API.post<{ id?: string }>('/api/purchase-orders', payload);
 
     toast.success("Bon de commande généré avec succès !");
 

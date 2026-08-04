@@ -100,7 +100,9 @@ export const financeService = {
       ? `?workspaceId=${encodeURIComponent(workspaceId)}`
       : '';
 
-    return API.get(
+    return API.get<{
+      turnover?: Array<{ name: string; total: number }>;
+    }>(
       `/api/finance/reports/dashboard-stats${params}`,
     );
   },

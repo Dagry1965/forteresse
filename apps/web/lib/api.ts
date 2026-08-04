@@ -1,6 +1,53 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
-export async function api<T = any>(
+type ApiError = {
+  status?: number;
+  message?: string;
+  data?: unknown;
+};
+
+type ApiResponseBody = {
+  message?: string;
+  [key: string]: unknown;
+};
+
+type TimeSlotResult = {
+  id: string;
+  startTime: string;
+  endTime: string;
+  label?: string;
+  available?: number | boolean;
+};
+
+type VehicleResult = {
+  id: string;
+  make: string;
+  model: string;
+  plateNumber: string;
+};
+
+type AppointmentResult = {
+  id: string;
+  date: string;
+  status: string;
+  companyId?: string | null;
+  company?: {
+    name?: string;
+  };
+  timeSlot: {
+    startTime: string;
+  };
+  vehicle: {
+    make: string;
+    model: string;
+    plateNumber: string;
+    client?: {
+      name?: string;
+    };
+  };
+};
+
+export async function api<T = unknown>(
   url: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -32,7 +79,7 @@ export async function api<T = any>(
     });
 
     const text = await res.text();
-    let json: any = null;
+    let json: ApiResponseBody | null = null;
 
     try {
       json = text ? JSON.parse(text) : null;
@@ -61,8 +108,9 @@ export async function api<T = any>(
   // Refresh Token
   try {
     return await doFetch(token);
-  } catch (error: any) {
-    if (error?.status === 401 && refreshToken) {
+  } catch (error: unknown) {
+    const apiError = error as ApiError;
+    if (apiError.status === 401 && refreshToken) {
       console.warn("🔄 Tentative de refresh token...");
       try {
         const refreshRes = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
@@ -95,14 +143,14 @@ export async function api<T = any>(
 }
 
 export const API = {
-  get: <T = any>(url: string) => api<T>(url),
-  post: <T = any>(url: string, body?: any) =>
+  get: <T = unknown>(url: string) => api<T>(url),
+  post: <T = unknown>(url: string, body?: unknown) =>
     api<T>(url, { method: "POST", body: body ? JSON.stringify(body) : undefined }),
-  put: <T = any>(url: string, body?: any) =>
+  put: <T = unknown>(url: string, body?: unknown) =>
     api<T>(url, { method: "PUT", body: body ? JSON.stringify(body) : undefined }),
-  patch: <T = any>(url: string, body?: any) =>
+  patch: <T = unknown>(url: string, body?: unknown) =>
     api<T>(url, { method: "PATCH", body: body ? JSON.stringify(body) : undefined }),
-  delete: <T = any>(url: string) => api<T>(url, { method: "DELETE" }),
+  delete: <T = unknown>(url: string) => api<T>(url, { method: "DELETE" }),
 };
 
 export type FetchTimeSlotsParams = {
@@ -120,12 +168,12 @@ export async function fetchTimeSlots({
     date,
   });
 
-  return API.get<any[]>(`/api/time-slots/available?${params.toString()}`);
+  return API.get<TimeSlotResult[]>(`/api/time-slots/available?${params.toString()}`);
 }
 
 export async function fetchVehicles(workspaceId: string) {
   const params = new URLSearchParams({ workspaceId });
-  return API.get<any[]>(`/api/vehicles?${params.toString()}`);
+  return API.get<VehicleResult[]>(`/api/vehicles?${params.toString()}`);
 }
 
 export async function fetchEnterpriseVehicles(companyId: string) {
@@ -139,7 +187,7 @@ export async function fetchEnterpriseVehicles(companyId: string) {
     companyId,
   });
 
-  return API.get<any[]>(`/api/vehicles?${params.toString()}`);
+  return API.get<VehicleResult[]>(`/api/vehicles?${params.toString()}`);
 }
 
 export interface ReserveAppointmentParams {
@@ -207,7 +255,7 @@ export async function fetchAppointmentsByDate(
     date,
   });
 
-  return API.get<any[]>(
+  return API.get<AppointmentResult[]>(
     `/api/appointments?${params.toString()}`,
   );
 }
