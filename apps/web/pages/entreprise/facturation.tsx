@@ -2,10 +2,26 @@ import { useState, useEffect } from "react";
 import { API } from "../../lib/api";
 import { CONFIG } from "../../lib/config";
 
+type EnterpriseInvoice = {
+  id: string;
+  totalTTC: number;
+  createdAt: string;
+};
+
+type EnterpriseBillingSummary = {
+  company: {
+    name: string;
+  };
+  periodLabel: string;
+  count: number;
+  total: number;
+  invoices: EnterpriseInvoice[];
+};
+
 export default function FacturationEntreprise() {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [summary, setSummary] = useState<any>(null);
+  const [summary, setSummary] = useState<EnterpriseBillingSummary | null>(null);
 
   const companyId =
     typeof window !== "undefined"
@@ -19,7 +35,7 @@ export default function FacturationEntreprise() {
       `${CONFIG.API_BASE}/api/enterprise/${companyId}/billing/${year}/${month}`
     );
 
-    setSummary(data);
+    setSummary(data as EnterpriseBillingSummary);
   }
 
   useEffect(() => {
@@ -90,7 +106,7 @@ export default function FacturationEntreprise() {
           </h2>
 
           <ul className="space-y-2">
-            {summary.invoices.map((inv: any) => (
+            {summary.invoices.map((inv) => (
               <li key={inv.id} className="border p-3 rounded">
                 Facture {inv.id} — {inv.totalTTC} CHF —{" "}
                 {new Date(inv.createdAt).toLocaleDateString()}
