@@ -6,6 +6,19 @@ import { clientService, Client } from '@/services/clientService';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+function getErrorMessage(error: unknown): string | undefined {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return undefined;
+}
+
 export default function EditClientPage() {
   const router = useRouter();
   const clientId = router.query.id as string;
@@ -53,10 +66,10 @@ export default function EditClientPage() {
           ? ''
           : String(data.credit_limit),
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Erreur chargement client', error);
       toast.error(
-        error?.message || 'Erreur lors du chargement du client',
+        getErrorMessage(error) || 'Erreur lors du chargement du client',
       );
     } finally {
       setLoading(false);
@@ -149,9 +162,9 @@ export default function EditClientPage() {
 
       toast.success('Client mis à jour avec succès');
       router.push(`/clients/${clientId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error(
-        error?.message || 'Erreur lors de la mise à jour',
+        getErrorMessage(error) || 'Erreur lors de la mise à jour',
       );
     } finally {
       setSaving(false);
