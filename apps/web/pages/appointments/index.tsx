@@ -28,6 +28,40 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { AppointmentUiMapper } from '@/shared/mappers/appointmentUiMapper';
 import { APPOINTMENT_STATUS } from '../../../../shared/constants/status.constants';
 
+type AppointmentPayload = {
+  clientId: string;
+  vehicleId: string;
+  date: string;
+  workspaceId?: string;
+  timeSlotId?: string;
+  startTime?: string;
+  endTime?: string;
+};
+
+type EditableAppointment = Appointment & {
+  client_id?: string;
+  clientId?: string;
+  vehicle_id?: string;
+  vehicleId?: string;
+  time_slot_id?: string;
+  timeSlotId?: string;
+};
+
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error && typeof error === 'object') {
+    const candidate = error as {
+      message?: unknown;
+      response?: { data?: { message?: unknown } };
+    };
+
+    const responseMessage = candidate.response?.data?.message;
+    if (typeof responseMessage === 'string') return responseMessage;
+    if (typeof candidate.message === 'string') return candidate.message;
+  }
+
+  return fallback;
+}
+
 export default function AppointmentsPage() {
   const router = useRouter();
   /* ================= ÉTATS ================= */
@@ -225,9 +259,9 @@ export default function AppointmentsPage() {
       await appointmentService.startIntervention(id);
       toast.success('Véhicule envoyé à l’atelier (Diagnostic)');
       fetchInitialData();
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast.error(
-        e.response?.data?.message || "Erreur lors de l'envoi à l'atelier",
+        getErrorMessage(e, "Erreur lors de l\u2019envoi \u00e0 l\u2019atelier"),
       );
     }
   };
@@ -251,17 +285,23 @@ export default function AppointmentsPage() {
     setModalOpen(true);
   };
 
-  const openEditModal = (appointment: any) => {
+  const openEditModal = (appointment: Appointment) => {
     if (!appointment) return;
+    const editableAppointment = appointment as EditableAppointment;
     const d = appointment.date || new Date().toISOString().split('T')[0];
     setSelectedDate(d);
     loadSlots(d);
     setIsEditing(true);
     setForm({
-      id: appointment.id || appointment._id,
-      clientId: appointment.client_id || appointment.clientId,
-      vehicleId: appointment.vehicle_id || appointment.vehicleId,
-      timeSlotId: appointment.time_slot_id || appointment.timeSlotId || '',
+      id: editableAppointment.id,
+      clientId:
+        editableAppointment.client_id || editableAppointment.clientId || '',
+      vehicleId:
+        editableAppointment.vehicle_id || editableAppointment.vehicleId || '',
+      timeSlotId:
+        editableAppointment.time_slot_id ||
+        editableAppointment.timeSlotId ||
+        '',
       startTime: appointment.startTime || '',
       endTime: appointment.endTime || '',
     });
@@ -279,7 +319,7 @@ export default function AppointmentsPage() {
       await appointmentService.cancel(apptToCancel);
       toast.success('Le rendez-vous a été annulé');
       fetchInitialData();
-    } catch (e: any) {
+    } catch {
       toast.error("Erreur lors de l’annulation");
     } finally {
       setCancelModalOpen(false);
@@ -297,7 +337,7 @@ export default function AppointmentsPage() {
     try {
       const workspaceId =
         localStorage.getItem('current_workspace_id') || undefined;
-      const payload: any = {
+      const payload: AppointmentPayload = {
         clientId: form.clientId,
         vehicleId: form.vehicleId,
         date: selectedDate,
@@ -321,12 +361,10 @@ export default function AppointmentsPage() {
 
       setModalOpen(false);
       fetchInitialData();
-    } catch (e: any) {
-      const errorMsg =
-        e.response?.data?.message ||
-        e.message ||
-        'Erreur lors de l’enregistrement';
-      toast.error(errorMsg);
+    } catch (e: unknown) {
+      toast.error(
+        getErrorMessage(e, "Erreur lors de l\u2019enregistrement"),
+      );
     }
   };
 
@@ -612,7 +650,7 @@ export default function AppointmentsPage() {
               {vehicles
                 .filter(
                   (v) =>
-                    (v.clientId || (v as any).client_id) === form.clientId,
+                    (v.clientId || v.client_id) === form.clientId,
                 )
                 .map((v) => (
                   <option key={v.id || v._id} value={v.id || v._id}>
@@ -636,7 +674,7 @@ export default function AppointmentsPage() {
                     ...form,
                     startTime: slot.start,
                     endTime: slot.end,
-                    timeSlotId: slot.id || slot._id || '',
+                    timeSlotId: slot.id || '',
                   });
                 }
               }}
