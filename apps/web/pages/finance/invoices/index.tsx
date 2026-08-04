@@ -15,12 +15,49 @@ import {
 import { toast } from 'sonner';
 import { INVOICE_STATUS } from '../../../../../shared/constants/status.constants';
 
+type InvoicePayment = {
+  amount?: number | string;
+};
+
+type PaymentSchedule = {
+  due_date?: string;
+};
+
+type InvoiceClient = {
+  name?: string;
+};
+
+type Invoice = {
+  id: string;
+  reference?: string;
+  status?: string;
+  total?: number | string;
+  created_at: string;
+  client?: InvoiceClient;
+  payments?: InvoicePayment[];
+  Payment?: InvoicePayment[];
+  paymentSchedules?: PaymentSchedule[];
+};
+
+type PaymentResult = {
+  status?: string;
+};
+
+type ApiError = {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+};
+
 export default function InvoicesListPage() {
   const router = useRouter();
 
-  const [invoices, setInvoices] = useState<any[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedInvoice, setSelectedInvoice] = useState<any | null>(null);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('especes');
   const [paying, setPaying] = useState(false);
@@ -28,7 +65,7 @@ export default function InvoicesListPage() {
   const loadInvoices = async () => {
     try {
       const result = await financeService.getAllInvoices();
-      setInvoices(result ?? []);
+      setInvoices(Array.isArray(result) ? (result as Invoice[]) : []);
     } catch {
       toast.error('Erreur lors du chargement des factures');
     } finally {
@@ -40,12 +77,12 @@ export default function InvoicesListPage() {
     loadInvoices();
   }, []);
 
-  const getPayments = (invoice: any) =>
+  const getPayments = (invoice: Invoice): InvoicePayment[] =>
     invoice?.payments ?? invoice?.Payment ?? [];
 
-  const getPaidAmount = (invoice: any) => {
+  const getPaidAmount = (invoice: Invoice) => {
     const totalPaid = getPayments(invoice).reduce(
-      (sum: number, payment: any) =>
+      (sum: number, payment: InvoicePayment) =>
         sum + Number(payment.amount || 0),
       0,
     );
@@ -53,13 +90,13 @@ export default function InvoicesListPage() {
     return Math.min(totalPaid, Number(invoice?.total || 0));
   };
 
-  const getRemainingAmount = (invoice: any) =>
+  const getRemainingAmount = (invoice: Invoice) =>
     Math.max(
       Number(invoice?.total || 0) - getPaidAmount(invoice),
       0,
     );
 
-  const openPaymentForm = (invoice: any) => {
+  const openPaymentForm = (invoice: Invoice) => {
     const remaining = getRemainingAmount(invoice);
 
     setSelectedInvoice(invoice);
@@ -96,7 +133,7 @@ export default function InvoicesListPage() {
     setPaying(true);
 
     try {
-      const result: any = await financeService.payInvoice(
+      const result = await financeService.payInvoice(
         selectedInvoice.id,
         {
           amount: numericAmount,
@@ -104,8 +141,10 @@ export default function InvoicesListPage() {
         },
       );
 
+      const paymentResult = result as PaymentResult;
+
       toast.success(
-        result?.status === INVOICE_STATUS.PAID
+        paymentResult.status === INVOICE_STATUS.PAID
           ? 'Facture entièrement payée'
           : 'Paiement partiel enregistré',
       );
@@ -113,10 +152,12 @@ export default function InvoicesListPage() {
       closePaymentForm();
       setLoading(true);
       await loadInvoices();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const apiError = error as ApiError;
+
       toast.error(
-        error?.response?.data?.message ||
-          error?.message ||
+        apiError.response?.data?.message ||
+          apiError.message ||
           "Impossible d'enregistrer le paiement",
       );
     } finally {
@@ -285,7 +326,7 @@ export default function InvoicesListPage() {
                       <td className="p-5 text-center">
                         <span
                           className={`px-2.5 py-1 rounded-full text-[9px] font-black uppercase border ${getStatusStyle(
-                            invoice.status,
+                            invoice.status ?? '',
                           )}`}
                         >
                           {invoice.status}
