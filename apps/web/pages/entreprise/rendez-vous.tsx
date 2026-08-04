@@ -36,8 +36,12 @@ export default function RendezVousEntreprise() {
       });
 
       setMessage("Rendez-vous entreprise confirmé !");
-    } catch (e: any) {
-      setMessage(e.message);
+    } catch (e: unknown) {
+      setMessage(
+        e instanceof Error
+          ? e.message
+          : "Erreur lors de l’enregistrement du rendez-vous entreprise",
+      );
     }
   }
 
