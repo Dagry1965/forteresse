@@ -12,8 +12,34 @@ import {
 
 ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement);
 
+type EnterpriseVehicle = {
+  id: string;
+  make?: string;
+  model?: string;
+  plateNumber?: string;
+};
+
+type EnterpriseDashboardData = {
+  kpis: {
+    totalRevenue: number;
+    totalInterventions: number;
+    fleetSize: number;
+    avgRevenuePerIntervention: number;
+  };
+  charts: {
+    monthlyRevenue: number[];
+    monthlyInterventions: number[];
+  };
+  vehicles: EnterpriseVehicle[];
+};
+
+type KPIProps = {
+  label: string;
+  value: string | number;
+};
+
 export default function DashboardEntreprise() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<EnterpriseDashboardData | null>(null);
   const companyId = typeof window !== "undefined" ? localStorage.getItem("companyId") : null;
 
   async function load() {
@@ -23,7 +49,7 @@ export default function DashboardEntreprise() {
       `${CONFIG.API_BASE}/api/enterprise/${companyId}/dashboard`
     );
 
-    setData(res);
+    setData(res as EnterpriseDashboardData);
   }
 
   useEffect(() => {
@@ -90,7 +116,7 @@ export default function DashboardEntreprise() {
         <h2 className="text-xl font-semibold mb-4">Flotte</h2>
 
         <ul className="space-y-2">
-          {data.vehicles.map((v: any) => (
+          {data.vehicles.map((v) => (
             <li key={v.id} className="border p-3 rounded">
               {v.make} {v.model} — {v.plateNumber}
             </li>
@@ -101,7 +127,7 @@ export default function DashboardEntreprise() {
   );
 }
 
-function KPI({ label, value }: any) {
+function KPI({ label, value }: KPIProps) {
   return (
     <div className="bg-white p-4 rounded shadow text-center">
       <p className="text-gray-500">{label}</p>
