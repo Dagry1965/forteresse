@@ -7,8 +7,20 @@ import { AlertTriangle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
+interface PaymentReminder {
+  id: string;
+  amount?: number | null;
+  due_date?: string | null;
+  invoice?: {
+    reference?: string | null;
+    client?: {
+      name?: string | null;
+    } | null;
+  } | null;
+}
+
 export function PaymentReminders() {
-  const [reminders, setReminders] = useState<any[]>([]);
+  const [reminders, setReminders] = useState<PaymentReminder[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,7 +51,7 @@ const handleQuickPay = async (scheduleId: string) => {
     toast.success("Paiement encaissé avec succès !");
     // On recharge la page pour mettre à jour le dashboard
     window.location.reload();
-  } catch (err: any) {
+  } catch (err: unknown) {
     toast.error("Erreur lors de l'encaissement");
     console.error(err);
   }
@@ -71,7 +83,7 @@ const handleQuickPay = async (scheduleId: string) => {
       </div>
 
       <div className="space-y-3">
-        {reminders.map((reminder: any) => (
+        {reminders.map((reminder) => (
           <div
             key={reminder.id}
             className="p-4 bg-red-50 border border-red-200 rounded-xl flex justify-between items-center"
