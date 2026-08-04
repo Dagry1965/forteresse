@@ -40,7 +40,7 @@ export default function FinanceHubPage() {
       .getOverdueReminders()
       .then((data) => setOverdueInvoices(Array.isArray(data) ? (data as OverdueInvoiceSchedule[]) : []))
       .catch(() =>
-        toast.error('Erreur lors du chargement des factures ?chues'),
+        toast.error('Erreur lors du chargement des factures échues'),
       )
       .finally(() => setLoadingOverdue(false));
   }, []);
@@ -55,7 +55,7 @@ export default function FinanceHubPage() {
     },
     {
       title: 'Journal de Caisse',
-      description: 'Suivi des encaissements et cl?ture du jour',
+      description: 'Suivi des encaissements et clôture du jour',
       icon: Banknote,
       path: '/finance/cashier',
       color: 'bg-green-500',
@@ -85,7 +85,7 @@ export default function FinanceHubPage() {
             Finance
           </h1>
           <p className="text-slate-500 font-medium">
-            Pilotez la rentabilit? et les encaissements du garage
+            Pilotez la rentabilité et les encaissements du garage
           </p>
         </div>
       </div>
@@ -99,10 +99,10 @@ export default function FinanceHubPage() {
 
             <div>
               <h2 className="font-black uppercase text-red-900">
-                Factures ?chues
+                Factures échues
               </h2>
               <p className="text-sm text-red-600">
-                ?ch?ances d?pass?es et non r?gl?es
+                Échéances dépassées et non réglées
               </p>
             </div>
           </div>
@@ -115,11 +115,11 @@ export default function FinanceHubPage() {
         {loadingOverdue ? (
           <div className="flex items-center justify-center gap-3 p-10 text-slate-400">
             <Loader2 className="animate-spin" size={22} />
-            Chargement des ?ch?ances...
+            Chargement des échéances...
           </div>
         ) : overdueInvoices.length === 0 ? (
           <div className="p-10 text-center font-medium text-slate-400">
-            Aucune facture ?chue.
+            Aucune facture échue.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -138,7 +138,7 @@ export default function FinanceHubPage() {
                   </p>
 
                   <p className="mt-1 text-xs font-bold text-red-600">
-                    ?chue le{' '}
+                    Échue le{' '}
                     {new Date(schedule.due_date).toLocaleDateString(
                       'fr-FR',
                     )}
@@ -150,7 +150,7 @@ export default function FinanceHubPage() {
                     {Number(schedule.amount).toLocaleString('fr-FR', {
                       minimumFractionDigits: 2,
                     })}{' '}
-                    ?
+                    €
                   </p>
 
                   <Button
@@ -208,11 +208,11 @@ export default function FinanceHubPage() {
           </p>
 
           <h3 className="max-w-md text-xl font-bold leading-relaxed">
-            Consultez r?guli?rement votre{' '}
+            Consultez régulièrement votre{' '}
             <span className="text-blue-400">
               Journal de Caisse
             </span>{' '}
-            pour ?viter les ?carts en fin de mois.
+            pour éviter les écarts en fin de mois.
           </h3>
         </div>
 
