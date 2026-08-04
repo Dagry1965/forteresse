@@ -15,17 +15,67 @@ import {
 import { toast } from 'sonner';
 import { CASE_STATUS, PROFORMA_STATUS } from '../../../../../../shared/constants/status.constants';
 
+type InterventionPart = {
+  id: string;
+  quantity: number;
+  price_snapshot: number | string;
+  item?: {
+    name?: string;
+  };
+};
+
+type ProformaIntervention = {
+  id: string;
+  description?: string;
+  InterventionPart?: InterventionPart[];
+};
+
+type ProformaDocument = {
+  id: string;
+  reference: string;
+  created_at: string;
+  total: number | string;
+  status: string;
+  case?: {
+    status?: string;
+    client?: {
+      name?: string;
+      phone?: string;
+      email?: string;
+    };
+    vehicle?: {
+      brand?: string;
+      model?: string;
+      registration?: string;
+    };
+    interventions?: ProformaIntervention[];
+  };
+};
+
+function getErrorMessage(error: unknown): string | undefined {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+
+  return undefined;
+}
+
 export default function ProformaPrintPage() {
   const router = useRouter();
   const { id } = router.query;
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<ProformaDocument | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
     if (id) {
       proformaService.getOne(id as string)
-        .then(setData)
+        .then((result) => setData(result as ProformaDocument))
         .catch(() => toast.error("Erreur de chargement"))
         .finally(() => setLoading(false));
     }
@@ -69,9 +119,9 @@ export default function ProformaPrintPage() {
       await proformaService.convertToInvoice(data.id);
       toast.success("La facture a été créée avec succès.");
       router.push('/finance/invoices');
-    } catch (e: any) {
+    } catch (e: unknown) {
       toast.error(
-        e?.message || "Erreur lors de la création de la facture",
+        getErrorMessage(e) || "Erreur lors de la création de la facture",
       );
     } finally {
       setActionLoading(false);
@@ -222,7 +272,7 @@ export default function ProformaPrintPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {interventions.map((int: any) => (
+              {interventions.map((int) => (
                 <React.Fragment key={int.id}>
                   {/* Titre de l'intervention */}
                   <tr className="bg-slate-50">
@@ -231,7 +281,7 @@ export default function ProformaPrintPage() {
                     </td>
                   </tr>
                   {/* Détail des pièces */}
-                  {int.InterventionPart?.map((part: any) => (
+                  {int.InterventionPart?.map((part) => (
                     <tr key={part.id}>
                       <td className="py-4 text-xs font-bold text-slate-800">{part.item?.name}</td>
                       <td className="py-4 text-center text-xs">{part.quantity}</td>
