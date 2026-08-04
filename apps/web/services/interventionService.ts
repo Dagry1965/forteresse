@@ -27,6 +27,16 @@ export interface Case {
   }[];
 }
 
+export interface InterventionPart {
+  id: string;
+  quantity: number;
+  price_snapshot: number | string;
+  item?: {
+    id?: string;
+    name?: string;
+  };
+}
+
 export interface Intervention {
   id: string;
   description: string;
@@ -34,7 +44,7 @@ export interface Intervention {
   created_at: string;
   case_id?: string;
   case?: Case;
-  InterventionPart?: any[];
+  InterventionPart?: InterventionPart[];
 }
 
 // ====================== SERVICE FRONTEND ======================
