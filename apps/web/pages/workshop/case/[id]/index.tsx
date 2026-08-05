@@ -25,8 +25,133 @@ import {
   Save,
   Undo2,
   FileText,
-  Play // ✅ Ajouté pour l'état en cours
+  Play, // ✅ Ajouté pour l'état en cours
+  XCircle,
 } from 'lucide-react';
+
+type FlowCardProps = {
+  title: string;
+  stopTitle: string;
+  continueTitle: string;
+  condition: string;
+  variant?: 'neutral' | 'danger' | 'success' | 'warning';
+};
+
+function FlowCard({
+  title,
+  stopTitle,
+  continueTitle,
+  condition,
+  variant = 'neutral',
+}: FlowCardProps) {
+  const variantStyles = {
+    neutral: 'border-slate-200 bg-white',
+    danger: 'border-red-200 bg-red-50',
+    success: 'border-green-200 bg-green-50',
+    warning: 'border-amber-200 bg-amber-50',
+  } as const;
+
+  return (
+    <Card className={`rounded-2xl border p-5 shadow-sm ${variantStyles[variant]}`}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-black uppercase tracking-widest text-slate-800">
+          {title}
+        </h3>
+        <span className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase text-white">
+          Flux métier
+        </span>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 rounded-xl bg-white/80 p-3">
+          <XCircle className="mt-0.5 shrink-0 text-red-600" size={18} />
+          <div>
+            <p className="text-xs font-black uppercase text-red-700">Arrêt</p>
+            <p className="text-sm font-medium text-slate-700">{stopTitle}</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-xl bg-white/80 p-3">
+          <ChevronRight className="mt-0.5 shrink-0 text-blue-600" size={18} />
+          <div>
+            <p className="text-xs font-black uppercase text-blue-700">Continuer</p>
+            <p className="text-sm font-medium text-slate-700">{continueTitle}</p>
+          </div>
+        </div>
+
+        <div className="flex items-start gap-3 rounded-xl bg-white/80 p-3">
+          <CheckCircle2 className="mt-0.5 shrink-0 text-amber-600" size={18} />
+          <div>
+            <p className="text-xs font-black uppercase text-amber-700">
+              Condition requise
+            </p>
+            <p className="text-sm font-medium text-slate-700">{condition}</p>
+          </div>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function GarageFlowBlocks() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <FlowCard
+        title="Dossier atelier"
+        stopTitle="Le passage vers les étapes avancées est bloqué tant que la dernière proforma n'est pas acceptée."
+        continueTitle="Le dossier peut progresser de RECEIVED vers DIAGNOSIS, puis vers les étapes suivantes."
+        condition="La dernière proforma doit être ACCEPTED avant WAITING_PARTS, IN_PROGRESS ou COMPLETED."
+        variant="neutral"
+      />
+
+      <FlowCard
+        title="Génération de proforma"
+        stopTitle="La génération s'arrête s'il n'y a aucun article d'intervention."
+        continueTitle="La proforma peut être générée dès qu'au moins une pièce ou un article est présent."
+        condition="Au moins un InterventionPart doit exister dans le dossier."
+        variant="warning"
+      />
+
+      <FlowCard
+        title="Validation proforma"
+        stopTitle="Si la proforma est REJECTED, on ne débloque ni travaux ni facturation."
+        continueTitle="Si la proforma est ACCEPTED, la suite du flux s'ouvre."
+        condition="Le statut doit passer de DRAFT vers ACCEPTED ou REJECTED."
+        variant="success"
+      />
+
+      <FlowCard
+        title="Facturation simple"
+        stopTitle="La facturation s'arrête si la proforma n'est pas ACCEPTED."
+        continueTitle="La facture peut être créée uniquement à partir d'une proforma acceptée."
+        condition="Vérifier que la proforma liée est ACCEPTED avant create()."
+        variant="danger"
+      />
+
+      <FlowCard
+        title="Facturation groupée"
+        stopTitle="Les proformas non acceptées sont exclues."
+        continueTitle="Le regroupement facture seulement les dossiers validés."
+        condition="Le flux groupé doit filtrer uniquement les proformas ACCEPTED."
+        variant="success"
+      />
+
+      <FlowCard
+        title="Clôture atelier"
+        stopTitle="Le dossier ne doit pas être clôturé avant la fin des interventions."
+        continueTitle="Une fois les travaux terminés, le dossier peut passer en COMPLETED."
+        condition="Toutes les interventions doivent être terminées ou validées."
+        variant="neutral"
+      />
+    </div>
+  );
+}
+
+function caseHasInterventionArticles(dossier: Case | null): boolean {
+  return (dossier?.interventions ?? []).some(
+    (intervention) => (intervention.InterventionPart?.length ?? 0) > 0,
+  );
+}
 
 export default function CaseDetailPage() {
   const params = useParams();
@@ -63,7 +188,7 @@ export default function CaseDetailPage() {
       const data = await interventionService.getCaseDetails(currentInt.case_id);
       setDossier(data);
     } catch {
-      toast.error("Erreur lors du chargement du dossier");
+      toast.error('Erreur lors du chargement du dossier');
       router.push('/workshop');
     } finally {
       setLoading(false);
@@ -76,7 +201,7 @@ export default function CaseDetailPage() {
       const data = await stockService.getAll(workspaceId);
       setStockItems(data || []);
     } catch (e) {
-      console.error("Erreur chargement stock", e);
+      console.error('Erreur chargement stock', e);
     }
   };
 
@@ -93,13 +218,13 @@ export default function CaseDetailPage() {
     try {
       await interventionService.createNewPhase(
         dossier.id,
-        "Nouveau problème détecté (ex: fuite, pièce usée au démontage...)"
+        'Nouveau problème détecté (ex: fuite, pièce usée au démontage...)',
       );
 
-      toast.success("Nouvelle phase de travail ajoutée");
+      toast.success('Nouvelle phase de travail ajoutée');
       fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur lors de la création");
+      toast.error('Erreur lors de la création');
     }
   };
 
@@ -114,10 +239,10 @@ export default function CaseDetailPage() {
         status: status as Intervention['status'],
       });
 
-      toast.success("Mise à jour enregistrée");
+      toast.success('Mise à jour enregistrée');
       fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur lors de la sauvegarde");
+      toast.error('Erreur lors de la sauvegarde');
     }
   };
 
@@ -128,7 +253,7 @@ export default function CaseDetailPage() {
         quantity: 1,
       });
 
-      toast.success("Pièce ajoutée à la phase");
+      toast.success('Pièce ajoutée à la phase');
       setSearchTermPart('');
       setActiveSearchPhase(null);
       fetchFullDossier();
@@ -140,10 +265,10 @@ export default function CaseDetailPage() {
   const handleRemovePart = async (partId: string) => {
     try {
       await interventionService.removePart(partId);
-      toast.success("Pièce retirée");
+      toast.success('Pièce retirée');
       fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur de suppression");
+      toast.error('Erreur de suppression');
     }
   };
 
@@ -152,23 +277,18 @@ export default function CaseDetailPage() {
   const handleGenerateProforma = async () => {
     if (!dossier) return;
 
-    const hasInterventionArticles = (dossier.interventions ?? []).some(
-      (phase: Intervention) =>
-        (phase.InterventionPart?.length ?? 0) > 0,
-    );
-
-    if (!hasInterventionArticles) {
-      toast.error("Aucun article d'intervention : génération impossible.");
-      return;
-    }
-
     try {
+      if (!caseHasInterventionArticles(dossier)) {
+        toast.error("Aucun article d'intervention : génération impossible.");
+        return;
+      }
+
       setActionLoading(true);
       const proforma = await interventionService.generateProforma(dossier.id);
       toast.success(`Proforma ${proforma.reference} générée !`);
       router.push(`/billing/proforma/${proforma.id}`);
     } catch (e) {
-      toast.error("Erreur lors de la génération du devis global");
+      toast.error('Erreur lors de la génération du devis global');
     } finally {
       setActionLoading(false);
     }
@@ -184,10 +304,10 @@ export default function CaseDetailPage() {
       // ✅ Appel conforme à votre architecture /case/:id/status
       await interventionService.updateCaseStatus(dossier.id, CASE_STATUS.IN_PROGRESS);
 
-      toast.success("Accord client enregistré ! Travaux lancés.");
+      toast.success('Accord client enregistré ! Travaux lancés.');
       await fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur lors de la validation");
+      toast.error('Erreur lors de la validation');
     } finally {
       setActionLoading(false);
     }
@@ -201,13 +321,13 @@ export default function CaseDetailPage() {
 
       await interventionService.updateCaseStatus(
         dossier.id,
-        CASE_STATUS.IN_PROGRESS
+        CASE_STATUS.IN_PROGRESS,
       );
 
-      toast.success("Le dossier est passé en réparation.");
+      toast.success('Le dossier est passé en réparation.');
       await fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur lors du passage en réparation");
+      toast.error('Erreur lors du passage en réparation');
     } finally {
       setActionLoading(false);
     }
@@ -221,16 +341,16 @@ export default function CaseDetailPage() {
 
       await interventionService.updateCaseStatus(
         dossier.id,
-        CASE_STATUS.COMPLETED
+        CASE_STATUS.COMPLETED,
       );
 
       toast.success(
-        "Toutes les interventions sont termin?es. Dossier pr?t pour la comptabilit?."
+        'Toutes les interventions sont terminées. Dossier prêt pour la comptabilité.',
       );
 
       await fetchFullDossier();
     } catch (e) {
-      toast.error("Erreur lors de la cl?ture des travaux");
+      toast.error('Erreur lors de la clôture des travaux');
     } finally {
       setActionLoading(false);
     }
@@ -250,7 +370,7 @@ export default function CaseDetailPage() {
     const phaseSum =
       phase.InterventionPart?.reduce(
         (s: number, p: InterventionPart) => s + Number(p.price_snapshot) * p.quantity,
-        0
+        0,
       ) || 0;
 
     return acc + phaseSum;
@@ -259,9 +379,7 @@ export default function CaseDetailPage() {
   const tva = totalHT * 0.20;
   const totalTTC = totalHT + tva;
   const currentProforma = dossier.proformas?.[0];
-  const hasInterventionArticles = (dossier.interventions ?? []).some(
-    (phase: Intervention) => (phase.InterventionPart?.length ?? 0) > 0,
-  );
+  const hasInterventionArticles = caseHasInterventionArticles(dossier);
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8 pb-20">
@@ -362,8 +480,8 @@ export default function CaseDetailPage() {
 
                         <h3 className="font-black text-xs uppercase text-slate-700 tracking-widest">
                           {index === 0
-                            ? "Diagnostic de départ"
-                            : "Travaux Supplémentaires"}
+                            ? 'Diagnostic de départ'
+                            : 'Travaux Supplémentaires'}
                         </h3>
                       </div>
 
@@ -375,7 +493,7 @@ export default function CaseDetailPage() {
                             : phase.status === INTERVENTION_STATUS.IN_PROGRESS
                               ? 'EN COURS'
                               : phase.status === INTERVENTION_STATUS.COMPLETED
-                                ? 'TERMIN?'
+                                ? 'TERMINÉ'
                                 : phase.status}
                       </span>
                     </div>
@@ -394,7 +512,7 @@ export default function CaseDetailPage() {
                             handleSavePhase(
                               phase.id,
                               e.target.value,
-                              phase.status
+                              phase.status,
                             )
                           }
                           placeholder="Décrivez les pannes ou les travaux effectués..."
@@ -414,7 +532,7 @@ export default function CaseDetailPage() {
                             className="text-blue-600 font-bold text-xs"
                             onClick={() => {
                               setActiveSearchPhase(
-                                activeSearchPhase === phase.id ? null : phase.id
+                                activeSearchPhase === phase.id ? null : phase.id,
                               );
                               setSearchTermPart('');
                             }}
@@ -445,7 +563,7 @@ export default function CaseDetailPage() {
                                   .filter((i) =>
                                     i.name
                                       .toLowerCase()
-                                      .includes(searchPart.toLowerCase())
+                                      .includes(searchPart.toLowerCase()),
                                   )
                                   .map((item) => (
                                     <div
@@ -619,7 +737,7 @@ export default function CaseDetailPage() {
                 >
                   <FileText size={18} />
                   {currentProforma.status === PROFORMA_STATUS.DRAFT
-                    ? 'Ouvrir la proforma pour validation'
+                    ? "Ouvrir la proforma pour validation"
                     : 'Voir la proforma'}
 
                   <span className="ml-auto text-[10px] uppercase opacity-70">
@@ -680,7 +798,19 @@ export default function CaseDetailPage() {
             )}
           </div>
         </div>
+      </div>
 
+      <div className="mt-10 space-y-4">
+        <div>
+          <h2 className="text-xl font-black uppercase tracking-tight text-slate-900">
+            Règles de flux du garage
+          </h2>
+          <p className="text-sm text-slate-500">
+            Arrêt / Continuer / Condition requise
+          </p>
+        </div>
+
+        <GarageFlowBlocks />
       </div>
     </div>
   );
