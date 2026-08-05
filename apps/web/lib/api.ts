@@ -53,7 +53,7 @@ export async function api<T = unknown>(
 ): Promise<T> {
 
   const token = localStorage.getItem("access_token") || localStorage.getItem("token");
-  const refreshToken = localStorage.getItem("refreshToken");
+  const refreshToken = localStorage.getItem("refresh_token");
   const workspaceId = localStorage.getItem("current_workspace_id");
 
   const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
@@ -122,7 +122,7 @@ export async function api<T = unknown>(
         if (refreshRes.ok) {
           const data = await refreshRes.json();
           const newAccessToken = data.accessToken || data.access_token;
-          localStorage.setItem("token", newAccessToken);
+          localStorage.setItem("access_token", newAccessToken);
           console.log("✅ Token rafraîchi, on rejoue la requête initiale.");
           return await doFetch(newAccessToken);
         } else {

@@ -51,6 +51,9 @@ export default function LoginPage() {
 
       // 🔥 CORRECTION CRITIQUE : clé cohérente avec lib/api.ts
       localStorage.setItem("access_token", data.access_token);
+      if (data.refresh_token) {
+        localStorage.setItem("refresh_token", data.refresh_token);
+      }
 
       // 🔥 Stockage du workspace multi-tenant
       const workspaceId = data.user?.memberships?.[0]?.workspaceId;
