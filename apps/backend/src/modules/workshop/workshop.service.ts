@@ -8,6 +8,7 @@ import {
   CASE_STATUS,
   INTERVENTION_STATUS,
   CASE_STATUS_TRANSITIONS,
+  PROFORMA_STATUS,
 } from '../../../../../shared/constants/status.constants';
 
 @Injectable()
@@ -61,63 +62,86 @@ export class WorkshopService {
     };
   }
 
-  async updateCaseStatus(workspaceId: string, caseId: string, status: string) {
-    return this.prisma.$transaction(async (tx) => {
-      const repairCase = await tx.case.findFirst({
-        where: {
-          id: caseId,
-          workspace_id: workspaceId,
+ async updateCaseStatus(workspaceId: string, caseId: string, status: string) {
+  return this.prisma.$transaction(async (tx) => {
+    const repairCase = await tx.case.findFirst({
+      where: {
+        id: caseId,
+        workspace_id: workspaceId,
+      },
+      include: {
+        proformas: {
+          where: { deleted_at: null },
+          orderBy: { created_at: 'desc' },
+          take: 1,
         },
-      });
+      },
+    });
 
-      if (!repairCase) {
-        throw new NotFoundException('Dossier introuvable');
-      }
+    if (!repairCase) {
+      throw new NotFoundException('Dossier introuvable');
+    }
 
-      this.assertCaseStatusTransition(repairCase.status, status);
+    const latestProforma = repairCase.proformas?.[0] ?? null;
 
-      if (status === CASE_STATUS.IN_PROGRESS) {
-        await tx.intervention.updateMany({
-          where: {
-            case_id: caseId,
-            workspace_id: workspaceId,
-            deleted_at: null,
-            status: {
-              in: [INTERVENTION_STATUS.PENDING, INTERVENTION_STATUS.DIAGNOSIS],
-            },
-          },
-          data: {
-            status: INTERVENTION_STATUS.IN_PROGRESS,
-            updated_at: new Date(),
-          },
-        });
-      }
+    const requiresAcceptedProforma =
+      status === CASE_STATUS.WAITING_PARTS ||
+      status === CASE_STATUS.IN_PROGRESS ||
+      status === CASE_STATUS.COMPLETED;
 
-      if (status === CASE_STATUS.COMPLETED) {
-        await tx.intervention.updateMany({
-          where: {
-            case_id: caseId,
-            workspace_id: workspaceId,
-            deleted_at: null,
-          },
-          data: {
-            status: INTERVENTION_STATUS.COMPLETED,
-            updated_at: new Date(),
-          },
-        });
-      }
+    if (
+      requiresAcceptedProforma &&
+      latestProforma?.status !== PROFORMA_STATUS.ACCEPTED
+    ) {
+      throw new BadRequestException(
+        "Le devis doit être accepté avant de poursuivre l'atelier.",
+      );
+    }
 
-      return tx.case.update({
+    this.assertCaseStatusTransition(repairCase.status, status);
+
+    if (status === CASE_STATUS.IN_PROGRESS) {
+      await tx.intervention.updateMany({
         where: {
-          id: caseId,
+          case_id: caseId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+          status: {
+            in: [INTERVENTION_STATUS.PENDING, INTERVENTION_STATUS.DIAGNOSIS],
+          },
         },
         data: {
-          status,
+          status: INTERVENTION_STATUS.IN_PROGRESS,
           updated_at: new Date(),
         },
       });
+    }
+
+    if (status === CASE_STATUS.COMPLETED) {
+      await tx.intervention.updateMany({
+        where: {
+          case_id: caseId,
+          workspace_id: workspaceId,
+          deleted_at: null,
+        },
+        data: {
+          status: INTERVENTION_STATUS.COMPLETED,
+          updated_at: new Date(),
+        },
+      });
+    }
+
+    return tx.case.update({
+      where: {
+        id: caseId,
+      },
+      data: {
+        status,
+        updated_at: new Date(),
+      },
     });
-  }
+  });
+}
 
 
 

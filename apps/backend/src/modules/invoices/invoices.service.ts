@@ -61,82 +61,110 @@ export class InvoicesService {
   // ---------------------------------------------------------
   // CREATE INVOICE (Simple / Individuelle)
   // ---------------------------------------------------------
-  async create(
-    workspaceId: string,
-    userId: string,
-    dto: CreateInvoiceInput,
-  ) {
-    const status = this.normalizeStatus(dto.status);
-    const type = this.normalizeType(dto.type);
+async create(
+  workspaceId: string,
+  userId: string,
+  dto: CreateInvoiceInput,
+) {
+  const status = this.normalizeStatus(dto.status);
+  const type = this.normalizeType(dto.type);
 
-    const [client, user] = await Promise.all([
-      this.prisma.client.findFirst({
-        where: {
-          id: dto.client_id,
-          workspace_id: workspaceId,
-          deleted_at: null,
-        },
-      }),
-      this.prisma.user.findFirst({
-        where: {
-          id: userId,
-          workspace_id: workspaceId,
-          deleted_at: null,
-        },
-      }),
-    ]);
-
-    if (!client) {
-      throw new NotFoundException(
-        'Client introuvable dans ce workspace.',
-      );
-    }
-
-    if (!user) {
-      throw new NotFoundException(
-        'Utilisateur introuvable dans ce workspace.',
-      );
-    }
-
-    const reference = await this.sequencingService.generateReference(
-      workspaceId,
-      'INVOICE',
-    );
-
-    return this.prisma.invoice.create({
-      data: {
-        reference,
-        total: dto.total,
-        status,
-        type,
-        workspace: { connect: { id: workspaceId } },
-        client: { connect: { id: client.id } },
-        user: { connect: { id: user.id } },
-        customer_name_snapshot:
-          client.company_name || client.name || null,
-        customer_address_snapshot:
-          client.address || null,
-        customer_billing_address_snapshot:
-          client.billing_address || client.address || null,
-        customer_registration_number_snapshot:
-          client.registration_number || null,
-        customer_vat_number_snapshot:
-          client.vat_number || null,
-        customer_email_snapshot:
-          client.email || null,
-        customer_phone_snapshot:
-          client.phone || null,
-        ...(dto.proforma_id && { proforma: { connect: { id: dto.proforma_id } } }),
-        ...(dto.appointment_id && { appointment: { connect: { id: dto.appointment_id } } }),
+  const [client, user] = await Promise.all([
+    this.prisma.client.findFirst({
+      where: {
+        id: dto.client_id,
+        workspace_id: workspaceId,
+        deleted_at: null,
       },
-      include: {
-        client: true,
-        user: true,
-        proforma: true,
-        appointment: true,
+    }),
+    this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+    }),
+  ]);
+
+  if (!client) {
+    throw new NotFoundException(
+      'Client introuvable dans ce workspace.',
+    );
+  }
+
+  if (!user) {
+    throw new NotFoundException(
+      'Utilisateur introuvable dans ce workspace.',
+    );
+  }
+
+  let proforma = null;
+
+  if (dto.proforma_id) {
+    proforma = await this.prisma.proforma.findFirst({
+      where: {
+        id: dto.proforma_id,
+        workspace_id: workspaceId,
+        deleted_at: null,
       },
     });
+
+    if (!proforma) {
+      throw new NotFoundException(
+        'Proforma introuvable dans ce workspace.',
+      );
+    }
+
+    if (proforma.status !== PROFORMA_STATUS.ACCEPTED) {
+      throw new BadRequestException(
+        'Impossible de créer une facture tant que la proforma n’est pas acceptée.',
+      );
+    }
   }
+
+  const reference = await this.sequencingService.generateReference(
+    workspaceId,
+    'INVOICE',
+  );
+
+  return this.prisma.invoice.create({
+    data: {
+      reference,
+      total: dto.total,
+      status,
+      type,
+      workspace: { connect: { id: workspaceId } },
+      client: { connect: { id: client.id } },
+      user: { connect: { id: user.id } },
+      customer_name_snapshot:
+        client.company_name || client.name || null,
+      customer_address_snapshot:
+        client.address || null,
+      customer_billing_address_snapshot:
+        client.billing_address || client.address || null,
+      customer_registration_number_snapshot:
+        client.registration_number || null,
+      customer_vat_number_snapshot:
+        client.vat_number || null,
+      customer_email_snapshot:
+        client.email || null,
+      customer_phone_snapshot:
+        client.phone || null,
+      ...(proforma
+        ? { proforma: { connect: { id: proforma.id } } }
+        : {}),
+      ...(dto.appointment_id
+        ? { appointment: { connect: { id: dto.appointment_id } } }
+        : {}),
+    },
+    include: {
+      client: true,
+      user: true,
+      proforma: true,
+      appointment: true,
+    },
+  });
+}
 
   // ---------------------------------------------------------
   // CREATE GROUPED INVOICE (La méthode utilisée par Fleet/index.tsx)
