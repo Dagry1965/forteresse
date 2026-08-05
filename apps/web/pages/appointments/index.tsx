@@ -67,24 +67,6 @@ function normalizeDateOnly(value: string): string {
   return value.includes('T') ? value.split('T')[0] : value;
 }
 
-
-function getWorkshopCaseId(appt: Appointment): string | null {
-  const extended = appt as Appointment & {
-    repairCase?: { id?: string };
-    case?: { id?: string };
-    case_id?: string;
-    repairCase_id?: string;
-  };
-
-  return (
-    extended.repairCase?.id ||
-    extended.case?.id ||
-    extended.case_id ||
-    extended.repairCase_id ||
-    null
-  );
-}
-
 export default function AppointmentsPage() {
   const router = useRouter();
 
@@ -115,7 +97,7 @@ export default function AppointmentsPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
 
   // États pour l'annulation
-  const [cancelDialogOpen, setCancelModalOpen] = useState(false);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [apptToCancel, setApptToCancel] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -263,7 +245,7 @@ export default function AppointmentsPage() {
     const unique = new Map<string, Appointment>();
 
     for (const appt of appointments) {
-      const vehicle = appt.vehicle as Vehicle & { _id?: string } | undefined;
+      const vehicle = appt.vehicle as (Vehicle & { _id?: string }) | undefined;
       const key = vehicle?.id || vehicle?._id || appt.id;
 
       if (!unique.has(key)) {
@@ -296,7 +278,7 @@ export default function AppointmentsPage() {
 
       return matchStatus && matchDate && matchSearch;
     });
-  }, [appointments, filterStatus, filterDate, searchTerm]);
+  }, [appointmentsForList, filterStatus, filterDate, searchTerm]);
 
   /* ================= GESTION WORKSHOP ================= */
   const handleStartWorkshop = async (id: string) => {
@@ -357,7 +339,7 @@ export default function AppointmentsPage() {
 
   const handleCancelClick = (id: string) => {
     setApptToCancel(id);
-    setCancelModalOpen(true);
+    setCancelDialogOpen(true);
   };
 
   const confirmCancel = async () => {
@@ -369,7 +351,7 @@ export default function AppointmentsPage() {
     } catch {
       toast.error('Erreur lors de l’annulation');
     } finally {
-      setCancelModalOpen(false);
+      setCancelDialogOpen(false);
       setApptToCancel(null);
     }
   };
@@ -612,27 +594,37 @@ export default function AppointmentsPage() {
               key: 'actions',
               header: 'Actions',
               render: (r) => {
-                const caseId = getWorkshopCaseId(r);
-                const workshopStarted =
-                  r.status === APPOINTMENT_STATUS.IN_PROGRESS ||
-                  r.status === APPOINTMENT_STATUS.COMPLETED;
+                const appointment = r as Appointment & {
+                  repairCase?: { id?: string };
+                  case?: { id?: string };
+                };
+
+                const caseId =
+                  appointment.repairCase?.id ||
+                  appointment.case?.id ||
+                  null;
+
+                const isWorkshopStarted =
+                  appointment.status === APPOINTMENT_STATUS.IN_PROGRESS ||
+                  appointment.status === APPOINTMENT_STATUS.COMPLETED;
 
                 return (
                   <div
                     className="flex gap-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {(r.status === APPOINTMENT_STATUS.PENDING || r.status === APPOINTMENT_STATUS.CONFIRMED) && (
+                    {(appointment.status === APPOINTMENT_STATUS.PENDING ||
+                      appointment.status === APPOINTMENT_STATUS.CONFIRMED) && (
                       <Button
                         size="sm"
                         className="bg-orange-500 hover:bg-orange-600 text-white"
-                        onClick={() => handleStartWorkshop(r.id)}
+                        onClick={() => handleStartWorkshop(appointment.id)}
                       >
                         Démarrer Atelier
                       </Button>
                     )}
 
-                    {workshopStarted && (
+                    {isWorkshopStarted && (
                       <Button
                         size="sm"
                         className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -641,6 +633,7 @@ export default function AppointmentsPage() {
                             toast.error('Dossier atelier introuvable.');
                             return;
                           }
+
                           router.push(`/workshop/case/${caseId}`);
                         }}
                       >
@@ -651,22 +644,21 @@ export default function AppointmentsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => openEditModal(r)}
+                      onClick={() => openEditModal(appointment)}
                     >
                       Modifier
                     </Button>
 
-                    {r.status !== APPOINTMENT_STATUS.CANCELLED && r.status !== APPOINTMENT_STATUS.COMPLETED && (
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onClick={() =>
-                          handleCancelClick(r.id)
-                        }
-                      >
-                        Annuler
-                      </Button>
-                    )}
+                    {appointment.status !== APPOINTMENT_STATUS.CANCELLED &&
+                      appointment.status !== APPOINTMENT_STATUS.COMPLETED && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleCancelClick(appointment.id)}
+                        >
+                          Annuler
+                        </Button>
+                      )}
                   </div>
                 );
               },
@@ -739,7 +731,9 @@ export default function AppointmentsPage() {
               {vehicles
                 .filter(
                   (v) =>
-                    (v.clientId || v.client_id) === form.clientId,
+                    (v.clientId ||
+                      (v as Vehicle & { client_id?: string }).client_id) ===
+                    form.clientId,
                 )
                 .map((v) => (
                   <option key={v.id || v._id} value={v.id || v._id}>
@@ -793,8 +787,8 @@ export default function AppointmentsPage() {
                   s.available === 0
                     ? ' (Complet)'
                     : totalCapacity !== undefined
-                    ? ` (${s.booked}/${totalCapacity})`
-                    : '';
+                      ? ` (${s.booked}/${totalCapacity})`
+                      : '';
 
                 return (
                   <option
@@ -812,9 +806,9 @@ export default function AppointmentsPage() {
         </div>
       </EntityFormModal>
 
-          <ConfirmDialog
+      <ConfirmDialog
         open={cancelDialogOpen}
-        onOpenChange={setCancelModalOpen}
+        onOpenChange={setCancelDialogOpen}
         onConfirm={confirmCancel}
         title="Annuler le rendez-vous"
         description="Êtes-vous sûr de vouloir annuler ce rendez-vous ? Cette action est irréversible."
