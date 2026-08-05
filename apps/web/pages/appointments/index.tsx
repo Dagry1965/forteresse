@@ -67,6 +67,24 @@ function normalizeDateOnly(value: string): string {
   return value.includes('T') ? value.split('T')[0] : value;
 }
 
+
+function getWorkshopCaseId(appt: Appointment): string | null {
+  const extended = appt as Appointment & {
+    repairCase?: { id?: string };
+    case?: { id?: string };
+    case_id?: string;
+    repairCase_id?: string;
+  };
+
+  return (
+    extended.repairCase?.id ||
+    extended.case?.id ||
+    extended.case_id ||
+    extended.repairCase_id ||
+    null
+  );
+}
+
 export default function AppointmentsPage() {
   const router = useRouter();
 
@@ -241,9 +259,24 @@ export default function AppointmentsPage() {
       );
   }, [appointments]);
 
+  const appointmentsForList = useMemo(() => {
+    const unique = new Map<string, Appointment>();
+
+    for (const appt of appointments) {
+      const vehicle = appt.vehicle as Vehicle & { _id?: string } | undefined;
+      const key = vehicle?.id || vehicle?._id || appt.id;
+
+      if (!unique.has(key)) {
+        unique.set(key, appt);
+      }
+    }
+
+    return Array.from(unique.values());
+  }, [appointments]);
+
   /* ================= FILTRAGE ET RECHERCHE ================= */
   const filteredAppointments = useMemo(() => {
-    return appointments.filter((appt) => {
+    return appointmentsForList.filter((appt) => {
       const matchStatus = filterStatus
         ? appt.status === filterStatus
         : appt.status !== APPOINTMENT_STATUS.COMPLETED &&
@@ -578,42 +611,65 @@ export default function AppointmentsPage() {
             {
               key: 'actions',
               header: 'Actions',
-              render: (r) => (
-                <div
-                  className="flex gap-2"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {(r.status === APPOINTMENT_STATUS.PENDING || r.status === APPOINTMENT_STATUS.CONFIRMED) && (
-                    <Button
-                      size="sm"
-                      className="bg-orange-500 hover:bg-orange-600 text-white"
-                      onClick={() => handleStartWorkshop(r.id)}
-                    >
-                      Démarrer Atelier
-                    </Button>
-                  )}
+              render: (r) => {
+                const caseId = getWorkshopCaseId(r);
+                const workshopStarted =
+                  r.status === APPOINTMENT_STATUS.IN_PROGRESS ||
+                  r.status === APPOINTMENT_STATUS.COMPLETED;
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => openEditModal(r)}
+                return (
+                  <div
+                    className="flex gap-2"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    Modifier
-                  </Button>
+                    {(r.status === APPOINTMENT_STATUS.PENDING || r.status === APPOINTMENT_STATUS.CONFIRMED) && (
+                      <Button
+                        size="sm"
+                        className="bg-orange-500 hover:bg-orange-600 text-white"
+                        onClick={() => handleStartWorkshop(r.id)}
+                      >
+                        Démarrer Atelier
+                      </Button>
+                    )}
 
-                  {r.status !== APPOINTMENT_STATUS.CANCELLED && r.status !== APPOINTMENT_STATUS.COMPLETED && (
+                    {workshopStarted && (
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        onClick={() => {
+                          if (!caseId) {
+                            toast.error('Dossier atelier introuvable.');
+                            return;
+                          }
+                          router.push(`/workshop/case/${caseId}`);
+                        }}
+                      >
+                        Atelier déjà démarré
+                      </Button>
+                    )}
+
                     <Button
                       size="sm"
-                      variant="destructive"
-                      onClick={() =>
-                        handleCancelClick(r.id)
-                      }
+                      variant="outline"
+                      onClick={() => openEditModal(r)}
                     >
-                      Annuler
+                      Modifier
                     </Button>
-                  )}
-                </div>
-              ),
+
+                    {r.status !== APPOINTMENT_STATUS.CANCELLED && r.status !== APPOINTMENT_STATUS.COMPLETED && (
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() =>
+                          handleCancelClick(r.id)
+                        }
+                      >
+                        Annuler
+                      </Button>
+                    )}
+                  </div>
+                );
+              },
             },
           ]}
         />
@@ -756,7 +812,7 @@ export default function AppointmentsPage() {
         </div>
       </EntityFormModal>
 
-      <ConfirmDialog
+          <ConfirmDialog
         open={cancelDialogOpen}
         onOpenChange={setCancelModalOpen}
         onConfirm={confirmCancel}
