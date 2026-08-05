@@ -62,6 +62,11 @@ function getErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+function normalizeDateOnly(value: string): string {
+  if (!value) return new Date().toISOString().split('T')[0];
+  return value.includes('T') ? value.split('T')[0] : value;
+}
+
 export default function AppointmentsPage() {
   const router = useRouter();
 
@@ -112,7 +117,7 @@ export default function AppointmentsPage() {
         localStorage.getItem('current_workspace_id') || undefined;
 
       if (!workspaceId) {
-        toast.error("Aucun espace de travail sélectionné.");
+        toast.error('Aucun espace de travail sélectionné.');
         setLoading(false);
         return;
       }
@@ -137,7 +142,8 @@ export default function AppointmentsPage() {
     try {
       setLoadingSlots(true);
       const workspaceId = localStorage.getItem('current_workspace_id') || undefined;
-      const slots = await appointmentService.getAvailableSlots(date, workspaceId);
+      const safeDate = normalizeDateOnly(date);
+      const slots = await appointmentService.getAvailableSlots(safeDate, workspaceId);
       setAvailableSlots(slots || []);
     } catch (e) {
       toast.error('Erreur lors de la récupération des créneaux');
@@ -200,7 +206,7 @@ export default function AppointmentsPage() {
       return;
     }
 
-    const date = new Date().toISOString().split('T')[0];
+    const date = normalizeDateOnly(new Date().toISOString().split('T')[0]);
     setSelectedDate(date);
     void loadSlots(date);
     setIsEditing(false);
@@ -274,9 +280,9 @@ export default function AppointmentsPage() {
 
   /* ================= GESTION MODAL ================= */
   const openCreateModal = (dateStr?: string) => {
-    const d = dateStr
-      ? dateStr.split('T')[0]
-      : new Date().toISOString().split('T')[0];
+    const d = normalizeDateOnly(
+      dateStr || new Date().toISOString().split('T')[0],
+    );
     setSelectedDate(d);
     void loadSlots(d);
     setIsEditing(false);
@@ -294,7 +300,9 @@ export default function AppointmentsPage() {
   const openEditModal = (appointment: Appointment) => {
     if (!appointment) return;
     const editableAppointment = appointment as EditableAppointment;
-    const d = appointment.date || new Date().toISOString().split('T')[0];
+    const d = normalizeDateOnly(
+      appointment.date || new Date().toISOString().split('T')[0],
+    );
     setSelectedDate(d);
     void loadSlots(d);
     setIsEditing(true);
@@ -626,7 +634,7 @@ export default function AppointmentsPage() {
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               value={selectedDate}
               onChange={(e) => {
-                const date = e.target.value;
+                const date = normalizeDateOnly(e.target.value);
                 setSelectedDate(date);
                 setForm({
                   ...form,
