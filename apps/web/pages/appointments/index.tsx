@@ -64,6 +64,7 @@ function getErrorMessage(error: unknown, fallback: string): string {
 
 export default function AppointmentsPage() {
   const router = useRouter();
+
   /* ================= ÉTATS ================= */
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
@@ -73,8 +74,11 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // ✅ CHANGEMENT : 'list' par défaut au lieu de 'calendar'
+  // Vue principale
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+
+  // Vue calendrier
+  const [calendarView, setCalendarView] = useState<'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
@@ -105,7 +109,7 @@ export default function AppointmentsPage() {
     try {
       setLoading(true);
       const workspaceId =
-        localStorage.getItem("current_workspace_id") || undefined;
+        localStorage.getItem('current_workspace_id') || undefined;
 
       if (!workspaceId) {
         toast.error("Aucun espace de travail sélectionné.");
@@ -118,6 +122,7 @@ export default function AppointmentsPage() {
         clientService.getAll(workspaceId),
         vehicleService.getAll(workspaceId),
       ]);
+
       setAppointments(appts || []);
       setClients(cls || []);
       setVehicles(vehs || []);
@@ -164,7 +169,7 @@ export default function AppointmentsPage() {
 
     if (!clientId || !vehicleId) {
       toast.error(
-        'Les informations du client et du v\u00e9hicule sont incompl\u00e8tes.',
+        'Les informations du client et du véhicule sont incomplètes.',
       );
       setQueryPrefillHandled(true);
       return;
@@ -177,7 +182,7 @@ export default function AppointmentsPage() {
     );
 
     if (!selectedVehicle) {
-      toast.error('Le v\u00e9hicule demand\u00e9 est introuvable.');
+      toast.error('Le véhicule demandé est introuvable.');
       setQueryPrefillHandled(true);
       return;
     }
@@ -189,7 +194,7 @@ export default function AppointmentsPage() {
 
     if (vehicleClientId !== clientId) {
       toast.error(
-        'Ce v\u00e9hicule n\u2019appartient pas au client s\u00e9lectionn\u00e9.',
+        'Ce véhicule n’appartient pas au client sélectionné.',
       );
       setQueryPrefillHandled(true);
       return;
@@ -219,23 +224,24 @@ export default function AppointmentsPage() {
   ]);
 
   const calendarEvents = useMemo(() => {
-  return appointments
-    .map(AppointmentUiMapper.toFullCalendar)
-    .filter(
-      (
-        event,
-      ): event is NonNullable<
-        ReturnType<typeof AppointmentUiMapper.toFullCalendar>
-      > => event !== null,
-    );
-}, [appointments]);
+    return appointments
+      .map(AppointmentUiMapper.toFullCalendar)
+      .filter(
+        (
+          event,
+        ): event is NonNullable<
+          ReturnType<typeof AppointmentUiMapper.toFullCalendar>
+        > => event !== null,
+      );
+  }, [appointments]);
 
-  /* ================= FILTRAGE ET RECHERCHE (CRUCIAL) ================= */
+  /* ================= FILTRAGE ET RECHERCHE ================= */
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appt) => {
       const matchStatus = filterStatus
         ? appt.status === filterStatus
-        : appt.status !== APPOINTMENT_STATUS.COMPLETED && appt.status !== APPOINTMENT_STATUS.CANCELLED;
+        : appt.status !== APPOINTMENT_STATUS.COMPLETED &&
+          appt.status !== APPOINTMENT_STATUS.CANCELLED;
 
       const matchDate =
         !filterDate ||
@@ -253,7 +259,7 @@ export default function AppointmentsPage() {
     });
   }, [appointments, filterStatus, filterDate, searchTerm]);
 
-  /* ================= GESTION WORKSHOP (ATELIER) ================= */
+  /* ================= GESTION WORKSHOP ================= */
   const handleStartWorkshop = async (id: string) => {
     try {
       await appointmentService.startIntervention(id);
@@ -261,7 +267,7 @@ export default function AppointmentsPage() {
       fetchInitialData();
     } catch (e: unknown) {
       toast.error(
-        getErrorMessage(e, "Erreur lors de l\u2019envoi \u00e0 l\u2019atelier"),
+        getErrorMessage(e, 'Erreur lors de l’envoi à l’atelier'),
       );
     }
   };
@@ -272,7 +278,7 @@ export default function AppointmentsPage() {
       ? dateStr.split('T')[0]
       : new Date().toISOString().split('T')[0];
     setSelectedDate(d);
-    loadSlots(d);
+    void loadSlots(d);
     setIsEditing(false);
     setForm({
       id: '',
@@ -290,7 +296,7 @@ export default function AppointmentsPage() {
     const editableAppointment = appointment as EditableAppointment;
     const d = appointment.date || new Date().toISOString().split('T')[0];
     setSelectedDate(d);
-    loadSlots(d);
+    void loadSlots(d);
     setIsEditing(true);
     setForm({
       id: editableAppointment.id,
@@ -320,7 +326,7 @@ export default function AppointmentsPage() {
       toast.success('Le rendez-vous a été annulé');
       fetchInitialData();
     } catch {
-      toast.error("Erreur lors de l’annulation");
+      toast.error('Erreur lors de l’annulation');
     } finally {
       setCancelModalOpen(false);
       setApptToCancel(null);
@@ -337,6 +343,7 @@ export default function AppointmentsPage() {
     try {
       const workspaceId =
         localStorage.getItem('current_workspace_id') || undefined;
+
       const payload: AppointmentPayload = {
         clientId: form.clientId,
         vehicleId: form.vehicleId,
@@ -363,7 +370,7 @@ export default function AppointmentsPage() {
       fetchInitialData();
     } catch (e: unknown) {
       toast.error(
-        getErrorMessage(e, "Erreur lors de l\u2019enregistrement"),
+        getErrorMessage(e, 'Erreur lors de l’enregistrement'),
       );
     }
   };
@@ -450,21 +457,39 @@ export default function AppointmentsPage() {
       </div>
 
       {viewMode === 'calendar' ? (
-        <div className="bg-white p-4 border rounded-xl shadow-sm">
-          <FullCalendar
-            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-            initialView="timeGridWeek"
-            locale={frLocale}
-            events={calendarEvents}
-            editable
-            selectable
-            dateClick={(arg) => openCreateModal(arg.dateStr)}
-            eventClick={(info) => {
-              const appt = info.event.extendedProps.appointment;
-              if (appt) openEditModal(appt);
-            }}
-            height="700px"
-          />
+        <div className="space-y-4">
+          <div className="flex gap-2">
+            <Button
+              variant={calendarView === 'timeGridWeek' ? 'secondary' : 'outline'}
+              onClick={() => setCalendarView('timeGridWeek')}
+            >
+              Semaine
+            </Button>
+            <Button
+              variant={calendarView === 'dayGridMonth' ? 'secondary' : 'outline'}
+              onClick={() => setCalendarView('dayGridMonth')}
+            >
+              Mois
+            </Button>
+          </div>
+
+          <div className="bg-white p-4 border rounded-xl shadow-sm">
+            <FullCalendar
+              key={calendarView}
+              plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+              initialView={calendarView}
+              locale={frLocale}
+              events={calendarEvents}
+              editable
+              selectable
+              dateClick={(arg) => openCreateModal(arg.dateStr)}
+              eventClick={(info) => {
+                const appt = info.event.extendedProps.appointment;
+                if (appt) openEditModal(appt);
+              }}
+              height="700px"
+            />
+          </div>
         </div>
       ) : (
         <DataTable
@@ -609,7 +634,7 @@ export default function AppointmentsPage() {
                   startTime: '',
                   endTime: '',
                 });
-                loadSlots(date);
+                void loadSlots(date);
               }}
             />
           </div>
@@ -669,6 +694,7 @@ export default function AppointmentsPage() {
                 const slot = availableSlots.find(
                   (s) => s.start === e.target.value,
                 );
+
                 if (slot) {
                   setForm({
                     ...form,
@@ -735,6 +761,3 @@ export default function AppointmentsPage() {
     </div>
   );
 }
-
-
-
