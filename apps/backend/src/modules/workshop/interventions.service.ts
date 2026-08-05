@@ -644,6 +644,17 @@ export class InterventionsService {
         throw new BadRequestException(`Impossible de modifier cette proforma.`);
       }
 
+      const hasInterventionArticles = repairCase.interventions.some(
+      (intervention) => (intervention.InterventionPart?.length ?? 0) > 0,
+      );
+
+      if (!hasInterventionArticles) {
+        throw new BadRequestException(
+          "Impossible de générer la proforma : aucun article d'intervention n'a été ajouté.",
+        );
+      }
+
+
       let totalHT = 0;
       for (const intervention of repairCase.interventions) {
         for (const part of intervention.InterventionPart) {

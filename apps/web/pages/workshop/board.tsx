@@ -124,17 +124,10 @@ export default function WorkshopBoardPage() {
           </p>
         </div>
         <div className="flex gap-3">
-          <Button
-            onClick={() => router.push('/workshop')}
-            variant="outline"
-            className="flex gap-2 font-bold"
-          >
+          <Button onClick={() => router.push('/workshop')} variant="outline" className="flex gap-2 font-bold">
             <LayoutList size={16} /> Vue Liste
           </Button>
-          <Button
-            onClick={fetchInterventions}
-            className="bg-blue-600 text-white hover:bg-blue-700 font-bold flex gap-2"
-          >
+          <Button onClick={fetchInterventions} className="bg-blue-600 text-white hover:bg-blue-700 font-bold flex gap-2">
             <RefreshCw size={16} /> Actualiser
           </Button>
         </div>

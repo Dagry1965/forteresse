@@ -152,6 +152,16 @@ export default function CaseDetailPage() {
   const handleGenerateProforma = async () => {
     if (!dossier) return;
 
+    const hasInterventionArticles = (dossier.interventions ?? []).some(
+      (phase: Intervention) =>
+        (phase.InterventionPart?.length ?? 0) > 0,
+    );
+
+    if (!hasInterventionArticles) {
+      toast.error("Aucun article d'intervention : génération impossible.");
+      return;
+    }
+
     try {
       setActionLoading(true);
       const proforma = await interventionService.generateProforma(dossier.id);
@@ -249,6 +259,9 @@ export default function CaseDetailPage() {
   const tva = totalHT * 0.20;
   const totalTTC = totalHT + tva;
   const currentProforma = dossier.proformas?.[0];
+  const hasInterventionArticles = (dossier.interventions ?? []).some(
+    (phase: Intervention) => (phase.InterventionPart?.length ?? 0) > 0,
+  );
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8 pb-20">
@@ -576,16 +589,24 @@ export default function CaseDetailPage() {
             <div className="space-y-3">
               {!currentProforma &&
                 (dossier.status === CASE_STATUS.RECEIVED || dossier.status === CASE_STATUS.DIAGNOSIS) && (
-                  <Button
-                    className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
-                    onClick={handleGenerateProforma}
-                    disabled={actionLoading}
-                  >
-                    <FileText size={20} />
-                    {actionLoading
-                      ? 'Génération...'
-                      : 'Générer la proforma'}
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      className="w-full bg-green-600 hover:bg-green-700 h-16 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg flex gap-3"
+                      onClick={handleGenerateProforma}
+                      disabled={actionLoading || !hasInterventionArticles}
+                    >
+                      <FileText size={20} />
+                      {actionLoading
+                        ? 'Génération...'
+                        : 'Générer la proforma'}
+                    </Button>
+
+                    {!hasInterventionArticles && (
+                      <p className="text-xs font-medium text-amber-600">
+                        Aucun article d’intervention : la proforma ne peut pas être générée.
+                      </p>
+                    )}
+                  </div>
                 )}
 
               {currentProforma && (
@@ -674,4 +695,3 @@ function LayoutList({ size, className }: { size?: number; className?: string }) 
     </svg>
   );
 }
-

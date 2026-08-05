@@ -57,4 +57,9 @@ export const proformaService = {
       `/api/proformas/${id}/invoice`,
     );
   },
+
+async rejectProforma(id: string) {
+  return API.patch(`/api/proformas/${id}/reject`, {});
+},
+
 };
