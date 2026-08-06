@@ -126,6 +126,7 @@ export class AppointmentsService {
           client: true,
           vehicle: { include: { client: true } },
           time_slot: true,
+          repairCase: true,
         },
       });
 
@@ -138,20 +139,29 @@ export class AppointmentsService {
     });
   }
 
-  async findAll(workspaceId: string) {
-    return this.prisma.appointment.findMany({
-      where: {
-        workspace_id: workspaceId,
-        deleted_at: null,
+ async findAll(workspaceId: string) {
+  return this.prisma.appointment.findMany({
+    where: {
+      workspace_id: workspaceId,
+      deleted_at: null,
+    },
+    include: {
+      client: true,
+      vehicle: true,
+      time_slot: true,
+      repairCase: {
+        include: {
+          interventions: {
+            where: { deleted_at: null },
+            orderBy: { created_at: 'asc' },
+            take: 1,
+          },
+        },
       },
-      include: {
-        client: true,
-        vehicle: true,
-        time_slot: true,
-      },
-      orderBy: { date: 'desc' },
-    });
-  }
+    },
+    orderBy: { date: 'desc' },
+  });
+}
 
   async getPending(workspaceId: string) {
     return this.prisma.appointment.findMany({
@@ -164,6 +174,7 @@ export class AppointmentsService {
         client: true,
         vehicle: true,
         time_slot: true,
+        repairCase: true,
       },
       orderBy: { date: 'asc' },
     });
@@ -180,6 +191,7 @@ export class AppointmentsService {
         client: true,
         vehicle: true,
         time_slot: true,
+        repairCase: true,
       },
     });
 
@@ -217,19 +229,19 @@ export class AppointmentsService {
         || dto.endTime !== undefined
       ) {
         throw new BadRequestException(
-          'Utilisez la route de changement de cr\u00e9neau',
+          'Utilisez la route de changement de créneau',
         );
       }
 
       if (dto.clientId !== undefined || dto.vehicleId !== undefined) {
         throw new BadRequestException(
-          'Le client et le v\u00e9hicule ne peuvent pas \u00eatre modifi\u00e9s ici',
+          'Le client et le véhicule ne peuvent pas être modifiés ici',
         );
       }
 
       if (dto.date !== undefined) {
         throw new BadRequestException(
-          'La date est pilot\u00e9e par le cr\u00e9neau',
+          'La date est pilotée par le créneau',
         );
       }
 
@@ -266,6 +278,7 @@ export class AppointmentsService {
           client: true,
           vehicle: true,
           time_slot: true,
+          repairCase: true,
         },
       });
 
@@ -309,6 +322,7 @@ export class AppointmentsService {
             client: true,
             vehicle: true,
             time_slot: true,
+            repairCase: true,
           },
         });
       }
@@ -341,6 +355,7 @@ export class AppointmentsService {
           client: true,
           vehicle: true,
           time_slot: true,
+          repairCase: true,
         },
       });
 
@@ -429,6 +444,7 @@ export class AppointmentsService {
           client: true,
           vehicle: true,
           time_slot: true,
+          repairCase: true,
         },
       });
 
@@ -626,13 +642,13 @@ export class AppointmentsService {
       || Number.isNaN(appointmentStart.getTime())
     ) {
       throw new BadRequestException(
-        'La date et l\u2019heure du rendez-vous sont invalides',
+        'La date et l’heure du rendez-vous sont invalides',
       );
     }
 
     if (appointmentStart.getTime() <= Date.now()) {
       throw new BadRequestException(
-        'Impossible d\u2019enregistrer un rendez-vous dans le pass\u00e9',
+        'Impossible d’enregistrer un rendez-vous dans le passé',
       );
     }
   }
@@ -692,9 +708,9 @@ export class AppointmentsService {
   }
 
   /**
- * Bascule un Rendez-vous en Dossier (Case) + Intervention
- */
-async convertToIntervention(
+   * Bascule un Rendez-vous en Dossier (Case) + Intervention
+   */
+  async convertToIntervention(
     workspaceId: string,
     appointmentId: string,
   ) {
@@ -716,6 +732,7 @@ async convertToIntervention(
         include: {
           client: true,
           vehicle: true,
+          repairCase: true,
         },
       });
 
@@ -760,6 +777,7 @@ async convertToIntervention(
         return {
           appointment,
           case: existingCase,
+          caseId: existingCase.id,
           intervention: existingIntervention,
           alreadyStarted: true,
         };
@@ -808,15 +826,10 @@ async convertToIntervention(
       return {
         appointment,
         case: repairCase,
+        caseId: repairCase.id,
         intervention,
         alreadyStarted: false,
       };
     });
   }
-
-
-
-
-
-
 }
