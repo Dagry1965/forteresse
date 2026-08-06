@@ -47,6 +47,19 @@ type EditableAppointment = Appointment & {
   timeSlotId?: string;
 };
 
+type WorkshopCaseRef = {
+  id?: string;
+  _id?: string;
+  status?: string;
+};
+
+type AppointmentWithWorkshopCase = Appointment & {
+  case?: WorkshopCaseRef | null;
+  repairCase?: WorkshopCaseRef | null;
+  caseId?: string | null;
+  case_id?: string | null;
+};
+
 function getErrorMessage(error: unknown, fallback: string): string {
   if (error && typeof error === 'object') {
     const candidate = error as {
@@ -67,10 +80,73 @@ function normalizeDateOnly(value: string): string {
   return value.includes('T') ? value.split('T')[0] : value;
 }
 
+const isWorkshopStartedStatus = (status?: string) => {
+  if (!status) return false;
+  return (
+    status === APPOINTMENT_STATUS.IN_PROGRESS ||
+    status === APPOINTMENT_STATUS.COMPLETED ||
+    status === 'IN_PROGRESS' ||
+    status === 'COMPLETED'
+  );
+};
+
+const getWorkshopMeta = (appointment: Appointment) => {
+  const a = appointment as AppointmentWithWorkshopCase;
+
+  const linkedCase = a.repairCase ?? a.case ?? null;
+
+  const caseId =
+    linkedCase?.id ??
+    linkedCase?._id ??
+    a.caseId ??
+    a.case_id ??
+    null;
+
+  const isWorkshopStarted =
+    isWorkshopStartedStatus(appointment.status) ||
+    isWorkshopStartedStatus(linkedCase?.status) ||
+    Boolean(caseId);
+
+  return {
+    caseId: caseId ? String(caseId) : null,
+    isWorkshopStarted,
+  };
+};
+
+/** Extrait un caseId depuis la réponse de start-workshop */
+function extractCaseIdFromStartResult(result: unknown): string | null {
+  if (!result || typeof result !== 'object') return null;
+
+  const r = result as {
+    id?: string;
+    caseId?: string;
+    case_id?: string;
+    case?: { id?: string };
+    data?: {
+      id?: string;
+      caseId?: string;
+      case_id?: string;
+      case?: { id?: string };
+    };
+  };
+
+  return (
+    r.case?.id ??
+    r.caseId ??
+    r.case_id ??
+    r.data?.case?.id ??
+    r.data?.caseId ??
+    r.data?.case_id ??
+    // Attention: r.id peut être l'id du RDV, pas du case.
+    // On le prend en dernier recours seulement si case.* est absent
+    // et si ton API documente que start-workshop renvoie le case.
+    null
+  );
+}
+
 export default function AppointmentsPage() {
   const router = useRouter();
 
-  /* ================= ÉTATS ================= */
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -79,10 +155,7 @@ export default function AppointmentsPage() {
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  // Vue principale
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-
-  // Vue calendrier
   const [calendarView, setCalendarView] = useState<'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -91,12 +164,10 @@ export default function AppointmentsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [queryPrefillHandled, setQueryPrefillHandled] = useState(false);
 
-  // Filtres et recherche
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterDate, setFilterDate] = useState<string>('');
   const [searchTerm, setSearchTerm] = useState<string>('');
 
-  // États pour l'annulation
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [apptToCancel, setApptToCancel] = useState<string | null>(null);
 
@@ -109,16 +180,13 @@ export default function AppointmentsPage() {
     endTime: '',
   });
 
-  /* ================= CHARGEMENT ================= */
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      const workspaceId =
-        localStorage.getItem('current_workspace_id') || undefined;
+      const workspaceId = localStorage.getItem('current_workspace_id') || undefined;
 
       if (!workspaceId) {
         toast.error('Aucun espace de travail sélectionné.');
-        setLoading(false);
         return;
       }
 
@@ -128,10 +196,12 @@ export default function AppointmentsPage() {
         vehicleService.getAll(workspaceId),
       ]);
 
+      console.log('ALL APPOINTMENTS →', appts);
+
       setAppointments(appts || []);
       setClients(cls || []);
       setVehicles(vehs || []);
-    } catch (e) {
+    } catch {
       toast.error('Erreur de chargement des données');
     } finally {
       setLoading(false);
@@ -145,7 +215,7 @@ export default function AppointmentsPage() {
       const safeDate = normalizeDateOnly(date);
       const slots = await appointmentService.getAvailableSlots(safeDate, workspaceId);
       setAvailableSlots(slots || []);
-    } catch (e) {
+    } catch {
       toast.error('Erreur lors de la récupération des créneaux');
     } finally {
       setLoadingSlots(false);
@@ -174,9 +244,7 @@ export default function AppointmentsPage() {
     }
 
     if (!clientId || !vehicleId) {
-      toast.error(
-        'Les informations du client et du véhicule sont incomplètes.',
-      );
+      toast.error('Les informations du client et du véhicule sont incomplètes.');
       setQueryPrefillHandled(true);
       return;
     }
@@ -199,9 +267,7 @@ export default function AppointmentsPage() {
       '';
 
     if (vehicleClientId !== clientId) {
-      toast.error(
-        'Ce véhicule n’appartient pas au client sélectionné.',
-      );
+      toast.error('Ce véhicule n’appartient pas au client sélectionné.');
       setQueryPrefillHandled(true);
       return;
     }
@@ -242,13 +308,32 @@ export default function AppointmentsPage() {
   }, [appointments]);
 
   const appointmentsForList = useMemo(() => {
+    const statusRank: Record<string, number> = {
+      [APPOINTMENT_STATUS.IN_PROGRESS]: 4,
+      [APPOINTMENT_STATUS.COMPLETED]: 3,
+      [APPOINTMENT_STATUS.CONFIRMED]: 2,
+      [APPOINTMENT_STATUS.PENDING]: 1,
+      [APPOINTMENT_STATUS.CANCELLED]: 0,
+    };
+
     const unique = new Map<string, Appointment>();
 
     for (const appt of appointments) {
       const vehicle = appt.vehicle as (Vehicle & { _id?: string }) | undefined;
       const key = vehicle?.id || vehicle?._id || appt.id;
 
-      if (!unique.has(key)) {
+      const current = unique.get(key);
+      if (!current) {
+        unique.set(key, appt);
+        continue;
+      }
+
+      const currentRank = statusRank[current.status] ?? -1;
+      const nextRank = statusRank[appt.status] ?? -1;
+      const currentDate = new Date(current.date || 0).getTime();
+      const nextDate = new Date(appt.date || 0).getTime();
+
+      if (nextRank > currentRank || (nextRank === currentRank && nextDate > currentDate)) {
         unique.set(key, appt);
       }
     }
@@ -256,7 +341,6 @@ export default function AppointmentsPage() {
     return Array.from(unique.values());
   }, [appointments]);
 
-  /* ================= FILTRAGE ET RECHERCHE ================= */
   const filteredAppointments = useMemo(() => {
     return appointmentsForList.filter((appt) => {
       const matchStatus = filterStatus
@@ -280,24 +364,31 @@ export default function AppointmentsPage() {
     });
   }, [appointmentsForList, filterStatus, filterDate, searchTerm]);
 
-  /* ================= GESTION WORKSHOP ================= */
-  const handleStartWorkshop = async (id: string) => {
-    try {
-      await appointmentService.startIntervention(id);
-      toast.success('Véhicule envoyé à l’atelier (Diagnostic)');
-      fetchInitialData();
-    } catch (e: unknown) {
-      toast.error(
-        getErrorMessage(e, 'Erreur lors de l’envoi à l’atelier'),
+const handleStartWorkshop = async (id: string) => {
+  try {
+    const result = await appointmentService.startIntervention(id);
+    console.log('START INTERVENTION RESULT →', result);
+
+    toast.success('Véhicule envoyé à l’atelier (Diagnostic)');
+    await fetchInitialData();
+
+    const newCaseId = extractCaseIdFromStartResult(result);
+
+    if (newCaseId) {
+      router.push(`/workshop/case/${newCaseId}`);
+    } else {
+      // Atelier démarré mais l'API n'a pas renvoyé l'id du dossier
+      toast.message(
+        'Atelier démarré. Ouvre le dossier depuis la liste atelier si besoin.',
       );
     }
-  };
+  } catch (e: unknown) {
+    toast.error(getErrorMessage(e, 'Erreur lors de l’envoi à l’atelier'));
+  }
+};
 
-  /* ================= GESTION MODAL ================= */
   const openCreateModal = (dateStr?: string) => {
-    const d = normalizeDateOnly(
-      dateStr || new Date().toISOString().split('T')[0],
-    );
+    const d = normalizeDateOnly(dateStr || new Date().toISOString().split('T')[0]);
     setSelectedDate(d);
     void loadSlots(d);
     setIsEditing(false);
@@ -315,22 +406,15 @@ export default function AppointmentsPage() {
   const openEditModal = (appointment: Appointment) => {
     if (!appointment) return;
     const editableAppointment = appointment as EditableAppointment;
-    const d = normalizeDateOnly(
-      appointment.date || new Date().toISOString().split('T')[0],
-    );
+    const d = normalizeDateOnly(appointment.date || new Date().toISOString().split('T')[0]);
     setSelectedDate(d);
     void loadSlots(d);
     setIsEditing(true);
     setForm({
       id: editableAppointment.id,
-      clientId:
-        editableAppointment.client_id || editableAppointment.clientId || '',
-      vehicleId:
-        editableAppointment.vehicle_id || editableAppointment.vehicleId || '',
-      timeSlotId:
-        editableAppointment.time_slot_id ||
-        editableAppointment.timeSlotId ||
-        '',
+      clientId: editableAppointment.client_id || editableAppointment.clientId || '',
+      vehicleId: editableAppointment.vehicle_id || editableAppointment.vehicleId || '',
+      timeSlotId: editableAppointment.time_slot_id || editableAppointment.timeSlotId || '',
       startTime: appointment.startTime || '',
       endTime: appointment.endTime || '',
     });
@@ -356,7 +440,6 @@ export default function AppointmentsPage() {
     }
   };
 
-  /* ================= SOUMISSION ================= */
   const handleSubmit = async () => {
     if (!form.clientId || !form.vehicleId || !form.startTime) {
       toast.error('Veuillez remplir tous les champs obligatoires.');
@@ -364,8 +447,7 @@ export default function AppointmentsPage() {
     }
 
     try {
-      const workspaceId =
-        localStorage.getItem('current_workspace_id') || undefined;
+      const workspaceId = localStorage.getItem('current_workspace_id') || undefined;
 
       const payload: AppointmentPayload = {
         clientId: form.clientId,
@@ -392,9 +474,7 @@ export default function AppointmentsPage() {
       setModalOpen(false);
       fetchInitialData();
     } catch (e: unknown) {
-      toast.error(
-        getErrorMessage(e, 'Erreur lors de l’enregistrement'),
-      );
+      toast.error(getErrorMessage(e, 'Erreur lors de l’enregistrement'));
     }
   };
 
@@ -405,7 +485,6 @@ export default function AppointmentsPage() {
         <Button onClick={() => openCreateModal()}>+ Nouveau rendez-vous</Button>
       </div>
 
-      {/* Barre de Recherche et Filtres */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex flex-wrap gap-4">
           <select
@@ -450,9 +529,7 @@ export default function AppointmentsPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <span className="absolute left-4 top-2.5 text-gray-400 text-xs">
-            🔍
-          </span>
+          <span className="absolute left-4 top-2.5 text-gray-400 text-xs">🔍</span>
           {searchTerm && (
             <button
               onClick={() => setSearchTerm('')}
@@ -571,103 +648,104 @@ export default function AppointmentsPage() {
               key: 'status',
               header: 'Statut',
               render: (r) => {
+                const { isWorkshopStarted } = getWorkshopMeta(r);
+
                 const status = r.status;
                 let colorClass = 'bg-gray-100 text-gray-700';
-                if (status === APPOINTMENT_STATUS.CONFIRMED)
+
+                if (isWorkshopStarted) {
+                  colorClass = 'bg-green-100 text-green-700 font-bold ring-1 ring-green-200';
+                } else if (status === APPOINTMENT_STATUS.CONFIRMED) {
                   colorClass = 'bg-green-100 text-green-700 font-bold';
-                else if (status === APPOINTMENT_STATUS.PENDING)
+                } else if (status === APPOINTMENT_STATUS.PENDING) {
                   colorClass = 'bg-yellow-100 text-yellow-700';
-                else if (status === APPOINTMENT_STATUS.CANCELLED)
+                } else if (status === APPOINTMENT_STATUS.CANCELLED) {
                   colorClass = 'bg-red-100 text-red-700';
-                else if (status === APPOINTMENT_STATUS.COMPLETED)
+                } else if (status === APPOINTMENT_STATUS.COMPLETED) {
                   colorClass = 'bg-blue-100 text-blue-700';
+                }
+
                 return (
                   <span
                     className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}
                   >
-                    {status}
+                    {isWorkshopStarted ? 'Atelier démarré' : status}
                   </span>
                 );
               },
             },
             {
-              key: 'actions',
-              header: 'Actions',
-              render: (r) => {
-                const appointment = r as Appointment & {
-                  repairCase?: { id?: string };
-                  case?: { id?: string };
-                };
+  key: 'actions',
+  header: 'Actions',
+  render: (r) => {
+    const appointment = r as AppointmentWithWorkshopCase;
+    const { caseId, isWorkshopStarted } = getWorkshopMeta(appointment);
 
-                const caseId =
-                  appointment.repairCase?.id ||
-                  appointment.case?.id ||
-                  null;
+    const canStartWorkshop =
+      (appointment.status === APPOINTMENT_STATUS.PENDING ||
+        appointment.status === APPOINTMENT_STATUS.CONFIRMED) &&
+      !isWorkshopStarted;
 
-                const isWorkshopStarted =
-                  appointment.status === APPOINTMENT_STATUS.IN_PROGRESS ||
-                  appointment.status === APPOINTMENT_STATUS.COMPLETED;
+    const handleWorkshopClick = async () => {
+      if (isWorkshopStarted) {
+        if (!caseId) {
+          toast.error(
+            'Dossier atelier introuvable. L’API ne renvoie pas le caseId pour ce rendez-vous.',
+          );
+          console.error('RDV sans caseId:', appointment);
+          return;
+        }
+        router.push(`/workshop/case/${caseId}`);
+        return;
+      }
 
-                return (
-                  <div
-                    className="flex gap-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {(appointment.status === APPOINTMENT_STATUS.PENDING ||
-                      appointment.status === APPOINTMENT_STATUS.CONFIRMED) && (
-                      <Button
-                        size="sm"
-                        className="bg-orange-500 hover:bg-orange-600 text-white"
-                        onClick={() => handleStartWorkshop(appointment.id)}
-                      >
-                        Démarrer Atelier
-                      </Button>
-                    )}
+      if (canStartWorkshop) {
+        await handleStartWorkshop(appointment.id);
+      }
+    };
 
-                    {isWorkshopStarted && (
-                      <Button
-                        size="sm"
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                        onClick={() => {
-                          if (!caseId) {
-                            toast.error('Dossier atelier introuvable.');
-                            return;
-                          }
+    return (
+      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+        {(canStartWorkshop || isWorkshopStarted) && (
+          <Button
+            size="sm"
+            className={
+              isWorkshopStarted
+                ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                : 'bg-orange-500 hover:bg-orange-600 text-white'
+            }
+            onClick={handleWorkshopClick}
+          >
+            {isWorkshopStarted ? 'Voir Atelier' : 'Démarrer Atelier'}
+          </Button>
+        )}
 
-                          router.push(`/workshop/case/${caseId}`);
-                        }}
-                      >
-                        Atelier déjà démarré
-                      </Button>
-                    )}
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => openEditModal(appointment)}
+        >
+          Modifier
+        </Button>
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEditModal(appointment)}
-                    >
-                      Modifier
-                    </Button>
-
-                    {appointment.status !== APPOINTMENT_STATUS.CANCELLED &&
-                      appointment.status !== APPOINTMENT_STATUS.COMPLETED && (
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleCancelClick(appointment.id)}
-                        >
-                          Annuler
-                        </Button>
-                      )}
-                  </div>
-                );
-              },
-            },
+        {appointment.status !== APPOINTMENT_STATUS.CANCELLED &&
+          appointment.status !== APPOINTMENT_STATUS.COMPLETED && (
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={() => handleCancelClick(appointment.id)}
+            >
+              Annuler
+            </Button>
+          )}
+      </div>
+    );
+  },
+},
           ]}
         />
       )}
 
-      {/* MODALE DE FORMULAIRE */}
       <EntityFormModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

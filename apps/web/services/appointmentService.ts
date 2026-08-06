@@ -17,6 +17,12 @@ export interface Appointment {
     plateNumber?: string;
   };
   time_slot?: { id: string; start: string; end: string };
+
+  // Atelier
+  caseId?: string | null;
+  case_id?: string | null;
+  case?: { id: string; status?: string } | null;
+  repairCase?: { id: string; status?: string } | null;
 }
 
 export interface AppointmentPayload {
@@ -39,113 +45,73 @@ export interface AvailableTimeSlot {
   isAvailable?: boolean;
 }
 
+export interface StartWorkshopResult {
+  id?: string;
+  caseId?: string;
+  case_id?: string;
+  case?: { id: string; status?: string };
+  data?: {
+    id?: string;
+    caseId?: string;
+    case_id?: string;
+    case?: { id: string; status?: string };
+  };
+}
+
 export const appointmentService = {
   async getAll(workspaceId?: string) {
-    try {
-      const params = workspaceId ? `?workspaceId=${workspaceId}` : '';
-      return await API.get<Appointment[]>(`/api/appointments${params}`);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur getAll:', error);
-      throw error;
-    }
+    const params = workspaceId ? `?workspaceId=${workspaceId}` : '';
+    return API.get<Appointment[]>(`/api/appointments${params}`);
   },
 
   async getPending(workspaceId?: string) {
-    try {
-      const params = workspaceId ? `?workspaceId=${workspaceId}` : '';
-      return await API.get<Appointment[]>(`/api/appointments/pending${params}`);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur getPending:', error);
-      throw error;
-    }
+    const params = workspaceId ? `?workspaceId=${workspaceId}` : '';
+    return API.get<Appointment[]>(`/api/appointments/pending${params}`);
   },
 
   async create(data: AppointmentPayload) {
-    try {
-      return await API.post('/api/appointments', data);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur création:', error);
-      throw error;
-    }
+    return API.post('/api/appointments', data);
   },
 
   async update(id: string, data: Partial<AppointmentPayload>) {
-    try {
-      return await API.patch(`/api/appointments/${id}`, data);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur mise à jour:', error);
-      throw error;
-    }
+    return API.patch(`/api/appointments/${id}`, data);
   },
 
   async cancel(id: string) {
-    try {
-      return await API.patch(`/api/appointments/${id}/cancel`);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur annulation:', error);
-      throw error;
-    }
+    return API.patch(`/api/appointments/${id}/cancel`);
   },
 
   async remove(id: string) {
-    try {
-      return await API.delete(`/api/appointments/${id}`);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur suppression:', error);
-      throw error;
-    }
+    return API.delete(`/api/appointments/${id}`);
   },
 
   async restore(id: string) {
-    try {
-      return await API.patch(`/api/appointments/${id}/restore`);
-    } catch (error: unknown) {
-      console.error('[appointmentService] Erreur restore:', error);
-      throw error;
-    }
+    return API.patch(`/api/appointments/${id}/restore`);
   },
 
   async getAvailableSlots(date: string, workspaceId?: string) {
-  try {
     const params = new URLSearchParams({
       date,
       ...(workspaceId ? { workspaceId } : {}),
     });
 
-    return await API.get<AvailableTimeSlot[]>(
-      `/api/appointments/available-slots?${params.toString()}`
+    return API.get<AvailableTimeSlot[]>(
+      `/api/appointments/available-slots?${params.toString()}`,
     );
-  } catch (error: unknown) {
-    console.error('[appointmentService] Erreur getAvailableSlots:', error);
-    throw error;
-  }
-},
-
-
-  async validate(id: string, action: "confirm" | "cancel") {
-    try {
-      const status = action === "confirm" ? APPOINTMENT_STATUS.CONFIRMED : APPOINTMENT_STATUS.CANCELLED;
-
-      return await API.patch(`/api/appointments/${id}`, {
-        status,
-      });
-    } catch (error: unknown) {
-      console.error("[appointmentService] Erreur validation:", error);
-      throw error;
-    }
   },
 
-async startIntervention(id: string) {
-  try {
-    return await API.post(`/api/appointments/${id}/start-workshop`);
-  } catch (error: unknown) {
-    console.error('[appointmentService] Erreur startIntervention:', error);
-    throw error;
-  }
-},
+  async validate(id: string, action: 'confirm' | 'cancel') {
+    const status =
+      action === 'confirm'
+        ? APPOINTMENT_STATUS.CONFIRMED
+        : APPOINTMENT_STATUS.CANCELLED;
 
+    return API.patch(`/api/appointments/${id}`, { status });
+  },
 
-
-
+  async startIntervention(id: string) {
+    return API.post<StartWorkshopResult>(
+      `/api/appointments/${id}/start-workshop`,
+    );
+  },
 };
-
