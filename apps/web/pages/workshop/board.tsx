@@ -21,6 +21,8 @@ type BoardProforma = {
   id: string;
   reference?: string;
   status: string;
+  createdAt?: string;
+  created_at?: string;
 };
 
 type BoardCase = NonNullable<Intervention['case']> & {
@@ -30,6 +32,29 @@ type BoardCase = NonNullable<Intervention['case']> & {
 type BoardIntervention = Omit<Intervention, 'case'> & {
   case?: BoardCase;
 };
+
+
+function getLatestProforma(proformas?: BoardProforma[] | null): BoardProforma | null {
+  if (!Array.isArray(proformas) || proformas.length === 0) return null;
+
+  const withDate = proformas
+    .map((proforma, index) => {
+      const dateRaw = proforma.createdAt || proforma.created_at;
+      const timestamp = dateRaw ? new Date(dateRaw).getTime() : NaN;
+      return { proforma, index, timestamp };
+    })
+    .sort((a, b) => {
+      const aValid = Number.isFinite(a.timestamp);
+      const bValid = Number.isFinite(b.timestamp);
+
+      if (aValid && bValid) return b.timestamp - a.timestamp;
+      if (aValid) return -1;
+      if (bValid) return 1;
+      return b.index - a.index;
+    });
+
+  return withDate[0]?.proforma ?? null;
+}
 
 const COLUMNS = [
   { id: CASE_STATUS.RECEIVED, label: 'File d\'attente', color: 'border-t-slate-400', bg: 'bg-slate-50' },
@@ -68,7 +93,7 @@ export default function WorkshopBoardPage() {
 
   const moveCase = async (intervention: BoardIntervention, newStatus: string) => {
     try {
-      const latestProforma = intervention.case?.proformas?.[0] ?? null;
+      const latestProforma = getLatestProforma(intervention.case?.proformas ?? null);
       const needsAcceptedProforma =
         newStatus === CASE_STATUS.WAITING_PARTS ||
         newStatus === CASE_STATUS.IN_PROGRESS ||
@@ -152,7 +177,7 @@ export default function WorkshopBoardPage() {
               {interventions
                 .filter((int) => getBoardStatus(int) === col.id)
                 .map((int) => {
-                  const latestProforma = int.case?.proformas?.[0] ?? null;
+                  const latestProforma = getLatestProforma(int.case?.proformas ?? null);
                   const proformaAccepted =
                     latestProforma?.status === PROFORMA_STATUS.ACCEPTED;
 
@@ -166,7 +191,7 @@ export default function WorkshopBoardPage() {
                     <Card
                       key={int.id}
                       className="p-4 cursor-pointer hover:ring-2 hover:ring-blue-400 transition-all border-none shadow-sm group bg-white"
-                      onClick={() => router.push(`/workshop/case/${int.case_id || int.case?.id}`)}
+                      onClick={() => router.push(`/workshop/case/${int.id}`)}
                     >
                       <div className="text-[10px] font-bold text-blue-500 mb-3 flex items-center gap-1">
                         <ClipboardList size={12} /> DOSSIER #{int.case?.id?.slice(-4).toUpperCase()}

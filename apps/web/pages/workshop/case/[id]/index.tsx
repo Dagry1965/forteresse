@@ -37,6 +37,58 @@ type FlowCardProps = {
   variant?: 'neutral' | 'danger' | 'success' | 'warning';
 };
 
+type ProformaLike = {
+  id: string;
+  reference?: string;
+  status: string;
+  created_at?: string | Date;
+  updated_at?: string | Date;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+};
+
+type InterventionRouteRecord = Intervention & {
+  case_id?: string | null;
+  case?: { id?: string } | null;
+  repairCase?: { id?: string } | null;
+};
+
+function getTimestamp(value?: string | Date): number {
+  if (!value) return 0;
+  const timestamp = new Date(value).getTime();
+  return Number.isNaN(timestamp) ? 0 : timestamp;
+}
+
+function getLatestProforma(proformas?: ProformaLike[] | null): ProformaLike | null {
+  if (!Array.isArray(proformas) || proformas.length === 0) {
+    return null;
+  }
+
+  return [...proformas].sort((a, b) => {
+    const aTimestamp =
+      getTimestamp(a.updated_at) ||
+      getTimestamp(a.updatedAt) ||
+      getTimestamp(a.created_at) ||
+      getTimestamp(a.createdAt);
+    const bTimestamp =
+      getTimestamp(b.updated_at) ||
+      getTimestamp(b.updatedAt) ||
+      getTimestamp(b.created_at) ||
+      getTimestamp(b.createdAt);
+
+    return bTimestamp - aTimestamp;
+  })[0] ?? null;
+}
+
+function resolveInterventionCaseId(intervention: InterventionRouteRecord): string | null {
+  return (
+    intervention.case_id ??
+    intervention.case?.id ??
+    intervention.repairCase?.id ??
+    null
+  );
+}
+
 function FlowCard({
   title,
   stopTitle,
@@ -177,16 +229,28 @@ export default function CaseDetailPage() {
     try {
       setLoading(true);
 
-      // 1. On récupère l'intervention pour avoir le case_id
-      const currentInt = await interventionService.getOne(id);
+      let dossierData: Case | null = null;
 
-      // 2. On récupère le dossier complet
-      if (!currentInt.case_id) {
-        throw new Error("Cette intervention n'est associée à aucun dossier.");
+      try {
+        // 1. On essaie d'abord de lire l'id comme une intervention
+        const currentInt = (await interventionService.getOne(
+          id,
+        )) as InterventionRouteRecord;
+
+        const linkedCaseId = resolveInterventionCaseId(currentInt);
+
+        if (linkedCaseId) {
+          dossierData = await interventionService.getCaseDetails(linkedCaseId);
+        }
+      } catch {
+        // Si l'id de route est déjà un caseId, on essaie directement le dossier
       }
 
-      const data = await interventionService.getCaseDetails(currentInt.case_id);
-      setDossier(data);
+      if (!dossierData) {
+        dossierData = await interventionService.getCaseDetails(id);
+      }
+
+      setDossier(dossierData);
     } catch {
       toast.error('Erreur lors du chargement du dossier');
       router.push('/workshop');
@@ -209,6 +273,23 @@ export default function CaseDetailPage() {
     fetchFullDossier();
     fetchStock();
   }, [fetchFullDossier]);
+
+  const latestProforma = getLatestProforma(dossier?.proformas ?? null);
+  const proformaAccepted = latestProforma?.status === PROFORMA_STATUS.ACCEPTED;
+
+  const requireAcceptedProforma = (): boolean => {
+    if (!latestProforma) {
+      toast.error("Aucune proforma liée à ce dossier.");
+      return false;
+    }
+
+    if (!proformaAccepted) {
+      toast.error("Le devis doit être accepté avant de poursuivre l'atelier.");
+      return false;
+    }
+
+    return true;
+  };
 
   /* ================= ACTIONS SUR LES PHASES ================= */
 
@@ -299,9 +380,12 @@ export default function CaseDetailPage() {
   const handleApproveCase = async () => {
     if (!dossier) return;
 
+    if (!requireAcceptedProforma()) {
+      return;
+    }
+
     try {
       setActionLoading(true);
-      // ✅ Appel conforme à votre architecture /case/:id/status
       await interventionService.updateCaseStatus(dossier.id, CASE_STATUS.IN_PROGRESS);
 
       toast.success('Accord client enregistré ! Travaux lancés.');
@@ -315,6 +399,10 @@ export default function CaseDetailPage() {
 
   const handleStartRepair = async () => {
     if (!dossier) return;
+
+    if (!requireAcceptedProforma()) {
+      return;
+    }
 
     try {
       setActionLoading(true);
@@ -335,6 +423,10 @@ export default function CaseDetailPage() {
 
   const handleCompleteCase = async () => {
     if (!dossier) return;
+
+    if (!requireAcceptedProforma()) {
+      return;
+    }
 
     try {
       setActionLoading(true);
@@ -378,7 +470,7 @@ export default function CaseDetailPage() {
 
   const tva = totalHT * 0.20;
   const totalTTC = totalHT + tva;
-  const currentProforma = dossier.proformas?.[0];
+  const currentProforma = latestProforma;
   const hasInterventionArticles = caseHasInterventionArticles(dossier);
 
   return (
@@ -780,18 +872,37 @@ export default function CaseDetailPage() {
               )}
             </div>
 
-            {/* Indicateur de devis envoyé */}
-            {dossier.status === CASE_STATUS.INVOICED && (
-              <div className="p-4 bg-green-50 border-2 border-green-100 rounded-2xl flex items-center gap-4 animate-pulse">
-                <CheckCircle2 className="text-green-600" size={24} />
+            {/* Indicateur de proforma */}
+            {latestProforma && (
+              <div
+                className={`p-4 border-2 rounded-2xl flex items-center gap-4 ${
+                  proformaAccepted
+                    ? 'bg-green-50 border-green-100'
+                    : 'bg-amber-50 border-amber-100'
+                }`}
+              >
+                <CheckCircle2
+                  className={proformaAccepted ? 'text-green-600' : 'text-amber-600'}
+                  size={24}
+                />
 
                 <div>
-                  <p className="text-xs font-black text-green-900 uppercase">
-                    Devis Envoyé
+                  <p
+                    className={`text-xs font-black uppercase ${
+                      proformaAccepted ? 'text-green-900' : 'text-amber-900'
+                    }`}
+                  >
+                    {proformaAccepted ? 'Devis accepté' : 'Devis en attente'}
                   </p>
 
-                  <p className="text-[10px] text-green-700 font-medium">
-                    En attente de validation client
+                  <p
+                    className={`text-[10px] font-medium ${
+                      proformaAccepted ? 'text-green-700' : 'text-amber-700'
+                    }`}
+                  >
+                    {proformaAccepted
+                      ? 'La suite du flux atelier est débloquée'
+                      : 'La progression atelier reste limitée'}
                   </p>
                 </div>
               </div>
