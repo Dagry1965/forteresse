@@ -126,7 +126,15 @@ export class AppointmentsService {
           client: true,
           vehicle: { include: { client: true } },
           time_slot: true,
-          repairCase: true,
+          repairCase: {
+            include: {
+              interventions: {
+                where: { deleted_at: null },
+                orderBy: { created_at: 'asc' },
+                take: 1,
+              },
+            },
+          },
         },
       });
 
@@ -140,28 +148,28 @@ export class AppointmentsService {
   }
 
  async findAll(workspaceId: string) {
-  return this.prisma.appointment.findMany({
-    where: {
-      workspace_id: workspaceId,
-      deleted_at: null,
-    },
-    include: {
-      client: true,
-      vehicle: true,
-      time_slot: true,
-      repairCase: {
-        include: {
-          interventions: {
-            where: { deleted_at: null },
-            orderBy: { created_at: 'asc' },
-            take: 1,
+    return this.prisma.appointment.findMany({
+      where: {
+        workspace_id: workspaceId,
+        deleted_at: null,
+      },
+      include: {
+        client: true,
+        vehicle: true,
+        time_slot: true,
+        repairCase: {
+          include: {
+            interventions: {
+              where: { deleted_at: null },
+              orderBy: { created_at: 'asc' },
+              take: 1,
+            },
           },
         },
       },
-    },
-    orderBy: { date: 'desc' },
-  });
-}
+      orderBy: { date: 'desc' },
+    });
+  }
 
   async getPending(workspaceId: string) {
     return this.prisma.appointment.findMany({
@@ -174,7 +182,15 @@ export class AppointmentsService {
         client: true,
         vehicle: true,
         time_slot: true,
-        repairCase: true,
+        repairCase: {
+          include: {
+            interventions: {
+              where: { deleted_at: null },
+              orderBy: { created_at: 'asc' },
+              take: 1,
+            },
+          },
+        },
       },
       orderBy: { date: 'asc' },
     });
@@ -191,7 +207,15 @@ export class AppointmentsService {
         client: true,
         vehicle: true,
         time_slot: true,
-        repairCase: true,
+        repairCase: {
+          include: {
+            interventions: {
+              where: { deleted_at: null },
+              orderBy: { created_at: 'asc' },
+              take: 1,
+            },
+          },
+        },
       },
     });
 
@@ -278,7 +302,15 @@ export class AppointmentsService {
           client: true,
           vehicle: true,
           time_slot: true,
-          repairCase: true,
+          repairCase: {
+            include: {
+              interventions: {
+                where: { deleted_at: null },
+                orderBy: { created_at: 'asc' },
+                take: 1,
+              },
+            },
+          },
         },
       });
 
@@ -322,7 +354,15 @@ export class AppointmentsService {
             client: true,
             vehicle: true,
             time_slot: true,
-            repairCase: true,
+            repairCase: {
+              include: {
+                interventions: {
+                  where: { deleted_at: null },
+                  orderBy: { created_at: 'asc' },
+                  take: 1,
+                },
+              },
+            },
           },
         });
       }
@@ -355,7 +395,15 @@ export class AppointmentsService {
           client: true,
           vehicle: true,
           time_slot: true,
-          repairCase: true,
+          repairCase: {
+            include: {
+              interventions: {
+                where: { deleted_at: null },
+                orderBy: { created_at: 'asc' },
+                take: 1,
+              },
+            },
+          },
         },
       });
 
@@ -444,7 +492,15 @@ export class AppointmentsService {
           client: true,
           vehicle: true,
           time_slot: true,
-          repairCase: true,
+          repairCase: {
+            include: {
+              interventions: {
+                where: { deleted_at: null },
+                orderBy: { created_at: 'asc' },
+                take: 1,
+              },
+            },
+          },
         },
       });
 
@@ -778,6 +834,7 @@ export class AppointmentsService {
           appointment,
           case: existingCase,
           caseId: existingCase.id,
+          interventionId: existingIntervention.id,
           intervention: existingIntervention,
           alreadyStarted: true,
         };
@@ -827,6 +884,7 @@ export class AppointmentsService {
         appointment,
         case: repairCase,
         caseId: repairCase.id,
+        interventionId: intervention.id,
         intervention,
         alreadyStarted: false,
       };
